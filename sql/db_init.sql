@@ -8,6 +8,13 @@ CREATE TABLE users (
 	user_settings	int(11) NOT NULL;
 );
 
+CREATE TABLE user_keys (
+	key_id int(11) AUTO_INCREMENT PRIMARY KEY NOT NULL,
+	key_userid int(11) NOT NULL UNIQUE,
+	key_token varchar(255) NOT NULL,
+	key_status bool NOT NULL
+);
+
 CREATE TABLE settings (
 	settings_id		int(11)	AUTOINCREMENT PRIMARY KEY NOT NULL;
 	settings_colour	
@@ -44,6 +51,7 @@ CREATE TABLE matches (
 	match_tournament_id	int(11) NOT NULL;
 	match_user1_id		int(11) NOT NULL;
 	match_user2_id		int(11) NOT NULL;
+	match_winner		int(11);
 	match_date_start	timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL;
 	match_date_end		timestamp;
 );
@@ -57,3 +65,22 @@ REFERENCES users (user_id, user_id, user_id, user_id, user_id, user_id, user_id,
 
 ALTER TABLE matches ADD FOREIGN KEY (match_tournament_id) REFERENCES tournaments (tournament_id);
 ALTER TABLE matches ADD FOREIGN KEY (match_user1_id, match_user2_id) REFERENCES users (user_id, user_id);
+
+ALTER TABLE user_keys ADD FOREIGN KEY (key_userid) REFERENCES users (user_id);
+
+-- API for the DB
+
+-- stats for W/L per user
+
+-- select all matches for a user $userid
+SELECT COUNT(m.match_id) AS matchcount FROM users AS u
+LEFT JOIN matches AS m ON u.user_id = m.match_user1_id
+LEFT JOIN matches AS m2 ON u.user_id = m2.match_user2_id 
+WHERE u.user_id = $userid
+AND m.match_date_end NOT NULL
+AND m2.match_date_end NOT NULL;
+
+SELECT COUNT(m.match_id) AS matchwins FROM users AS u
+JOIN matches AS m ON u.user_id = m.match_winner
+WHERE u.user_id = $userid
+AND m.match_date_end NOT NULL;
