@@ -5,11 +5,10 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE users (
 	user_id					INTEGER	AUTOINCREMENT PRIMARY KEY NOT NULL,
 	user_username			TEXT UNIQUE NOT NULL,
-	user_password			TEXT,
+	user_password			TEXT ,
 	user_email				TEXT UNIQUE NOT NULL,
 	user_dob				DATE NOT NULL,
-	user_settings			INTEGER NOT NULL,
-	user_creation_date		DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	user_creation_date		DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	user_modification_date	DATETIME,
 	user_twofa_enabled		INTEGER NOT NULL DEFAULT 0,
 	user_twofa_secret		TEXT
@@ -20,7 +19,7 @@ CREATE TABLE oauth (
 	oauth_userid			INTEGER NOT NULL,
 	oauth_provider			TEXT NOT NULL,
 	oauth_provider_userid	TEXT NOT NULL,
-	oauth_creation_date		DATETIME DEFAULT CURRENT_DATETIME NOT NULL
+	oauth_creation_date		DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 	
 	FOREIGN KEY (oauth_userid) REFERENCES users (user_id)
 		ON DELETE CASCADE,
@@ -32,7 +31,7 @@ CREATE TABLE user_keys (
 	key_userid			INTEGER NOT NULL UNIQUE,
 	key_token			TEXT NOT NULL,
 	key_status bool		NOT NULL,
-	key_creation_date	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	key_creation_date	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	key_expiry_date		DATETIME,
 
 	FOREIGN KEY (key_userid) REFERENCES users (user_id)
@@ -40,7 +39,7 @@ CREATE TABLE user_keys (
 );
 
 CREATE TABLE friends (
-	friend_id				INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	friend_id				INTEGER PRIMARY KEY NOT NULL,
 	friend_userid			INTEGER NOT NULL,
 	friend_status			TEXT NOT NULL CHECK (status IN ('pending','accepted','blocked')),
 	friend_creation_date	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,16 +54,21 @@ CREATE TABLE friends (
 )
 
 CREATE TABLE settings (
-	settings_id		INTEGER	AUTOINCREMENT PRIMARY KEY NOT NULL,
+	settings_id		INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	settings_userid	INTEGER NOT NULL UNIQUE
 	settings_avatar	TEXT,
 	settings_colour	TEXT,
 	settings_locale	TEXT CHECK(settings_locale IN("fr", "en")) DEFAULT "fr"
+
+	ADD FOREIGN KEY (settings_userid) REFERENCES users (user_id)
+		ON DELETE CASCADE
 );
 
 CREATE TABLE tournaments (
 	tournament_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
 	tournament_name			TEXT NOT NULL,
-	tournament_date_start	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	tournament_status		TEXT CHECK(tournament_status IN('upcoming', 'ongoing', 'ended')) NOT NULL,
+	tournament_date_start	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	tournament_date_end		DATETIME,
 	tournament_winner		INTEGER,
 	tournament_userlist		INTEGER NOT NULL,
@@ -78,12 +82,15 @@ CREATE TABLE userlist (
 
 CREATE TABLE matches (
 	match_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
-	match_tournament_id	INTEGER NOT NULL,
+	match_tournament_id	INTEGER,
+	match_status		TEXT NOT NULL CHECK(match_status IN('upcoming', 'ongoing', 'ended', 'forfeit'))
 	match_user1_id		INTEGER NOT NULL,
+	match_user1_score	INTEGER NOT NULL DEFAULT 0,
 	match_user2_id		INTEGER NOT NULL,
+	match_user2_score	INTEGER NOT NULL DEFAULT 0,
 	match_winner		INTEGER,
-	match_date_start	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
-	match_date_end		DATETIME,
+	match_date_start	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	match_date_end		DATETIME
 );
 
 CREATE TABLE stats (
@@ -111,20 +118,3 @@ ALTER TABLE matches ADD FOREIGN KEY (match_tournament_id) REFERENCES tournaments
 ALTER TABLE matches ADD FOREIGN KEY (match_user1_id, match_user2_id) REFERENCES users (user_id, user_id);
 
 ALTER TABLE user_keys ADD FOREIGN KEY (key_userid) REFERENCES users (user_id);
-
--- API for the DB
-
--- stats for W/L per user
-
--- select all matches for a user $userid
-SELECT COUNT(m.match_id) AS matchcount FROM users AS u
-LEFT JOIN matches AS m ON u.user_id = m.match_user1_id
-LEFT JOIN matches AS m2 ON u.user_id = m2.match_user2_id 
-WHERE u.user_id = $userid
-AND (m.match_date_end IS NOT NULL
-OR m2.match_date_end IS NOT NULL);
-
-SELECT COUNT(m.match_id) AS matchwins FROM users AS u
-JOIN matches AS m ON u.user_id = m.match_winner
-WHERE u.user_id = $userid
-AND m.match_date_end IS NOT NULL;
