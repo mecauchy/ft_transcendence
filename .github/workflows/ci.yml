@@ -3,10 +3,10 @@ name: CI - ft_transcendence
 on:
   push:
     branches:
-      [main, dev]
+      [master, dev]
   pull_request:
     branches:
-      [main, dev]
+      [master, dev]
 
 jobs:
   check-reposiry:
