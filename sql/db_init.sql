@@ -51,7 +51,7 @@ CREATE TABLE friends (
 
 	PRIMARY KEY (friend_id, friend_userid)
 
-)
+);
 
 CREATE TABLE settings (
 	settings_id		INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
