@@ -1,0 +1,34 @@
+name: CI - ft_transcendence
+
+on:
+  push:
+    branches:
+      [main, dev]
+  pull_request:
+    branches:
+      [main, dev]
+
+jobs:
+  check-reposiry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check repository
+        run: |
+        if [ -f .env ]; then echo " Error: .env file detected in repo!"; exit 1; fi
+          if [ -d node_modules ]; then echo " Error: node_modules detected in repo!"; exit 1; fi
+          echo " Repository is clean."
+
+# On check pour nodes_modules car pollue l'historique git et rend le clonage plus long
+
+# Si le depot est propre on essaye de build le projet
+
+build-test:
+  needs: check-repository
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - name: create .env for CI
+      run: cp .env.example .env
+    - name: Build Docker container
+      run: docker compose build
