@@ -1,0 +1,130 @@
+-- SQL code to init the transcendance database
+
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE users (
+	user_id					INTEGER	AUTOINCREMENT PRIMARY KEY NOT NULL,
+	user_username			TEXT UNIQUE NOT NULL,
+	user_password			TEXT,
+	user_email				TEXT UNIQUE NOT NULL,
+	user_dob				DATE NOT NULL,
+	user_settings			INTEGER NOT NULL,
+	user_creation_date		DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	user_modification_date	DATETIME,
+	user_twofa_enabled		INTEGER NOT NULL DEFAULT 0,
+	user_twofa_secret		TEXT
+);
+
+CREATE TABLE oauth (
+	oauth_id				INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	oauth_userid			INTEGER NOT NULL,
+	oauth_provider			TEXT NOT NULL,
+	oauth_provider_userid	TEXT NOT NULL,
+	oauth_creation_date		DATETIME DEFAULT CURRENT_DATETIME NOT NULL
+	
+	FOREIGN KEY (oauth_userid) REFERENCES users (user_id)
+		ON DELETE CASCADE,
+	UNIQUE (oauth_provider, oauth_provider_userid)
+);
+
+CREATE TABLE user_keys (
+	key_id				INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	key_userid			INTEGER NOT NULL UNIQUE,
+	key_token			TEXT NOT NULL,
+	key_status bool		NOT NULL,
+	key_creation_date	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	key_expiry_date		DATETIME,
+
+	FOREIGN KEY (key_userid) REFERENCES users (user_id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE friends (
+	friend_id				INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	friend_userid			INTEGER NOT NULL,
+	friend_status			TEXT NOT NULL CHECK (status IN ('pending','accepted','blocked')),
+	friend_creation_date	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	FOREIGN KEY (friend_id) REFERENCES users(user_id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (friend_userid) REFERENCES users(user_id)
+		ON DELETE CASCADE,
+
+	PRIMARY KEY (friend_id, friend_userid)
+
+)
+
+CREATE TABLE settings (
+	settings_id		INTEGER	AUTOINCREMENT PRIMARY KEY NOT NULL,
+	settings_avatar	TEXT,
+	settings_colour	TEXT,
+	settings_locale	TEXT CHECK(settings_locale IN("fr", "en")) DEFAULT "fr"
+);
+
+CREATE TABLE tournaments (
+	tournament_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	tournament_name			TEXT NOT NULL,
+	tournament_date_start	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	tournament_date_end		DATETIME,
+	tournament_winner		INTEGER,
+	tournament_userlist		INTEGER NOT NULL,
+);
+
+CREATE TABLE userlist (
+	userlist_id				INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	userlist_tournament_id	INTEGER NOT NULL,
+	userlist_userid			INTEGER NOT NULL
+);
+
+CREATE TABLE matches (
+	match_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+	match_tournament_id	INTEGER NOT NULL,
+	match_user1_id		INTEGER NOT NULL,
+	match_user2_id		INTEGER NOT NULL,
+	match_winner		INTEGER,
+	match_date_start	DATETIME DEFAULT CURRENT_DATETIME NOT NULL,
+	match_date_end		DATETIME,
+);
+
+CREATE TABLE stats (
+	stat_userid				INTEGER PRIMARY KEY,
+	stat_games_played		INTEGER NOT NULL DEFAULT 0,
+	stat_games_won			INTEGER NOT NULL DEFAULT 0,
+	stat_games_lost			INTEGER NOT NULL DEFAULT 0,
+	stat_points_scored		INTEGER NOT NULL DEFAULT 0,
+	stat_points_conceded	INTEGER NOT NULL DEFAULT 0,
+	stat_tournaments_played	INTEGER NOT NULL DEFAULT 0,
+	stat_tournaments_won	INTEGER NOT NULL DEFAULT 0,
+	stat_last_played	DATETIME,
+
+	FOREIGN KEY (stat_userid) REFERENCES users (user_id)
+		ON DELETE CASCADE
+);
+
+ALTER TABLE users ADD FOREIGN KEY (user_settings) REFERENCES settings (settings_id);
+
+ALTER TABLE tournaments ADD FOREIGN KEY (tournament_userlist) REFERENCES userlist (userlist_id);
+
+ALTER TABLE userlist ADD FOREIGN KEY (userlist_userid) REFERENCES users (user_id);
+
+ALTER TABLE matches ADD FOREIGN KEY (match_tournament_id) REFERENCES tournaments (tournament_id);
+ALTER TABLE matches ADD FOREIGN KEY (match_user1_id, match_user2_id) REFERENCES users (user_id, user_id);
+
+ALTER TABLE user_keys ADD FOREIGN KEY (key_userid) REFERENCES users (user_id);
+
+-- API for the DB
+
+-- stats for W/L per user
+
+-- select all matches for a user $userid
+SELECT COUNT(m.match_id) AS matchcount FROM users AS u
+LEFT JOIN matches AS m ON u.user_id = m.match_user1_id
+LEFT JOIN matches AS m2 ON u.user_id = m2.match_user2_id 
+WHERE u.user_id = $userid
+AND (m.match_date_end IS NOT NULL
+OR m2.match_date_end IS NOT NULL);
+
+SELECT COUNT(m.match_id) AS matchwins FROM users AS u
+JOIN matches AS m ON u.user_id = m.match_winner
+WHERE u.user_id = $userid
+AND m.match_date_end IS NOT NULL;
