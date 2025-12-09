@@ -19,6 +19,13 @@ jobs:
             if [ -d node_modules ]; then echo " Error: node_modules detected in repo!"; exit 1; fi
             echo " Repository is clean."
 
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: build-test
+      - uses: actions/checkout@
+
 # On check pour nodes_modules car pollue l'historique git et rend le clonage plus long
 
 # Si le depot est propre on essaye de build le projet
@@ -28,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: create .env for CI
-        run: cp .env.example .env
+      # - name: create .env for CI
+      #   run: cp .env.example .env
       - name: Build Docker container
         run: docker compose build

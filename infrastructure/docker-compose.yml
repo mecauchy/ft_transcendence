@@ -39,9 +39,10 @@ services:
     container_name: db
     environment:
       - POSTGRES_USER=root_admin
-      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_PASSWORD_FILE=/run/secret/postgres_pass
     volumes:
       - postgres_db:/var/lib/postgresql/data
+      - db_secrets_vol:/run/secret:ro
       - ./infrastructure/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - backend_net
@@ -53,6 +54,55 @@ services:
     restart:
       unless-stopped
 
+  db_sidecar:
+    image: hashicorp/vault:1.13.3
+    container_name: db_sidecar
+    depends_on:
+      - vault
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=postgres-token
+    volumes:
+      - db_secrets_vol:/run/secret
+
+  vault:
+    image: hashicorp/vault:1.13.3
+    container_name: vault
+    environment:
+      - VAULT_ROOT_ADMIN: root_admin_key
+      - VAULT_ADDR: 'http://0.0.0.0.8200'
+
+      # Local (dev) use docker secret
+      - AUTH_DB_PASS_FILE: /run/secret/auth_db_pass
+      - CHAT_DB_PASS_FILE: /run/secret/chat_db_pass
+      - GAME_DB_PASS_FILE: /run/secret/game_db_pass
+      - USER_DB_PASS_FILE: /run/secret/user_db_pass
+
+      # Production use env variables through github actions secret
+      - AUTH_DB_PASS: ${AUTH_DB_PASS}
+      - CHAT_DB_PASS: ${CHAT_DB_PASS}
+      - GAME_DB_PASS: ${GAME_DB_PASS}
+      - USER_DB_PASS: ${USER_DB_PASS}
+
+    secret:
+      - auth_db_pass
+      - chat_db_pass
+      - game_db_pass
+      - user_db_pass
+
+    volumes:
+      - ./infrastructure/vault/policies:/vault/policies
+      - ./infrastructure/vault/init_vault.sh:/docker-entrypoint-init.sh
+
+secret:
+  auth_db_pass:
+    file: ./secret/auth_db_pass.txt
+  chat_db_pass:
+    file: ./secret/chat_db_pass.txt
+  game_db_pass:
+    file: ./secret/game_db_pass.txt
+  user_db_pass:
+    file: ./secret/user_db_pass.txt
 
 networks:
   public_net:
