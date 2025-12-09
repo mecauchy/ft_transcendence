@@ -1,0 +1,16 @@
+# --- DEVOPS & INFRASTRUCTURE ---
+.github/             @mcauchy-
+Dockerfile           @mcauchy-
+docker-compose.yml   @mcauchy-
+Makefile             @mcauchy-
+elk/                 @mcauchy-
+prometheus/          @mcauchy-
+
+# --- BACKEND ---
+/backend/    @Login-BackendDev1 @Login-BackendDev2 @Login-TechLead
+
+# --- FRONTEND ---
+/frontend/   @Login-FrontendDev1 @Login-FrontendDev2
+
+# --- DOCUMENTATION & CONFIG ---
+README.md    @mcauchy-
