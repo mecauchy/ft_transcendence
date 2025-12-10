@@ -1,0 +1,13 @@
+# Override file for docker-compose.yml in prod
+
+services:
+  vault:
+    command: vault server -config=/vault/config/vault-prod.hcl
+    environment:
+      - VAULT_API_ADDR=https://vault:8200
+#API GATEWAY SERVICE
+  # api_gateway:
+  #   environment:
+  #     - VAULT_AUTH_METHOD=approle
+  #     - VAULT_ROLE_ID_FILE=${GATEWAY_SERVICE_ROLE_ID}
+  #     - VAULT_SECRET_ID_FILE=${GATEWAY_SERVICE_SECRET_ID}1
