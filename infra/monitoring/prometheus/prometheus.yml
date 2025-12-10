@@ -1,0 +1,15 @@
+#global : regle par defaut pour tout le fichier, scrape toutes les 15 sec
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  -job_name: 'prometheus'
+  static_configs:
+    - targets:
+      - prometheus:9090
+  # le port 8080 permet a prometheus de contacter cadvisor.
+  # toutes les 15 sec cAdvisor fournit les donees CPU/RAM/Reseau de tous les conteneurs
+  -job_name: 'cadvisor'
+  static_configs:
+    - targets:
+      - 'cadvisor:8080'
