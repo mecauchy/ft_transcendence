@@ -16,6 +16,18 @@ services:
         wait
       "
 
+  # PostgreSQL SERVICE
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: root_password_dev_only
+    ports:
+      - "5432:5432" # Expose Postgres port for local development (DBeaver/PgAdmin)
+
+  # Redis SERVICE
+  redis:
+    ports:
+      - "6378:6379" # Expose Redis port for local development (RedisInsight/Redis CLI)
+
   # api_gateway:
   #   environment:
   #     - VAULT_AUTH_METHOD=approle
