@@ -23,11 +23,11 @@ get_secret_content() {
 echo "Initializing Vault..."
 
 # Policies file paths
-AUTH_POLICY_FILE="./infrastructure/vault/policies/auth-policy.hcl"
-CHAT_POLICY_FILE="./infrastructure/vault/policies/chat-policy.hcl"
-GAME_POLICY_FILE="./infrastructure/vault/policies/game-policy.hcl"
-USER_POLICY_FILE="./infrastructure/vault/policies/user-policy.hcl"
-POSTGRES_POLICY_FILE="./infrastructure/vault/policies/postgres-policy.hcl"
+AUTH_POLICY_FILE="./infra/vault/policies/auth-policy.hcl"
+CHAT_POLICY_FILE="./infra/vault/policies/chat-policy.hcl"
+GAME_POLICY_FILE="./infra/vault/policies/game-policy.hcl"
+USER_POLICY_FILE="./infra/vault/policies/user-policy.hcl"
+POSTGRES_POLICY_FILE="./infra/vault/policies/postgres-policy.hcl"
 
 # Retrieve secret from environment variables or local files
 AUTH_DB_PASS=$(get_secret_content "AUTH_DB_PASS" "./secret/auth_db_pass.txt")
@@ -78,3 +78,50 @@ vault token create -policy="chat-policy" -id="chat-token"
 vault token create -policy="game-policy" -id="game-token"
 vault token create -policy="user-policy" -id="user-token"
 vault token create -policy="postgres-policy" -id="postgres-token"
+
+# Enable APProle
+vault auth enable approle
+
+# AUTH SERVICE
+# Define roles and bind policies
+vault write auth/approle/role/auth-role \
+	token_policies="auth-policy" \
+	token_ttl=1h \
+	token_max_ttl=4h
+# Set fixed dev creds
+vault write auth/approle/role/auth-role role_id="auth-role-id"
+vault write -f auth/approle/role/auth-role/custom-secret-id secret_id="auth-secret-id"
+
+# CHAT SERVICE
+vault write auth/approle/role/chat-role \
+	token_policies="chat-policy" \
+	token_ttl=1h \
+	token_max_ttl=4h
+vault write auth/approle/role/chat-role role_id="chat-role-id"
+vault write -f auth/approle/role/chat-role/custom-secret-id secret_id="chat-secret-id"
+
+# GAME SERVICE
+vault write auth/approle/role/game-role \
+	token_policies="game-policy" \
+	token_ttl=1h \
+	token_max_ttl=4h
+vault write auth/approle/role/game-role role_id="game-role-id"
+vault write -f auth/approle/role/game-role/custom-secret-id secret_id="game-secret-id"
+
+# USER SERVICE
+vault write auth/approle/role/user-role \
+	token_policies="user-policy" \
+	token_ttl=1h \
+	token_max_ttl=4h
+vault write auth/approle/role/user-role role_id="user-role-id"
+vault write -f auth/approle/role/user-role/custom-secret-id secret_id="user-secret-id"
+
+# POSTGRES SERVICE
+vault write auth/approle/role/postgres-role \
+	token_policies="postgres-policy" \
+	token_ttl=1h \
+	token_max_ttl=4h
+vault write auth/approle/role/postgres-role role_id="postgres-role-id"
+vault write -f auth/approle/role/postgres-role/custom-secret-id secret_id="postgres-secret-id"
+
+echo "Vault initialization complete."

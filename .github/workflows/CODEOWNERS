@@ -1,4 +1,4 @@
-# --- DEVOPS & INFRASTRUCTURE ---
+# --- DEVOPS & infra ---
 .github/             @mcauchy-
 Dockerfile           @mcauchy-
 docker-compose.yml   @mcauchy-
