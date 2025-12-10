@@ -6,6 +6,11 @@ networks:
   service_mesh:
   logging_net:
 
+# Persistent volumes
+volumes:
+  postgres_data:
+  redis_data:
+
 services:
   #WAF SERVICE
   waf:
@@ -49,3 +54,42 @@ services:
       - VAULT_API_ADDR=http://0.0.0.0:8200
     networks:
       - service_mesh
+
+  # DATABASE SERVICE
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=root_admin
+    volumes:
+      - postgres_data:/var/lib/postgres/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - service_mesh
+      - logging_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - vault
+
+  # REDIS SERVICE
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - service_mesh
+      - logging_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - vault
+
