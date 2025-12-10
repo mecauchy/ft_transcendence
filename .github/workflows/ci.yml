@@ -20,11 +20,12 @@ jobs:
             echo " Repository is clean."
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: build-test
-      - uses: actions/checkout@
+  # build-and-test:
+    # runs-on: ubuntu-latest
+    # steps:
+    #   - name: build-test
+    #   - uses: actions/checkout@v4
+
 
 # On check pour nodes_modules car pollue l'historique git et rend le clonage plus long
 
