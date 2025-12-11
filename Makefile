@@ -14,7 +14,7 @@ POSTGRES_USER := root_admin
 # Help target
 help:
 	@echo "$(BLUE)╔════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(BLUE)║           $(PROJECT_NAME) - Essential Commands               ║$(NC)"
+	@echo "$(BLUE)║           $(PROJECT_NAME) - Essential Commands             ║$(NC)"
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)🚀 Runtime:$(NC)"
