@@ -1,4 +1,4 @@
-// packages/shared/types/user.ts
+// packages/shared/types/event.ts
 import { IInvestigationState } from "./state";
 
 export enum EventType {

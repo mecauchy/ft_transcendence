@@ -1,4 +1,4 @@
-// packages/shared/types/user.ts
+// packages/shared/types/state.ts
 
 /**
  * IInvestigationState: The immutable snapshot of a session at a specific tick.
