@@ -27,6 +27,12 @@ services:
       - logging_net
     depends_on:
       - vault
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zv localhost 80 2>&1 | grep -q succeeded && exit 0 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     # API GATEWAY SERVICE
   # api_gateway:
   #   build:

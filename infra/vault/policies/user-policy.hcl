@@ -1,11 +1,11 @@
 # User service
 # This policy allows the application to read secrets from the specified path
 
-path "secret/user-service/*" {
-	capabilities = ["read"]
+path "database/creds/user-role" {
+  capabilities = ["read"]
 }
 
-# Deny access to everything else
-path "secret/*" {
-	capabilities = ["deny"]
+# Renew leases
+path "sys/leases/renew" {
+  capabilities = ["update"]
 }

@@ -1,11 +1,16 @@
 # Game service
 # This policy allows the application to read secret from the specified path
 
-path "secret/game-service/*" {
-	capabilities = ["read"]
+path "database/creds/game-role" {
+  capabilities = ["read"]
 }
 
-# Deny access to everything else
-path "secret/*" {
-	capabilities = ["deny"]
+# if openai is used
+#path "secret/data/global" {
+#  capabilities = ["read"]
+#}
+
+# Renew leases
+path "sys/leases/renew" {
+  capabilities = ["update"]
 }
