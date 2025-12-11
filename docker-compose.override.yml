@@ -1,0 +1,35 @@
+# Override file for docker-compose.yml in dev
+
+services:
+  #VAULT SERVICE AUTO START
+  vault:
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
+    volumes:
+      - ./infra/vault/policies:/vault/policies:ro
+      - ./infra/vault/init-vault.sh:/init-vault.sh:ro
+    command: >
+      sh -c "
+        vault server -dev -dev-root-token-id=root_token_dev_only &
+        sleep 5 &&
+        sh /init-vault.sh &&
+        wait
+      "
+
+  # PostgreSQL SERVICE
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: root_password_dev_only
+    ports:
+      - "5432:5432" # Expose Postgres port for local development (DBeaver/PgAdmin)
+
+  # Redis SERVICE
+  redis:
+    ports:
+      - "6378:6379" # Expose Redis port for local development (RedisInsight/Redis CLI)
+
+  # api_gateway:
+  #   environment:
+  #     - VAULT_AUTH_METHOD=approle
+  #     - VAULT_ROLE_ID=gateway-role-id
+  #     - VAULT_SECRET_ID=gateway-secret-id
