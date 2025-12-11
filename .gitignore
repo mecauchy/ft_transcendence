@@ -26,6 +26,9 @@ infra/secret/*.crt
 *.sublime-project
 *.sublime-workspace
 .editorconfig
+*.docx
+*.pdf
+*.txt
 
 # OS files
 .DS_Store
