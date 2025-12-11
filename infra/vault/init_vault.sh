@@ -5,7 +5,7 @@ get_secret_content() {
 	local file_path=$2
 	if [ -n "${!env_var_name}" ]; then echo "${!env_var_name}";
 	elif [ -n "${file_path}" ] && [ -f "${file_path}" ]; then cat "${file_path}";
-	else echo ""; fi
+	else echo "Error: Secret for ${env_var_name} not found." >&2; exit 1; fi
 }
 
 echo "Initializing Vault..."
