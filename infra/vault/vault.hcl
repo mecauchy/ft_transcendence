@@ -1,8 +1,7 @@
-# Vault Configuration File for Development/Production
+# Vault Configuration File for Development
 
 # Storage backend configuration
-# For development: using file storage with volume
-# For production: use Consul, S3, PostgreSQL, etc.
+# Using file storage with persistent volume
 storage "file" {
   path = "/vault/file"
 }
@@ -10,19 +9,18 @@ storage "file" {
 # Listener configuration
 listener "tcp" {
   address       = "0.0.0.0:8200"
-  tls_disable   = 1  # Set to 0 in production with proper certificates
-  tls_cert_file = "/vault/config/tls/server.crt"
-  tls_key_file  = "/vault/config/tls/server.key"
+  tls_disable   = 1
 }
 
-# Cluster listener for HA setup
+# Cluster listener
 listener "tcp" {
-  address            = "0.0.0.0:8201"
-  tls_disable        = 1
-  cluster_address    = "0.0.0.0:8201"
+  address       = "0.0.0.0:8201"
+  tls_cert_file = "/vault/tls/server.crt"
+  tls_key_file  = "/vault/tls/server.key"
+  tls_disable   = 0
 }
 
-# Telemetry for monitoring (optional)
+# Telemetry
 telemetry {
   prometheus_retention_time = "30s"
   disable_hostname          = false
@@ -35,9 +33,10 @@ cluster_addr  = "http://0.0.0.0:8201"
 # Logging
 log_level = "info"
 
-# Enable UI (useful for development)
+# UI
 ui = true
 
-# Max lease duration
+# Lease durations
 max_lease_ttl      = "168h"
 default_lease_ttl  = "168h"
+

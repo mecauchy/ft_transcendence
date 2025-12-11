@@ -1,32 +1,39 @@
-# Override file for docker-compose.yml in dev
+# Override file for docker-compose.yml in DEV environment
+# This file is automatically used by `docker compose` when no -f flag is specified
 
 services:
-  #VAULT SERVICE AUTO START
+  # VAULT SERVICE - DEV MODE
   vault:
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
+    # Run in dev mode for easier development
+    entrypoint: /entrypoint.sh
     volumes:
-      - ./infra/vault/policies:/vault/policies:ro
-      - ./infra/vault/init-vault.sh:/init-vault.sh:ro
-    command: >
-      sh -c "
-        vault server -dev -dev-root-token-id=root_token_dev_only &
-        sleep 5 &&
-        sh /init-vault.sh &&
-        wait
-      "
+      - ./infra/secret:/run/secrets:ro
+      - ./infra/vault/init_vault.sh:/init-vault.sh:ro
+      - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
 
-  # PostgreSQL SERVICE
+  # PostgreSQL SERVICE - DEV MODE
   postgres:
     environment:
-      POSTGRES_PASSWORD: root_password_dev_only
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
     ports:
-      - "5432:5432" # Expose Postgres port for local development (DBeaver/PgAdmin)
+      - "5432:5432" # Expose for local development (DBeaver, pgAdmin, etc.)
 
-  # Redis SERVICE
+  # Redis SERVICE - DEV MODE
   redis:
     ports:
-      - "6378:6379" # Expose Redis port for local development (RedisInsight/Redis CLI)
+      - "6378:6379" # Expose for local development (RedisInsight, CLI)
+
+  # WAF SERVICE - DEV MODE
+  waf:
+    ports:
+      - "8080:80"   # HTTP
+      - "8443:443"  # HTTPS
+
 
   # api_gateway:
   #   environment:
