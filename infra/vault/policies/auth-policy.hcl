@@ -1,11 +1,15 @@
 # Authentification service
 # This policy allows the application to read secret from the specified path
-
-path "secret/auth-service/*" {
-	capabilities = ["read"]
+path "database/creds/auth-role" {
+  capabilities = ["read"]
 }
 
-# Deny access to everything else
-path "secret/*" {
-	capabilities = ["deny"]
+# Global static secrets
+path "secret/data/global/*" {
+  capabilities = ["read"]
+}
+
+# Vault token renewal
+path "sys/leases/renew" {
+  capabilities = ["update"]
 }
