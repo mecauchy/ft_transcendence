@@ -162,7 +162,8 @@ health:
 	@docker compose exec redis redis-cli ping || echo "$(RED)✗ Redis unreachable$(NC)"
 	@echo ""
 	@echo "$(YELLOW)WAF (Nginx):$(NC)"
-	@curl -s http://localhost:8080 -o /dev/null -w "Status: %{http_code}\n" || echo "$(RED)✗ WAF unreachable$(NC)"
+	@nc -zv localhost 8080 2>&1 | grep -q "succeeded" && echo "$(GREEN)✓ WAF listening on port 8080$(NC)" || echo "$(RED)✗ WAF unreachable$(NC)"
+	@docker compose exec waf nginx -t 2>&1 | grep -q "successful" && echo "$(GREEN)✓ Nginx config OK$(NC)" || echo "$(YELLOW)⚠ Nginx config issue$(NC)"
 
 # ============================================================================
 # CLEANUP
