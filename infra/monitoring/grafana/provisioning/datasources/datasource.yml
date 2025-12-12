@@ -1,0 +1,15 @@
+# Configuration automatically applied to Grafana at startup with an yml file
+# docker compose up lance directement ce fichier
+# proxy permet a grafana de contacter prometheus pour faire des requetes
+# Url c est l'adresse ou grafana trouve prometheus pour recuperer les donnees
+# isDefault : fait de cette source de donnees la source par defaut
+# editable : empeche la modification de cette source de donnees via l'interface grafana
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

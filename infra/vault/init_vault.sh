@@ -35,6 +35,7 @@ CHAT_DB_PASS=$(get_secret_content "CHAT_DB_PASS" "./secret/chat_db_pass.txt")
 GAME_DB_PASS=$(get_secret_content "GAME_DB_PASS" "./secret/game_db_pass.txt")
 USER_DB_PASS=$(get_secret_content "USER_DB_PASS" "./secret/user_db_pass.txt")
 POSTGRES_PASS=$(get_secret_content "POSTGRES_PASS" "./secret/postgres_pass.txt")
+GRAFANA_PASS=$(get_secret_content "GRAFANA_PASS" "./secret/grafana_pass.txt")
 
 # Vault configuration and secret writing
 echo "Configuring Vault..."
@@ -63,12 +64,17 @@ vault kv put secret/postgres \
 	username="root_admin" \
 	password="${POSTGRES_PASS}"
 
+vault kv put secret/grafana \
+	username="grafana_admin" \
+	password="${GRAFANA_PASS}"
+
 # Apply policies
 vault policy write auth-policy "${AUTH_POLICY_FILE}"
 vault policy write chat-policy "${CHAT_POLICY_FILE}"
 vault policy write game-policy "${GAME_POLICY_FILE}"
 vault policy write user-policy "${USER_POLICY_FILE}"
 vault policy write postgres-policy "${POSTGRES_POLICY_FILE}"
+vault policy write grafana-policy "./infra/vault/policies/grafana-policy.hcl"
 
 echo "Policy and secret setup complete."
 
@@ -78,6 +84,7 @@ vault token create -policy="chat-policy" -id="chat-token"
 vault token create -policy="game-policy" -id="game-token"
 vault token create -policy="user-policy" -id="user-token"
 vault token create -policy="postgres-policy" -id="postgres-token"
+vault token create -policy="grafana-policy" -id="grafana-token"
 
 # Enable APProle
 vault auth enable approle
