@@ -9,6 +9,7 @@ networks:
 volumes:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
 
 services:
   #WAF SERVICE
@@ -62,6 +63,7 @@ services:
     restart: no
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -71,6 +73,31 @@ services:
       - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
+    networks:
+      - logging_net
+    depends_on:
+      - alertmanager
+
+  # Alertmanager - Gestion et envoi des alertes vers Discord
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    profiles:
+      - "monitoring"
+    restart: no
+    depends_on:
+      - vault
+    volumes:
+      - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
+      - alertmanager_data:/alertmanager
+    entrypoint: /entrypoint.sh
+    environment:
+      # Webhook Discord stocké dans Vault (secret/data/alertmanager)
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    ports:
+      - "9093:9093"
     networks:
       - logging_net
 

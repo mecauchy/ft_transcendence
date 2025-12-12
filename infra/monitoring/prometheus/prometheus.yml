@@ -1,6 +1,18 @@
 #global : regle par defaut pour tout le fichier, scrape toutes les 15 sec
 global:
   scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Configuration Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Fichiers de règles d'alertes
+rule_files:
+  - /etc/prometheus/alert.rules.yml
 
 scrape_configs:
   - job_name: 'prometheus'

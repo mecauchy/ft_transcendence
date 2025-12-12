@@ -1,0 +1,86 @@
+# Prometheus Alertmanager Configuration
+# Envoie les alertes vers Discord via webhook
+
+global:
+  # Temps de résolution automatique si plus d'alerte
+  resolve_timeout: 5m
+
+# Configuration du routing des alertes
+route:
+  # Groupe par défaut
+  group_by: ['alertname', 'severity']
+  # Attendre 30s avant d'envoyer le premier groupe d'alertes
+  group_wait: 30s
+  # Intervalle entre les groupes d'alertes
+  group_interval: 5m
+  # Répéter les alertes toutes les 4h
+  repeat_interval: 4h
+  # Receiver par défaut
+  receiver: 'discord-notifications'
+  
+  # Routes spécifiques par sévérité
+  routes:
+    # Alertes critiques - envoyer immédiatement
+    - receiver: 'discord-critical'
+      matchers:
+        - severity = critical
+      group_wait: 10s
+      repeat_interval: 1h
+    
+    # Alertes warning
+    - receiver: 'discord-notifications'
+      matchers:
+        - severity = warning
+      group_wait: 1m
+      repeat_interval: 4h
+
+# Configuration des receivers (destinations)
+receivers:
+  # Receiver pour alertes normales/warning
+  - name: 'discord-notifications'
+    discord_configs:
+      # Le webhook sera injecté par l'entrypoint depuis Vault
+      - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
+        title: '🟠 {{ .Status | toUpper }} - {{ .CommonLabels.alertname }}'
+        message: |
+          {{ range .Alerts }}
+          **Alerte:** {{ .Labels.alertname }}
+          **Sévérité:** {{ .Labels.severity }}
+          **Instance:** {{ .Labels.instance }}
+          **Description:** {{ .Annotations.description }}
+          **Déclenchée à:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ if .EndsAt }}**Résolue à:** {{ .EndsAt.Format "2006-01-02 15:04:05" }}{{ end }}
+          ---
+          {{ end }}
+        send_resolved: true
+
+  # Receiver pour alertes critiques
+  - name: 'discord-critical'
+    discord_configs:
+      # Le webhook sera injecté par l'entrypoint depuis Vault
+      - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
+        title: '🔴 CRITIQUE - {{ .CommonLabels.alertname }}'
+        message: |
+          🚨 **ALERTE CRITIQUE** 🚨
+          {{ range .Alerts }}
+          **Alerte:** {{ .Labels.alertname }}
+          **Sévérité:** {{ .Labels.severity }}
+          **Service:** {{ .Labels.job }}
+          **Instance:** {{ .Labels.instance }}
+          
+          📝 **Résumé:** {{ .Annotations.summary }}
+          📋 **Description:** {{ .Annotations.description }}
+          
+          ⏰ **Déclenchée:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          ---
+          {{ end }}
+        send_resolved: true
+
+# Règles d'inhibition (évite les alertes redondantes)
+inhibit_rules:
+  # Si une alerte critical existe, inhiber les warnings du même service
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ['alertname', 'instance']
