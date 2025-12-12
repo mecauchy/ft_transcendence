@@ -15,7 +15,7 @@
 		"@fastify/http-proxy": "^10.0.0",
 		"@fastify/rate-limit": "^10.1.1",
 		"@fastify/websocket": "^11.0.1",
-		"@speak-up/shared": "workspace:*",
+			"@speak-up/shared": "file:../../shared/types",
 		"fastify": "^5.2.0",
 		"ioredis": "^5.4.2",
 		"node-vault": "^0.10.2",

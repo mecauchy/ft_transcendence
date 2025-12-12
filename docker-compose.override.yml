@@ -14,6 +14,24 @@ services:
       VAULT_ADDR: http://0.0.0.0:8200
       VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
 
+  api-gateway:
+    environment:
+      - LOG_LEVEL=debug
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - AUTH_SERVICE_URL=http://auth_service:3001
+      - USER_SERVICE_URL=http://user_service:3002
+      - GAME_SERVICE_URL=http://game_service:3003
+      - CORS_ORIGIN=*
+      - RATE_LIMIT_MAX=100
+      - RATE_LIMIT_WINDOW=1 minute
+    ports:
+      - "3000:3000" # Expose for local development
+    volumes:
+      - ./packages/backend/api-gateway:/usr/src/app:ro
+
   # PostgreSQL SERVICE - DEV MODE
   postgres:
     environment:
@@ -33,10 +51,3 @@ services:
     ports:
       - "8080:80"   # HTTP
       - "8443:443"  # HTTPS
-
-
-  # api_gateway:
-  #   environment:
-  #     - VAULT_AUTH_METHOD=approle
-  #     - VAULT_ROLE_ID=gateway-role-id
-  #     - VAULT_SECRET_ID=gateway-secret-id

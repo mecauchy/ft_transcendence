@@ -1,9 +1,9 @@
 // packages/backend/api-gateway/src/index.ts
 
-import Fastify, { FastifyRequest } from 'fastify';
-import helmet from '@fastify-helmet';
-import cors from '@fastify-cors';
-import rateLimit from '@fastify-rate-limit';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import helmet from '@fastify/helmet';
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import proxy from '@fastify/http-proxy';
 import websocket from '@fastify/websocket';
 import Redis from 'ioredis';
@@ -52,8 +52,8 @@ async function start() {
 			fastify.log.info('Connected to Redis server');
 		});
 
-		redis.on('error', (err) => {
-			fastify.log.error('Redis error:', err);
+		redis.on('error', (err: Error) => {
+			fastify.log.error({ error: err }, 'Redis error occurred');
 		});
 
 
@@ -94,35 +94,19 @@ async function start() {
 		await fastify.register( rateLimit, {
 			max: config.rateLimit.max,
 			timeWindow: config.rateLimit.timeWindow,
-			redis,
+			redis: redis as any,
 			skipOnError: false,
-			ban: config.rateLimit.ban,
 			continueExceeding: true,
 			enableDraftSpec: true,
-			addHeadersOnExceeding: {
-				'X-RateLimit-Limit': true,
-				'X-RateLimit-Remaining': true,
-				'X-RateLimit-Reset': true,
-			},
-			addHeaders: {
-				'X-RateLimit-Limit': true,
-				'X-RateLimit-Remaining': true,
-				'X-RateLimit-Reset': true,
-			},
-			errorResponseBuilder: (req, context) => {
-				return {
-					statusCode: 429,
-					error: 'Too Many Requests',
-					message: `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)} seconds. (rejected by macauchy)`,
-				};
-			},
-		});
+			cache: 10000,
+			allowList: ['127.0.0.1'],
+		} as any);
 
 		// WebSocket support for game services
 		await fastify.register(websocket, {
 			options: {
 				maxPayload: 1048576, // 1 MB
-				verifyClient: (info, next) => {
+				verifyClient: (info: any, next: (allow: boolean) => void) => {
 					// TODO: verify JWT token from query params or headers or cookies
 					next(true);
 				},
@@ -166,14 +150,14 @@ async function start() {
 			prefix: '/api/auth',
 			rewritePrefix: '/api/auth',
 			http2: false,
-			preHandler: async (request, reply) => {
+			preHandler: async (request: FastifyRequest) => {
 				request.log.info(
 					{ path: request.url, method: request.method },
 					'Proxying request to Auth Service'
 				);
 			},
 			replyOptions: {
-				rewriteHeaders: (originalReq, headers) => ({
+				rewriteHeaders: (originalReq: any, headers: any) => ({
 					...headers,
 					'x-forwarded-for': originalReq.ip,
 					'x-request-id': originalReq.id,
@@ -189,7 +173,7 @@ async function start() {
 			prefix: '/api/users',
 			rewritePrefix: '/api/users',
 			http2: false,
-			preHandler: async (request, reply) => {
+			preHandler: async (request: FastifyRequest) => {
 				// TODO: validate JWT token before proxying from Authorization header
 				request.log.info(
 					{ path: request.url, method: request.method },
@@ -201,9 +185,9 @@ async function start() {
 		// =====================================================
 		// ROUTE: GAME/INVESTIGATION ENDPOINTS
 		// =====================================================
-		fastify.register(async (fastify) => {
-			fastify.get('/investigation', { websocket: true }, async (connection, request) => {
-				const token = request.query.token as string;
+		await fastify.register(async (fastify) => {
+			fastify.get('/investigation', { websocket: true as any }, async (connection: any, request: FastifyRequest) => {
+				const token = (request.query as any).token as string;
 
 				request.log.info(
 					{ token: token ? '***' : 'missing', ip: request.ip },
@@ -214,7 +198,7 @@ async function start() {
 				// TODO: Extract userId and sessionId from token
 				// TODO: Forward Websocket to game service
 
-				connection.socket.on('message', async (message) => {
+				connection.socket.on('message', async (message: any) => {
 					try {
 						const data = JSON.parse(message.toString());
 						request.log.info({ type: data.type }, 'Received WebSocket message');
@@ -227,8 +211,8 @@ async function start() {
 								timestamp: Date.now(),
 							})
 						);
-					} catch (err) {
-						request.log.error(err, 'Failed to parse WebSocket message');
+					} catch (err: any) {
+						request.log.error({ error: err }, 'Failed to parse WebSocket message');
 						connection.socket.send(
 							JSON.stringify({
 								type: 'ERROR',
@@ -243,11 +227,9 @@ async function start() {
 					request.log.info('WebSocket connection closed');
 				});
 
-				connection.socket.on('error', (err) => {
-					request.log.error(err, 'WebSocket error occurred');
-				});
-
-				// Send initial ACK
+			connection.socket.on('error', (err: any) => {
+				request.log.error({ error: err }, 'WebSocket error occurred');
+			});				// Send initial ACK
 				connection.socket.send(
 					JSON.stringify({
 						type: 'CONNECTED',
@@ -261,21 +243,23 @@ async function start() {
 		// =====================================================
 		// ERROR HANDLING
 		// =====================================================
-		fastify.setErrorHandler((error, request, reply) => {
-			request.log.error(error, 'Unhandled error occurred');
+		fastify.setErrorHandler((error: any, request: FastifyRequest) => {
+			request.log.error({ error }, 'Unhandled error occurred');
 
-			if (error.statusCode == 429) {
-				return reply.status(429).send({
+			if (error?.statusCode === 429) {
+				return {
+					statusCode: 429,
 					error: 'Too Many Requests',
 					message: 'You have exceeded your request rate limit.',
-				});
+				};
 			}
 
-			reply.status(error.statusCode || 500).send({
-				error: error.name || 'Internal Server Error',
-				message: error.message || 'An unexpected error occurred.',
+			return {
+				statusCode: error?.statusCode || 500,
+				error: error?.name || 'Internal Server Error',
+				message: error?.message || 'An unexpected error occurred.',
 				requestId: request.id,
-			});
+			};
 		});
 
 		// =====================================================
@@ -316,7 +300,8 @@ async function start() {
 	`);
 
 	} catch (err) {
-		fastify.log.error('Error starting server:', err);
+		const error = err instanceof Error ? err : new Error(String(err));
+		fastify.log.error({ error }, 'Error starting server');
 		process.exit(1);
 	}
 }
