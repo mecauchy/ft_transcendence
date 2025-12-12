@@ -11,10 +11,10 @@ package-lock.json
 .env.production.local
 
 # Sensitive files
-infra/secrets/*.txt
-infra/secrets/*.key
-infra/secrets/*.pem
-infra/secrets/*.crt
+infra/secret/*.txt
+infra/secret/*.key
+infra/secret/*.pem
+infra/secret/*.crt
 
 # IDE & Editor
 .vscode/
@@ -26,6 +26,9 @@ infra/secrets/*.crt
 *.sublime-project
 *.sublime-workspace
 .editorconfig
+*.docx
+*.pdf
+*.txt
 
 # OS files
 .DS_Store

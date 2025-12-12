@@ -1,35 +1,53 @@
-# Override file for docker-compose.yml in dev
+# Override file for docker-compose.yml in DEV environment
+# This file is automatically used by `docker compose` when no -f flag is specified
 
 services:
-  #VAULT SERVICE AUTO START
+  # VAULT SERVICE - DEV MODE
   vault:
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
+    # Run in dev mode for easier development
+    entrypoint: /entrypoint.sh
     volumes:
-      - ./infra/vault/policies:/vault/policies:ro
-      - ./infra/vault/init-vault.sh:/init-vault.sh:ro
-    command: >
-      sh -c "
-        vault server -dev -dev-root-token-id=root_token_dev_only &
-        sleep 5 &&
-        sh /init-vault.sh &&
-        wait
-      "
+      - ./infra/secret:/run/secrets:ro
+      - ./infra/vault/init_vault.sh:/init-vault.sh:ro
+      - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
 
-  # PostgreSQL SERVICE
+  api-gateway:
+    environment:
+      - LOG_LEVEL=debug
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - AUTH_SERVICE_URL=http://auth_service:3001
+      - USER_SERVICE_URL=http://user_service:3002
+      - GAME_SERVICE_URL=http://game_service:3003
+      - CORS_ORIGIN=*
+      - RATE_LIMIT_MAX=100
+      - RATE_LIMIT_WINDOW=1 minute
+    ports:
+      - "3000:3000" # Expose for local development
+    volumes:
+      - ./packages/backend/api-gateway:/usr/src/app:ro
+
+  # PostgreSQL SERVICE - DEV MODE
   postgres:
     environment:
-      POSTGRES_PASSWORD: root_password_dev_only
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
     ports:
-      - "5432:5432" # Expose Postgres port for local development (DBeaver/PgAdmin)
+      - "5432:5432" # Expose for local development (DBeaver, pgAdmin, etc.)
 
-  # Redis SERVICE
+  # Redis SERVICE - DEV MODE
   redis:
     ports:
-      - "6378:6379" # Expose Redis port for local development (RedisInsight/Redis CLI)
+      - "6378:6379" # Expose for local development (RedisInsight, CLI)
 
-  # api_gateway:
-  #   environment:
-  #     - VAULT_AUTH_METHOD=approle
-  #     - VAULT_ROLE_ID=gateway-role-id
-  #     - VAULT_SECRET_ID=gateway-secret-id
+  # WAF SERVICE - DEV MODE
+  waf:
+    ports:
+      - "8080:80"   # HTTP
+      - "8443:443"  # HTTPS
