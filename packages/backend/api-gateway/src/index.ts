@@ -73,12 +73,267 @@ async function start() {
 					styleSrc: ["'self'", "'unsafe-inline'"],
 					scriptSrc: ["'self'"],
 					imgSrc: ["'self'", 'data:', 'https:'],
-				}
-			}
+					connectSrc: ["'self'", 'ws:', 'wss:'],
+				},
+			},
+			hsts: {
+				maxAge: 31536000,
+				includeSubDomains: true,
+				preload: true,
+			},
 		});
+
+		// CORS configuration
+		await fastify.register( cors, {
+			origin: config.cors.origin,
+			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+			allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+		});
+
+		// Rate limiting with token bucket algorithm for DDoS protection
+		await fastify.register( rateLimit, {
+			max: config.rateLimit.max,
+			timeWindow: config.rateLimit.timeWindow,
+			redis,
+			skipOnError: false,
+			ban: config.rateLimit.ban,
+			continueExceeding: true,
+			enableDraftSpec: true,
+			addHeadersOnExceeding: {
+				'X-RateLimit-Limit': true,
+				'X-RateLimit-Remaining': true,
+				'X-RateLimit-Reset': true,
+			},
+			addHeaders: {
+				'X-RateLimit-Limit': true,
+				'X-RateLimit-Remaining': true,
+				'X-RateLimit-Reset': true,
+			},
+			errorResponseBuilder: (req, context) => {
+				return {
+					statusCode: 429,
+					error: 'Too Many Requests',
+					message: `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)} seconds. (rejected by macauchy)`,
+				};
+			},
+		});
+
+		// WebSocket support for game services
+		await fastify.register(websocket, {
+			options: {
+				maxPayload: 1048576, // 1 MB
+				verifyClient: (info, next) => {
+					// TODO: verify JWT token from query params or headers or cookies
+					next(true);
+				},
+			},
+		});
+
+		// =====================================================
+		// HEALTH CHECK & MONITORING
+		// =====================================================
+		fastify.get('/health', async () => {
+			const vaultHealthy = await vault.isHealthy();
+			const redisHealthy = redis.status === 'ready';
+
+			return {
+				status: vaultHealthy && redisHealthy ? 'healthy' : 'degraded',
+				timestamp: new Date().toISOString(),
+				services: {
+					redis: redisHealthy,
+					vault: vaultHealthy,
+				},
+				uptime: process.uptime(),
+				memory: process.memoryUsage(),
+			};
+		});
+
+		// Prometheus metrics endpoint
+		fastify.get('/metrics', async () => {
+			return {
+				activeConnections: 0, // TODO: track from redis
+				totalRequests: 0, // TODO: implement counter
+				errorRates: 0, // TODO: implement error tracking
+				latency: 0, // TODO: implement latency tracking
+			};
+		});
+
+		// =====================================================
+		// ROUTE: AUTH SERVICE (/api/auth/*)
+		// =====================================================
+		await fastify.register( proxy, {
+			upstream: config.services.authService,
+			prefix: '/api/auth',
+			rewritePrefix: '/api/auth',
+			http2: false,
+			preHandler: async (request, reply) => {
+				request.log.info(
+					{ path: request.url, method: request.method },
+					'Proxying request to Auth Service'
+				);
+			},
+			replyOptions: {
+				rewriteHeaders: (originalReq, headers) => ({
+					...headers,
+					'x-forwarded-for': originalReq.ip,
+					'x-request-id': originalReq.id,
+				}),
+			},
+		});
+
+		// =====================================================
+		// ROUTE: USER SERVICE (/api/users/*)
+		// =====================================================
+		await fastify.register( proxy, {
+			upstream: config.services.userService,
+			prefix: '/api/users',
+			rewritePrefix: '/api/users',
+			http2: false,
+			preHandler: async (request, reply) => {
+				// TODO: validate JWT token before proxying from Authorization header
+				request.log.info(
+					{ path: request.url, method: request.method },
+					'Proxying request to User Service'
+				);
+			},
+		});
+
+		// =====================================================
+		// ROUTE: GAME/INVESTIGATION ENDPOINTS
+		// =====================================================
+		fastify.register(async (fastify) => {
+			fastify.get('/investigation', { websocket: true }, async (connection, request) => {
+				const token = request.query.token as string;
+
+				request.log.info(
+					{ token: token ? '***' : 'missing', ip: request.ip },
+					'New WebSocket connection to Investigation Service'
+				);
+
+				// TODO: Validate JWT token
+				// TODO: Extract userId and sessionId from token
+				// TODO: Forward Websocket to game service
+
+				connection.socket.on('message', async (message) => {
+					try {
+						const data = JSON.parse(message.toString());
+						request.log.info({ type: data.type }, 'Received WebSocket message');
+
+						// Placeholder: Echo message back
+						connection.socket.send(
+							JSON.stringify({
+								type: 'ACK',
+								message: 'Gateway received your message',
+								timestamp: Date.now(),
+							})
+						);
+					} catch (err) {
+						request.log.error(err, 'Failed to parse WebSocket message');
+						connection.socket.send(
+							JSON.stringify({
+								type: 'ERROR',
+								message: 'Invalid message format',
+								timestamp: Date.now(),
+							})
+						);
+					}
+				});
+
+				connection.socket.on('close', () => {
+					request.log.info('WebSocket connection closed');
+				});
+
+				connection.socket.on('error', (err) => {
+					request.log.error(err, 'WebSocket error occurred');
+				});
+
+				// Send initial ACK
+				connection.socket.send(
+					JSON.stringify({
+						type: 'CONNECTED',
+						message: 'Welcome to Speak-Up Investigation Engine',
+						timestamp: Date.now(),
+					})
+				);
+			});
+		});
+
+		// =====================================================
+		// ERROR HANDLING
+		// =====================================================
+		fastify.setErrorHandler((error, request, reply) => {
+			request.log.error(error, 'Unhandled error occurred');
+
+			if (error.statusCode == 429) {
+				return reply.status(429).send({
+					error: 'Too Many Requests',
+					message: 'You have exceeded your request rate limit.',
+				});
+			}
+
+			reply.status(error.statusCode || 500).send({
+				error: error.name || 'Internal Server Error',
+				message: error.message || 'An unexpected error occurred.',
+				requestId: request.id,
+			});
+		});
+
+		// =====================================================
+		// START THE SERVER
+		// =====================================================
+		const address = await fastify.listen({
+			host: config.host,
+			port: config.port,
+		});
+
+		fastify.log.info(`
+╔════════════════════════════════════════════════════════════╗
+║           API Gateway - Speak Up Platform                  ║
+╚════════════════════════════════════════════════════════════╝
+
+  🚀 Server:        ${address}
+  
+  📡 Routes:
+	 /api/auth/*    → ${config.services.authService}
+	 /api/users/*   → ${config.services.userService}
+	 /api/session/* → ${config.services.gameService}
+	 /investigation (WebSocket)
+  
+  🔒 Security:
+	 ✓ Helmet (CSP, HSTS)
+	 ✓ CORS enabled
+	 ✓ Rate limiting (${config.rateLimit.max} req/${config.rateLimit.timeWindow})
+  
+  💾 Infrastructure:
+	 Redis:  ${config.redis.host}:${config.redis.port}
+	 Vault:  ${config.vault.address}
+
+  📊 Monitoring:	 
+	 /health
+	 /metrics
+	 
+  Logs at level: ${config.logLevel}
+	`);
 
 	} catch (err) {
 		fastify.log.error('Error starting server:', err);
 		process.exit(1);
 	}
 }
+
+// ====================================================
+// GRACEFUL SHUTDOWN
+// ====================================================
+const signals = ['SIGINT', 'SIGTERM'];
+
+signals.forEach((signal) => {
+	process.on(signal, async () => {
+		fastify.log.info(`Received ${signal}, shutting down gracefully...`);
+		await fastify.close();
+		fastify.log.info('Server closed. Exiting process.');
+		process.exit(0);
+	});
+});
+
+// Start the server
+start();
