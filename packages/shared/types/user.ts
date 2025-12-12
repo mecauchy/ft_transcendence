@@ -7,18 +7,19 @@ export enum UserRole {
 }
 
 export interface IUserProfile {
-	id:	string;
-	username: string;
-	email:	string;
-	avatarUrl: string;
-	role: UserRole;
+	id:			string;
+	alias:		string;
+	username:	string;
+	email:		string;
+	avatarUrl:	string;
+	role:		UserRole;
 	preferences: {
-		language: 'fr' | 'en';
-		theme: 'light' | 'dark';
+		language:	'fr' | 'en';
+		theme:		'light' | 'dark';
 		accessibility: {
-			highContrast: boolean;
-			textToSpeech: boolean;
-			fontSize: 'small' | 'medium' | 'large';
+			highContrast:	boolean;
+			textToSpeech:	boolean;
+			fontSize:		'small' | 'medium' | 'large';
 		};
 	};
 	stats: {
