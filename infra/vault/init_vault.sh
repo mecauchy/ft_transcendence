@@ -67,6 +67,13 @@ vault secrets list 2>/dev/null | grep -q "^database/" || \
 echo ""
 echo -e "${YELLOW} Storing database credentials in Vault...${NC}"
 
+# Grafana credentials
+vault kv put secret/grafana \
+	username="grafana_admin" \
+	password="${GRAFANA_PASS}" 2>/dev/null && \
+	echo -e "${GREEN}✓ Grafana credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ Grafana credentials already exist${NC}"
+
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
 	password="${POSTGRES_PASS}" \
@@ -142,11 +149,6 @@ vault write database/roles/auth-role \
 	max_ttl="24h" 2>/dev/null && \
 	echo -e "${GREEN}✓ Auth role created${NC}" || \
 	echo -e "${YELLOW}⚠ Auth role already exists${NC}"
-
-vault kv put secret/grafana \
-	username="grafana_admin" \
-	password="${GRAFANA_PASS}"
-echo -e "${GREEN}✓ Grafana credentials stored${NC}"
 
 # Create token with all policies attached
 vault token create -policy="auth-policy" -id="auth-token"

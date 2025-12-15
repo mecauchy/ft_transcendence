@@ -17,6 +17,8 @@ services:
   grafana:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
+    volumes:
+      - ./infra/secret:/run/secrets:ro
 
   api-gateway:
     environment:

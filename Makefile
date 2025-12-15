@@ -29,6 +29,11 @@ help:
 	@echo "  make build-docker         - Rebuild Docker images"
 	@echo "  make secrets              - Generate missing development secrets"
 	@echo ""
+	@echo "$(GREEN)🔐 Secrets & Webhooks:$(NC)"
+	@echo "  ./scripts/webhook-manager.sh save '<url>'  - Save Discord webhook URL locally"
+	@echo "  ./scripts/webhook-manager.sh load          - Load webhook from file into Vault"
+	@echo "  ./scripts/webhook-manager.sh show          - Show saved webhook (masked)"
+	@echo ""
 	@echo "$(GREEN)📊 Monitoring:$(NC)"
 	@echo "  make logs                 - View live logs from all services"
 	@echo "  make logs-[service]       - View logs for specific service"
@@ -53,6 +58,8 @@ up: secrets
 	@docker compose --profile monitoring up -d
 	@sleep 3
 	@docker compose ps
+	@echo "$(YELLOW)→ Loading secrets into Vault...$(NC)"
+	@./scripts/webhook-manager.sh load 2>/dev/null || echo "$(YELLOW)⚠ No local webhook file found. Use: ./scripts/webhook-manager.sh save '<url>'$(NC)"
 
 dev: secrets
 	@echo "$(BLUE)→ Starting base containers (without monitoring)...$(NC)"

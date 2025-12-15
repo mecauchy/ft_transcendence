@@ -1,0 +1,5 @@
+.env.local
+.env.*.local
+infra/secret/*.txt
+infra/monitoring/alertmanager/secrets.env
+vault_keys.json
