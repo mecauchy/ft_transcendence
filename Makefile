@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
+.PHONY: help up down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
 
 # Colors for output
 BLUE := \033[0;34m
@@ -26,6 +26,7 @@ help:
 	@echo "  make build                - Build TypeScript locally (for volume mounting)"
 	@echo "  make build-local          - Same as 'make build'"
 	@echo "  make build-docker         - Rebuild Docker images"
+	@echo "  make secrets              - Generate missing development secrets"
 	@echo ""
 	@echo "$(GREEN)📊 Monitoring:$(NC)"
 	@echo "  make logs                 - View live logs from all services"
@@ -46,11 +47,15 @@ help:
 # RUNTIME
 # ============================================================================
 
-up:
+up: secrets
 	@echo "$(BLUE)→ Starting containers...$(NC)"
 	@docker compose up -d
 	@sleep 3
 	@docker compose ps
+
+secrets:
+	@echo "$(BLUE)→ Generating development secrets...$(NC)"
+	@./infra/secret/generate_dev_secrets.sh
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"

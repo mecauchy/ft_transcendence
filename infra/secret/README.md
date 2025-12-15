@@ -5,6 +5,19 @@ This directory contains sensitive credentials and secrets used by the applicatio
 
 ⚠️ **IMPORTANT**: This directory is protected by `.gitignore` and should NEVER be committed to git.
 
+## Automatic Generation (Development)
+
+Missing secret files are **automatically generated** when you run:
+```bash
+make up
+```
+
+The `generate_dev_secrets.sh` script will create any missing secret files with secure random passwords.
+You can also manually generate secrets by running:
+```bash
+make secrets
+```
+
 ## File Structure
 
 ```
