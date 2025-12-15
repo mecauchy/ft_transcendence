@@ -7,6 +7,9 @@ storage "file" {
 }
 
 # Listener configuration
+# WARNING: TLS is disabled for development only
+# For production, enable TLS by setting tls_disable = 0 and providing
+# valid tls_cert_file and tls_key_file to prevent cleartext token exposure
 listener "tcp" {
   address       = "0.0.0.0:8200"
   tls_disable   = 1

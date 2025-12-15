@@ -25,7 +25,7 @@ export interface IBaseEvent {
 	eventId: string;          // Unique identifier for the event (UUIDv4)
 	timestamp: number;       // Timestamp when the event was created (ms since epoch)
 	type: EventType;        // Type of the event
-	emmitterId: string;     // User ID of the event emitter
+	emitterId: string;     // User ID of the event emitter
 	sessionId: string;      // Associated session ID
 }
 

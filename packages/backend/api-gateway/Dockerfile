@@ -11,7 +11,7 @@ COPY packages/backend/api-gateway/tsconfig.json ./
 COPY tsconfig.base.json ../
 
 # Copy local file: dependencies used by package.json
-COPY packages/shared/types /shared/types
+COPY packages/shared/types ../shared/types
 
 # Install dependencies
 RUN pnpm install
@@ -37,7 +37,7 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 COPY packages/backend/api-gateway/package.json ./
 
 # Copy local file: dependencies used by package.json
-COPY packages/shared/types /shared/types
+COPY packages/shared/types ../shared/types
 RUN pnpm install --prod
 
 # Copy built files from the builder stage

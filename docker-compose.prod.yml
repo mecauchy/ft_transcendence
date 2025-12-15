@@ -43,9 +43,10 @@ services:
 
   # Redis SERVICE - PRODUCTION MODE
   redis:
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_pass.txt)\""]
     volumes:
       - redis_data:/data
+      - ./infra/secrets:/run/secrets:ro
     # Don't expose port directly in production
     ports: []
     healthcheck:

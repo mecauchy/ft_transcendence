@@ -21,7 +21,12 @@ export const config = {
   },
 
   cors: {
-    origin: process.env.CORS_ORIGIN || '*', // Must be specific in production
+    origin:
+      process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN
+        : (process.env.NODE_ENV === 'production'
+            ? (() => { throw new Error('CORS_ORIGIN must be set in production'); })()
+            : '*'),
     credentials: true,
   },
 
@@ -35,3 +40,23 @@ export const config = {
     jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
   },
 };
+
+// Fail fast if using the default JWT secret in production
+if (
+  process.env.NODE_ENV === 'production' &&
+  config.security.jwtSecret === 'dev-secret-change-in-production'
+) {
+  throw new Error(
+    "FATAL: JWT_SECRET is not set in production. Refusing to start with default secret."
+  );
+}
+
+// Log warning if using development Vault token
+if (
+  process.env.NODE_ENV === 'production' &&
+  config.vault.token === 'root_token_dev_only'
+) {
+  throw new Error(
+    "FATAL: VAULT_TOKEN is using development default in production. Refusing to start with default token."
+  );
+}
