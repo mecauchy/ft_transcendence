@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs logs-vault logs-postgres logs-redis logs-waf health vault db redis clean
+.PHONY: help up down restart logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
 
 # Colors for output
 BLUE := \033[0;34m
@@ -22,10 +22,15 @@ help:
 	@echo "  make down                 - Stop all containers"
 	@echo "  make restart              - Restart all containers"
 	@echo ""
+	@echo "$(GREEN)🔨 Build (Development):$(NC)"
+	@echo "  make build                - Build TypeScript locally (for volume mounting)"
+	@echo "  make build-local          - Same as 'make build'"
+	@echo "  make build-docker         - Rebuild Docker images"
+	@echo ""
 	@echo "$(GREEN)📊 Monitoring:$(NC)"
 	@echo "  make logs                 - View live logs from all services"
 	@echo "  make logs-[service]       - View logs for specific service"
-	@echo "                              (vault, postgres, redis, waf)"
+	@echo "                              (vault, postgres, redis, waf, api-gateway)"
 	@echo "  make health               - Check health of all services"
 	@echo ""
 	@echo "$(GREEN)🔧 Access:$(NC)"
@@ -73,6 +78,9 @@ logs-redis:
 logs-waf:
 	@docker compose logs -f waf
 
+logs-api-gateway:
+	@docker compose logs -f api-gateway
+
 health:
 	@echo "$(BLUE)→ Checking service health...$(NC)"
 	@echo ""
@@ -100,6 +108,23 @@ db:
 
 redis:
 	@docker compose exec redis redis-cli
+
+# ============================================================================
+# BUILD (Development)
+# ============================================================================
+
+build: build-local
+	@echo "$(GREEN)✓ Local TypeScript built successfully$(NC)"
+
+build-local:
+	@echo "$(BLUE)→ Building TypeScript locally...$(NC)"
+	@cd packages/backend/api-gateway && npm run build && cd ../../..
+	@echo "$(GREEN)✓ api-gateway built$(NC)"
+
+build-docker:
+	@echo "$(BLUE)→ Building Docker images...$(NC)"
+	@docker compose build --no-cache
+	@echo "$(GREEN)✓ Docker images built$(NC)"
 
 # ============================================================================
 # CLEANUP
