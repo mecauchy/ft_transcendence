@@ -10,6 +10,7 @@ volumes:
   prometheus_data:
   grafana_data:
   alertmanager_data:
+  uptime-kuma:
 
 services:
   #WAF SERVICE
@@ -27,21 +28,6 @@ services:
       - logging_net
     depends_on:
       - vault
-    # API GATEWAY SERVICE
-  # api_gateway:
-  #   build:
-  #     context: .
-  #     dockerfile: ops/docker/backend.Dockerfile
-  #   networks:
-  #     - dmz_net
-  #     - service_mesh
-  #     - logging_net
-  #   environment:
-  #     - VAULT_ADDR=http://vault:8200
-  #   depends_on:
-  #     - vault
-  #     - logstash
-    # VAULT SERVICE
   vault:
     image: hashicorp/vault:1.13.3
     container_name: vault
@@ -84,7 +70,6 @@ services:
     container_name: alertmanager
     profiles:
       - "monitoring"
-    restart: no
     depends_on:
       - vault
     volumes:
@@ -143,5 +128,16 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    networks:
+      - logging_net
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+    # persistance des donnees d'uptime kuma
+      - uptime-kuma:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:3001
     networks:
       - logging_net

@@ -19,8 +19,4 @@ services:
   grafana:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
-  # api_gateway:
-  #   environment:
-  #     - VAULT_AUTH_METHOD=approle
-  #     - VAULT_ROLE_ID=gateway-role-id
-  #     - VAULT_SECRET_ID=gateway-secret-id
+
