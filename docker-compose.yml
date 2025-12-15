@@ -29,7 +29,7 @@ services:
     depends_on:
       - vault
     healthcheck:
-      test: ["CMD-SHELL", "nc -zv localhost 80 2>&1 | grep -q succeeded && exit 0 || exit 1"]
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=1 http://127.0.0.1:8080/ 2>&1 | grep -q '127.0.0.1:8080'"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -52,7 +52,7 @@ services:
       - vault
       - redis
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,11 +70,11 @@ services:
     networks:
       - service_mesh
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8200/v1/sys/health"]
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 15s
 
   # DATABASE SERVICE
   postgres:
