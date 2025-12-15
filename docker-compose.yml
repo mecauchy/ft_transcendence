@@ -47,6 +47,8 @@ services:
     environment:
       - PORT=3000
       - HOST=0.0.0.0
+    ports:
+      - "3000:3000"
     networks:
       - dmz_net
       - service_mesh
@@ -173,9 +175,9 @@ services:
     depends_on:
       - prometheus
       - vault
-    # http://localhost:3000 -> voir les graphiques sur le navigateur
+    # http://localhost:3002 -> voir les graphiques sur le navigateur
     ports:
-      - 3000:3000
+      - 3002:3000
     volumes:
       # l1: persistance, si power off alors comptes utilisateurs et dashboards sauvegardés 
       #l2: script d'automatisation qui évite de configurer grafana a prometheus a la main
