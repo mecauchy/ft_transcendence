@@ -1,5 +1,5 @@
 # Prometheus Alert Rules
-# Règles d'alertes pour surveiller les containers via cAdvisor
+# Règles d'alertes pour surveiller les conteneurs via cAdvisor
 
 groups:
   # ============================================
