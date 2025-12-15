@@ -1,4 +1,4 @@
-.PHONY: help up down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
 
 # Colors for output
 BLUE := \033[0;34m
@@ -18,7 +18,8 @@ help:
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)🚀 Runtime:$(NC)"
-	@echo "  make up                   - Start all containers"
+	@echo "  make up                   - Start all containers (including monitoring)"
+	@echo "  make dev                  - Start base containers (no monitoring)"
 	@echo "  make down                 - Stop all containers"
 	@echo "  make restart              - Restart all containers"
 	@echo ""
@@ -48,7 +49,13 @@ help:
 # ============================================================================
 
 up: secrets
-	@echo "$(BLUE)→ Starting containers...$(NC)"
+	@echo "$(BLUE)→ Starting all containers (including monitoring)...$(NC)"
+	@docker compose --profile monitoring up -d
+	@sleep 3
+	@docker compose ps
+
+dev: secrets
+	@echo "$(BLUE)→ Starting base containers (without monitoring)...$(NC)"
 	@docker compose up -d
 	@sleep 3
 	@docker compose ps
@@ -59,7 +66,7 @@ secrets:
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"
-	@docker compose down
+	@docker compose --profile monitoring down
 
 restart: down up
 	@echo "$(GREEN)✓ Containers restarted$(NC)"
