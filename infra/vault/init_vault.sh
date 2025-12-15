@@ -45,6 +45,7 @@ AUTH_PASS=$(get_secret_content "/run/secrets/auth_db_pass.txt")
 CHAT_PASS=$(get_secret_content "/run/secrets/chat_db_pass.txt")
 GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
+GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -142,47 +143,25 @@ vault write database/roles/auth-role \
 	echo -e "${GREEN}✓ Auth role created${NC}" || \
 	echo -e "${YELLOW}⚠ Auth role already exists${NC}"
 
-# Chat Role
-vault write database/roles/chat-role \
-	db_name=postgres \
-	creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON DATABASE \"chat_db\" TO \"{{name}}\";" \
-	default_ttl="1h" \
-	max_ttl="24h" 2>/dev/null && \
-	echo -e "${GREEN}✓ Chat role created${NC}" || \
-	echo -e "${YELLOW}⚠ Chat role already exists${NC}"
+vault kv put secret/grafana \
+	username="grafana_admin" \
+	password="${GRAFANA_PASS}"
+echo -e "${GREEN}✓ Grafana credentials stored${NC}"
 
-# Game Role
-vault write database/roles/game-role \
-	db_name=postgres \
-	creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON DATABASE \"game_db\" TO \"{{name}}\";" \
-	default_ttl="1h" \
-	max_ttl="24h" 2>/dev/null && \
-	echo -e "${GREEN}✓ Game role created${NC}" || \
-	echo -e "${YELLOW}⚠ Game role already exists${NC}"
+# Create token with all policies attached
+vault token create -policy="auth-policy" -id="auth-token"
+vault token create -policy="chat-policy" -id="chat-token"
+vault token create -policy="game-policy" -id="game-token"
+vault token create -policy="user-policy" -id="user-token"
+vault token create -policy="postgres-policy" -id="postgres-token"
+vault token create -policy="grafana-policy" -id="grafana-token"
+echo -e "${GREEN}✓ Service tokens created${NC}"
 
-# User Role
-vault write database/roles/user-role \
-	db_name=postgres \
-	creation_statements="CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT ALL PRIVILEGES ON DATABASE \"user_db\" TO \"{{name}}\";" \
-	default_ttl="1h" \
-	max_ttl="24h" 2>/dev/null && \
-	echo -e "${GREEN}✓ User role created${NC}" || \
-	echo -e "${YELLOW}⚠ User role already exists${NC}"
+# Enable APProle
+vault auth enable approle
 
-#----------------------------------------------------------------------------
-# AUTHENTICATION - AppRole Method
-#----------------------------------------------------------------------------
-echo ""
-echo -e "${YELLOW} Configuring AppRole authentication...${NC}"
-
-vault auth list 2>/dev/null | grep -q "^approle/" || \
-	(vault auth enable approle && echo -e "${GREEN}✓ AppRole auth enabled${NC}") || \
-	echo -e "${YELLOW}⚠ AppRole already enabled${NC}"
-
-# Create Approles for each service
-echo -e "${YELLOW} Creating AppRole roles for services...${NC}"
-
-# Auth Service AppRole
+# AUTH SERVICE
+# Define roles and bind policies
 vault write auth/approle/role/auth-role \
 	token_policies="auth-policy" \
 	token_ttl=1h \

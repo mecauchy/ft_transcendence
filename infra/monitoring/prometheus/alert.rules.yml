@@ -1,0 +1,189 @@
+# Prometheus Alert Rules
+# Règles d'alertes pour surveiller les conteneurs via cAdvisor
+
+groups:
+  # ============================================
+  # GROUPE 1: Santé des Targets Prometheus
+  # ============================================
+  - name: prometheus_health
+    rules:
+      # Target inaccessible
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target {{ $labels.job }} est DOWN"
+          description: "La target {{ $labels.instance }} du job {{ $labels.job }} est inaccessible depuis plus d'1 minute."
+
+      # Prometheus lui-même a des problèmes
+      - alert: PrometheusConfigurationReloadFailure
+        expr: prometheus_config_last_reload_successful != 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Échec du rechargement de la config Prometheus"
+          description: "Prometheus n'a pas pu recharger sa configuration."
+
+  # ============================================
+  # GROUPE 2: Alertes CPU Containers
+  # ============================================
+  - name: container_cpu_alerts
+    rules:
+      # CPU élevé (> 80%)
+      - alert: ContainerHighCpuUsage
+        expr: |
+          (sum(rate(container_cpu_usage_seconds_total{name!=""}[5m])) by (name) 
+          / sum(container_spec_cpu_quota{name!=""}/container_spec_cpu_period{name!=""}) by (name) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU élevé sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% du CPU depuis 5 minutes."
+
+      # CPU critique (> 95%)
+      - alert: ContainerCriticalCpuUsage
+        expr: |
+          (sum(rate(container_cpu_usage_seconds_total{name!=""}[5m])) by (name) 
+          / sum(container_spec_cpu_quota{name!=""}/container_spec_cpu_period{name!=""}) by (name) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 CPU CRITIQUE sur {{ $labels.name }}"
+          description: "URGENT: Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% du CPU!"
+
+      # Alternative plus simple si pas de limites CPU définies
+      - alert: ContainerHighCpuUsageSimple
+        expr: sum(rate(container_cpu_usage_seconds_total{name!=""}[5m])) by (name) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU élevé sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} utilise beaucoup de CPU: {{ printf \"%.2f\" $value }} cores."
+
+  # ============================================
+  # GROUPE 3: Alertes Mémoire Containers
+  # ============================================
+  - name: container_memory_alerts
+    rules:
+      # Mémoire élevée (> 80% de la limite)
+      - alert: ContainerHighMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{name!=""} 
+          / container_spec_memory_limit_bytes{name!=""} * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mémoire élevée sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% de sa limite mémoire."
+
+      # Mémoire critique (> 95% de la limite)
+      - alert: ContainerCriticalMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{name!=""} 
+          / container_spec_memory_limit_bytes{name!=""} * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 MÉMOIRE CRITIQUE sur {{ $labels.name }}"
+          description: "URGENT: Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% de sa mémoire limite!"
+
+      # Mémoire absolue élevée (> 1GB) - utile si pas de limite définie
+      - alert: ContainerHighMemoryAbsolute
+        expr: container_memory_usage_bytes{name!=""} > 1073741824
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mémoire élevée sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} utilise plus de 1GB de mémoire ({{ $value | humanize1024 }}B)."
+
+  # ============================================
+  # GROUPE 4: Alertes Réseau Containers
+  # ============================================
+  - name: container_network_alerts
+    rules:
+      # Trafic réseau élevé (> 100MB/s)
+      - alert: ContainerHighNetworkTraffic
+        expr: |
+          sum(rate(container_network_receive_bytes_total{name!=""}[5m]) 
+          + rate(container_network_transmit_bytes_total{name!=""}[5m])) by (name) > 104857600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Trafic réseau élevé sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} génère plus de 100MB/s de trafic réseau ({{ $value | humanize1024 }}B/s)."
+
+      # Erreurs réseau
+      - alert: ContainerNetworkErrors
+        expr: |
+          sum(rate(container_network_receive_errors_total{name!=""}[5m]) 
+          + rate(container_network_transmit_errors_total{name!=""}[5m])) by (name) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Erreurs réseau sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} a des erreurs réseau."
+
+  # ============================================
+  # GROUPE 5: Alertes État des Containers
+  # ============================================
+  - name: container_state_alerts
+    rules:
+      # Container arrêté (si cAdvisor ne le voit plus)
+      - alert: ContainerAbsent
+        expr: absent(container_last_seen{name!=""})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container non détecté"
+          description: "Aucun container n'est détecté par cAdvisor. Vérifiez l'état des services."
+
+      # Container qui redémarre souvent
+      - alert: ContainerFrequentRestart
+        expr: |
+          increase(container_start_time_seconds{name!=""}[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redémarrages fréquents de {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} a redémarré plus de 3 fois dans la dernière heure."
+
+  # ============================================
+  # GROUPE 6: Alertes Disque Containers
+  # ============================================
+  - name: container_disk_alerts
+    rules:
+      # Écriture disque élevée
+      - alert: ContainerHighDiskWrite
+        expr: |
+          sum(rate(container_fs_writes_bytes_total{name!=""}[5m])) by (name) > 52428800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Écriture disque élevée sur {{ $labels.name }}"
+          description: "Le container {{ $labels.name }} écrit plus de 50MB/s sur disque ({{ $value | humanize1024 }}B/s)."
+
+      # Filesystem presque plein
+      - alert: ContainerFilesystemFull
+        expr: |
+          (container_fs_usage_bytes{name!=""} 
+          / container_fs_limit_bytes{name!=""} * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Filesystem presque plein sur {{ $labels.name }}"
+          description: "Le filesystem du container {{ $labels.name }} est utilisé à {{ printf \"%.2f\" $value }}%."

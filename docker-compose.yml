@@ -6,8 +6,11 @@ networks:
   service_mesh:
   logging_net:
 
-# Persistent volumes
 volumes:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  uptime-kuma:
   postgres_data:
   redis_data:
   vault_data:
@@ -114,3 +117,102 @@ services:
     depends_on:
       - vault
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    profiles:
+      - "monitoring"
+    restart: no
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - logging_net
+    depends_on:
+      - alertmanager
+
+  # Alertmanager - Gestion et envoi des alertes vers Discord
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    profiles:
+      - "monitoring"
+    depends_on:
+      - vault
+    volumes:
+      - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
+      - alertmanager_data:/alertmanager
+    entrypoint: /entrypoint.sh
+    environment:
+      # Webhook Discord stocké dans Vault (secret/data/alertmanager)
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    ports:
+      - "9093:9093"
+    networks:
+      - logging_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    # On utilise profile en tant que "interupteur" pour eviter qu'il consomme de la memoire pr rien. 
+    # Avec cette ligne, grafana ne démarrera que si je tape [docker compose --profile monitoring up] sinon éteint par default
+    profiles:
+      - "monitoring"
+    user: "472"
+    depends_on:
+      - prometheus
+      - vault
+    # http://localhost:3000 -> voir les graphiques sur le navigateur
+    ports:
+      - 3000:3000
+    volumes:
+      # l1: persistance, si power off alors comptes utilisateurs et dashboards sauvegardés 
+      #l2: script d'automatisation qui évite de configurer grafana a prometheus a la main
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
+    entrypoint: /entrypoint.sh
+    environment:
+      - GF_SECURITY_ADMIN_USER=grafana_admin
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    networks:
+      - logging_net
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    profiles:
+      - "monitoring"
+    privileged: true
+    ports:
+      - 8081:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - logging_net
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+    # persistance des données d'uptime kuma
+      - uptime-kuma:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:3001
+    networks:
+      - logging_net
