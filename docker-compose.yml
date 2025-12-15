@@ -166,7 +166,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     # On utilise profile en tant que "interupteur" pour eviter qu'il consomme de la memoire pr rien. 
-    # Avec cette ligne, grafana ne demarrera que si je tape [docker compose --profile monitoring up] sino  eteint par default
+    # Avec cette ligne, grafana ne démarrera que si je tape [docker compose --profile monitoring up] sinon éteint par default
     profiles:
       - "monitoring"
     user: "472"
@@ -177,8 +177,8 @@ services:
     ports:
       - 3000:3000
     volumes:
-      # l1: persisitane, si power off alors comptes utilisateurs et dashboards sauvegardes 
-      #l2: script d'automatisation qui evite de configurer garafana a prometheus a la main
+      # l1: persistance, si power off alors comptes utilisateurs et dashboards sauvegardés 
+      #l2: script d'automatisation qui évite de configurer grafana a prometheus a la main
       - grafana_data:/var/lib/grafana
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
@@ -194,8 +194,7 @@ services:
     container_name: cadvisor
     profiles:
       - "monitoring"
-    privileged:
-      true
+    privileged: true
     ports:
       - 8081:8080
     volumes:
@@ -210,7 +209,7 @@ services:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     volumes:
-    # persistance des donnees d'uptime kuma
+    # persistance des données d'uptime kuma
       - uptime-kuma:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
     ports:

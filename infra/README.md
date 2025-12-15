@@ -9,9 +9,7 @@ docker restart prometheus && sleep 3 && docker logs prometheus 2>&1 | tail -10
 
 echo "Attente de 70 secondes pour que l'alerte TargetDown se déclenche..." && sleep 70 && echo "" && echo "=== Alertes en cours ===" && curl -s http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | {alertname: .labels.alertname, state: .state, severity: .labels.severity}'
 
-3/ Verifier manuelement qu'on a bien recu une notif envoye a discord
-
-echo "Attente de 70 secondes pour que l'alerte TargetDown se déclenche..." && sleep 70 && echo "" && echo "=== Alertes en cours ===" && curl -s http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | {alertname: .labels.alertname, state: .state, severity: .labels.severity}'
+3/ Vérifier manuellement sur Discord que la notification d'alerte a bien été reçue
 
 
 5/ Arreter mes containers
