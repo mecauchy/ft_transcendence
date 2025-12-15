@@ -170,7 +170,7 @@ vault write database/roles/user-role \
 	echo -e "${YELLOW}⚠ User role already exists${NC}"
 
 #----------------------------------------------------------------------------
-# AUTHENTIFICATION - AppRole Method
+# AUTHENTICATION - AppRole Method
 #----------------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW} Configuring AppRole authentication...${NC}"

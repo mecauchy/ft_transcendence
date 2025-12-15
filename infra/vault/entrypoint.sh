@@ -11,7 +11,8 @@ VAULT_PID=$!
 echo "" 2>&1
 echo "Waiting for Vault to start..." 2>&1
 sleep 3
-for i in $(seq 1 30); do
+i=1
+while [ $i -le 30 ]; do
   if vault status > /dev/null 2>&1; then
     echo "✓ Vault started successfully" 2>&1
     break
@@ -21,6 +22,7 @@ for i in $(seq 1 30); do
     exit 1
   fi
   sleep 1
+  i=$((i+1))
 done
 
 # Set environment variables for init script

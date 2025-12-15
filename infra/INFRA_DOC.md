@@ -35,21 +35,21 @@ docker compose exec postgres psql -U root_admin
 docker compose exec postgres psql -U root_admin -d auth_db
 
 # List all databases
-docker compose exec postgres psql -U root_admin -c \"\\l\"
+docker compose exec postgres psql -U root_admin -c "\l"
 
 # List all tables in a database
-docker compose exec postgres psql -U root_admin -d auth_db -c \"\\dt\"
+docker compose exec postgres psql -U root_admin -d auth_db -c "\dt"
 
 # Execute SQL query
-docker compose exec postgres psql -U root_admin -c \"SELECT version();\"
+docker compose exec postgres psql -U root_admin -c "SELECT version();"
 
 # Create a new table
-docker compose exec postgres psql -U root_admin -d auth_db -c \"
+docker compose exec postgres psql -U root_admin -d auth_db -c "
   CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT NOW()
-  );\"
+  );"
 
 # Backup database
 docker compose exec postgres pg_dump -U root_admin auth_db > backup_auth_db.sql

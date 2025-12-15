@@ -1,6 +1,6 @@
 // packages/backend/api-gateway/src/index.ts
 
-import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import Fastify, { FastifyRequest } from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -227,9 +227,11 @@ async function start() {
 					request.log.info('WebSocket connection closed');
 				});
 
-			connection.socket.on('error', (err: any) => {
-				request.log.error({ error: err }, 'WebSocket error occurred');
-			});				// Send initial ACK
+				connection.socket.on('error', (err: any) => {
+					request.log.error({ error: err }, 'WebSocket error occurred');
+				});
+
+				// Send initial ACK
 				connection.socket.send(
 					JSON.stringify({
 						type: 'CONNECTED',

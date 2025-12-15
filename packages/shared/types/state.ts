@@ -5,7 +5,7 @@
  * This object is serialized and broadcast via WebSockets.
  */
 export interface IInvestigationState {
-	// Idetity and Synchronization
+	// Identity and Synchronization
 	sessionId: string;          // Unique identifier for the session (UUIDv4)
 	sequenceId: number;       // Incremental sequence number for synchronization
 	lastUpdateTimestamp: number; // Timestamp of the last update (ms since epoch)

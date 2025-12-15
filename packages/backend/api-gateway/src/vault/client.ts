@@ -7,8 +7,15 @@ interface VaultConfig {
 	token?: string;
 }
 
+// Define a minimal interface for the Vault client
+interface IVaultClient {
+	read(path: string): Promise<{ data: any }>;
+	health(): Promise<{ sealed: boolean; initialized: boolean }>;
+	token?: string;
+}
+
 export class VaultClient {
-	private client: any;
+	private client: IVaultClient;
 	private config: VaultConfig;
 
 	constructor(config: VaultConfig) {
@@ -39,7 +46,11 @@ export class VaultClient {
 			const result = await this.client.read(path);
 			return result.data;
 		} catch (error) {
-			console.error(`Failed to retrieve secret from path ${path}:`, error);
+			if (error instanceof Error) {
+				console.error(`Failed to retrieve secret from path ${path} [${error.name}]: ${error.message}`);
+			} else {
+				console.error(`Failed to retrieve secret from path ${path}:`, error);
+			}
 			throw error;
 		}
 	}
@@ -47,7 +58,7 @@ export class VaultClient {
 	async isHealthy(): Promise<boolean> {
 		try {
 			const health = await this.client.health();
-			return health.sealed == false && health.initialized == true;
+			return health.sealed === false && health.initialized === true;
 		} catch (error) {
 			console.error('Vault health check failed:', error);
 			return false;
