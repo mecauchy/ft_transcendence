@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 function Profile() {
 	return (
 		<div className="profile_container">

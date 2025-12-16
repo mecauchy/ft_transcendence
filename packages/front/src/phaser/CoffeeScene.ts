@@ -18,7 +18,9 @@ export default class CoffeeScene extends Phaser.Scene {
 		card.setInteractive({ draggable: true });
 		this.input.setDraggable(card);
 
-		this.input.on("drag", (_pointer, gameObject, x, y) => {
+		this.input.on("drag", (
+			_pointer:Phaser.Input.Pointer,
+			gameObject: Phaser.GameObjects.Text, x: number, y: number) => {
 			gameObject.x = x;
 			gameObject.y = y;
 		});

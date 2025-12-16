@@ -9,9 +9,11 @@ function TicTacToe() {
 		[0, 0, 0],
 	]);
 	const currentPlayer = useRef<1 | 2>(1);
+
 	useEffect(() => {
 		const canva = canvasRef.current;
 		if (!canva) return;
+
 		const context = canva.getContext("2d");
 		if (!context) return;
 
@@ -24,18 +26,21 @@ function TicTacToe() {
 				context.moveTo((canva.width / 3) * i, 0);
 				context.lineTo((canva.width / 3) * i, canva.height);
 				context.stroke();
+
 				context.beginPath();
 				context.moveTo(0, (canva.height / 3) * i);
 				context.lineTo(canva.width, (canva.height / 3) * i);
 				context.stroke();
 			}
 		};
+
 		const drawMarks = () => {
 			for (let row = 0; row < 3; row++) {
 				for (let col = 0; col < 3; col++) {
 					const mark = map.current[row][col];
 					const centerX = (col + 0.5) * (canva.width / 3);
 					const centerY = (row + 0.5) * (canva.height / 3);
+
 					if (mark === 1) {
 						context.strokeStyle = "red";
 						context.beginPath();
@@ -64,14 +69,22 @@ function TicTacToe() {
 			if (m[0][2] && m[0][2] === m[1][1] && m[1][1] === m[2][0]) return m[0][2];
 			return null;
 		};
+
+
+		drawGrid();
+		drawMarks();
+		void checkWin();
+		void currentPlayer.current;
+
 	}, []);
 
-	return (<canvas
+	return (
+		<canvas
 			ref={canvasRef}
 			width={700}
 			height={700}
 			className="tictactoeCanvas"
-			/>
+		/>
 	);
 }
 

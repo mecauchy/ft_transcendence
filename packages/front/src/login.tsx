@@ -22,6 +22,8 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const [specialCharPresent, setSpecialCharPresent] = useState<boolean>(false);
 	const [birthdate, setBirthdate] = useState<string>('');
 
+	void user;
+	void newUser;
 	//handlers for registration
 	const handleRegister = (event: React.FormEvent) => {
 		event.preventDefault();

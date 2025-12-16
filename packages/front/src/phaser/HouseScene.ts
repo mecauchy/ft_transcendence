@@ -11,8 +11,9 @@ export default class HouseScene extends Phaser.Scene {
 			color: "#ffffff",
 		}).setOrigin(0.5);
 
-		// bouton retour carte
-		this.input.keyboard.once("keydown-ESC", () => {
+		const keyboard = this.input.keyboard;
+		if (!keyboard) return;
+		keyboard.once("keydown-ESC", () => {
 			this.scene.start("WorldMapScene");
 		});
 	}

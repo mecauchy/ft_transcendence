@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 function Settings() {
 	return (
 		<div className="settings_container">
