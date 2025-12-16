@@ -16,23 +16,27 @@ volumes:
   vault_data:
 
 services:
-  #WAF SERVICE
+  #WAF SERVICE - ModSecurity WAF with nginx reverse proxy
   waf:
-    image: owasp/modsecurity-crs:nginx-alpine
+    image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "8080:80"   # Access HTTP traffic
+      - "8443:443"  # Access HTTPS traffic
     volumes:
-      - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:rw
+      - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
+      - ./infra/certs:/etc/nginx/certs:rw
     networks:
       - public_net
       - dmz_net
       - logging_net
     depends_on:
       - vault
+      - api-gateway
+      - front
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=1 http://127.0.0.1:8080/ 2>&1 | grep -q '127.0.0.1:8080'"]
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 80 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -62,7 +66,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
 
   vault:
     image: hashicorp/vault:1.13.3
