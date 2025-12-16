@@ -15,8 +15,6 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
 
   grafana:
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
     volumes:
       - ./infra/secret:/run/secrets:ro
 
