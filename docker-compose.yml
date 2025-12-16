@@ -178,8 +178,6 @@ services:
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
-    profiles:
-      - "monitoring"
     depends_on:
       - vault
     volumes:
@@ -233,6 +231,7 @@ services:
     networks:
       - service_mesh
       - logging_net
+
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
@@ -249,6 +248,7 @@ services:
       - /dev/disk/:/dev/disk:ro
     networks:
       - logging_net
+
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
@@ -258,7 +258,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/bash", "-c", "if [ -f /app/data/kuma.db ]; then bash /setup-kuma.sh; fi && bash /entrypoint.sh"]
     ports:
       - 3010:3001
     environment:
@@ -268,8 +268,8 @@ services:
       - logging_net
       - service_mesh
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001"]
+      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => { if (r.statusCode !== 200 && r.statusCode !== 302) { console.error(\"Status: \" + r.statusCode); process.exit(1); } process.exit(0); }).on(\"error\", (e) => { console.error(e); process.exit(1); })'"
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
