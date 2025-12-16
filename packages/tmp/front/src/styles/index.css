@@ -1,0 +1,25 @@
+#root, html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	min-height: 100%;
+	font-family: Arial, sans-serif;
+	background: linear-gradient(135deg, #2e004f, #4b0082, #7a2dbf);
+	background-size: 200% 200%;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+	background-attachment: fixed;
+	animation: gradientAnimation 6s ease infinite;
+}
+
+@keyframes gradientAnimation {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
