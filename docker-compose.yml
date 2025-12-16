@@ -27,6 +27,8 @@ services:
       - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
       - ./infra/certs:/etc/nginx/certs:rw
+      - ./infra/waf/waf_entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       - public_net
       - dmz_net
@@ -36,11 +38,11 @@ services:
       - api-gateway
       - front
     healthcheck:
-      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 80 || exit 1"]
+      test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null https://127.0.0.1/api/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 30s
 
   api-gateway:
     build:

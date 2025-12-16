@@ -11,7 +11,21 @@ echo "🔐 [WAF Entrypoint] Checking SSL Certificates"
 # Check and install Openssl if not present
 if ! command -v openssl >/dev/null 2>&1; then
 	echo "⚠️  Openssl not found, installing..."
-	apk add --no-cache openssl
+	if command -v apk >/dev/null 2>&1; then
+		apk add --no-cache openssl
+	elif command -v apt-get >/dev/null 2>&1; then
+		apt-get update && apt-get install -y openssl
+	fi
+fi
+
+# Check and install curl if not present (required for healthcheck)
+if ! command -v curl >/dev/null 2>&1; then
+	echo "⚠️  curl not found, installing..."
+	if command -v apk >/dev/null 2>&1; then
+		apk add --no-cache curl
+	elif command -v apt-get >/dev/null 2>&1; then
+		apt-get update && apt-get install -y curl
+	fi
 fi
 
 # Create directories if they don't exist
@@ -42,4 +56,3 @@ if [ ! -f /etc/nginx/modsecurity.conf ]; then
 fi
 
 exec nginx -g 'daemon off;'
-
