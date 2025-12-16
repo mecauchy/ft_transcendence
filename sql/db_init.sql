@@ -1,120 +1,118 @@
 -- SQL code to init the transcendance database
 
-PRAGMA foreign_keys = ON;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TYPE user_role AS ENUM('PATIENT', 'DOCTOR', 'ADMIN');
+CREATE TYPE friend_status AS ENUM('PENDING', 'ACCEPTED', 'BLOCKED');
+CREATE TYPE session_mode AS ENUM('AI', 'P2P');
+CREATE TYPE session_status AS ENUM('WAITING', 'ACTIVE', 'PAUSED', 'COMPLETED', 'TERMINATED');
+CREATE TYPE token_status AS ENUM('ACTIVE', 'REVOKED');
+CREATE TYPE token_type AS ENUM('REFRESH', 'API');
+
 
 CREATE TABLE users (
-	user_id					INTEGER	AUTOINCREMENT PRIMARY KEY NOT NULL,
-	user_username			TEXT UNIQUE NOT NULL,
-	user_password			TEXT ,
-	user_email				TEXT UNIQUE NOT NULL,
+	user_id					BIGSERIAL PRIMARY KEY,
+	user_username			VARCHAR(32) UNIQUE NOT NULL,
+	user_email				VARCHAR(255) UNIQUE NOT NULL,
+	user_password			TEXT,
 	user_dob				DATE NOT NULL,
-	user_creation_date		DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	user_modification_date	DATETIME,
-	user_twofa_enabled		INTEGER NOT NULL DEFAULT 0,
-	user_twofa_secret		TEXT
+	user_role				user_role NOT NULL DEFAULT 'PATIENT',
+	user_twofa_enabled		BOOLEAN NOT NULL DEFAULT FALSE,
+	user_twofa_secret		TEXT,
+	user_creation_date		TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+	user_modification_date	TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
+CREATE INDEX idx_users_email ON users (user_email);
+CREATE INDEX idx_users_username ON users (user_username);
+
 
 CREATE TABLE oauth (
-	oauth_id				INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	oauth_userid			INTEGER NOT NULL,
+	oauth_id				BIGSERIAL PRIMARY KEY,
+	oauth_userid			BIGINT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
 	oauth_provider			TEXT NOT NULL,
 	oauth_provider_userid	TEXT NOT NULL,
-	oauth_creation_date		DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
-	
-	FOREIGN KEY (oauth_userid) REFERENCES users (user_id)
-		ON DELETE CASCADE,
+	oauth_creation_date		TIMESTAMPTZ DEFAULT NOW() NOT NULL
+
 	UNIQUE (oauth_provider, oauth_provider_userid)
 );
 
+
 CREATE TABLE user_keys (
-	key_id				INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
-	key_userid			INTEGER NOT NULL UNIQUE,
+	key_id				BIGSERIAL PRIMARY KEY,
+	key_userid			BIGINT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
 	key_token			TEXT NOT NULL,
-	key_status bool		NOT NULL,
-	key_creation_date	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	key_expiry_date		DATETIME,
-
-	FOREIGN KEY (key_userid) REFERENCES users (user_id)
-		ON DELETE CASCADE
+	key_type			token_type NOT NULL,
+	key_status			token_status NOT NULL DEFAULT 'ACTIVE',
+	key_creation_date	TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+	key_expiry_date		TIMESTAMPTZ
 );
+CREATE INDEX idx_userkeys_userid ON user_keys (key_userid);
+CREATE INDEX idx_userkeys_status ON user_keys (key_status);
 
-CREATE TABLE friends (
-	friend_id				INTEGER PRIMARY KEY NOT NULL,
-	friend_userid			INTEGER NOT NULL,
-	friend_status			TEXT NOT NULL CHECK (status IN ('pending','accepted','blocked')),
-	friend_creation_date	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-	FOREIGN KEY (friend_id) REFERENCES users(user_id)
-		ON DELETE CASCADE,
-	FOREIGN KEY (friend_userid) REFERENCES users(user_id)
-		ON DELETE CASCADE,
-
-	PRIMARY KEY (friend_id, friend_userid)
-
-);
 
 CREATE TABLE settings (
-	settings_id		INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
-	settings_userid	INTEGER NOT NULL UNIQUE
+	settings_id		BIGSERIAL PRIMARY KEY,
+	settings_userid	BIGINT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
 	settings_avatar	TEXT,
-	settings_colour	TEXT,
-	settings_locale	TEXT CHECK(settings_locale IN("fr", "en")) DEFAULT "fr"
+	settings_colour	VARCHAR(32),
+	settings_locale	VARCHAR(5) NOT NULL DEFAULT 'fr'
+);
+CREATE INDEX idx_settings_user ON settings (settings_userid);
 
-	ADD FOREIGN KEY (settings_userid) REFERENCES users (user_id)
-		ON DELETE CASCADE
+
+CREATE TABLE friends (
+	friend_id				BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	friend_userid			BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	friend_status			friend_status NOT NULL DEFAULT 'PENDING',
+	friend_creation_date	TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	PRIMARY KEY (friend_id, friend_userid)
+);
+CREATE INDEX idx_friends_friend ON friends (friend_userid);
+CREATE INDEX idx_friends_status ON friends (friend_status);
+
+
+CREATE TABLE scenarios (
+	scenario_id				BIGSERIAL PRIMARY KEY,
+	scenario_title			TEXT NOT NULL,
+	scenario_description	TEXT,
+	scenario_logic_tree		JSONB NOT NULL,	-- stores the narrative graph
+	scenario_version		INTEGER NOT NULL DEFAULT 1,
+	scenario_created_at		TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	scenario_updated_at		TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE tournaments (
-	tournament_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
-	tournament_name			TEXT NOT NULL,
-	tournament_status		TEXT CHECK(tournament_status IN('upcoming', 'ongoing', 'ended')) NOT NULL,
-	tournament_date_start	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	tournament_date_end		DATETIME,
-	tournament_winner		INTEGER,
-	tournament_userlist		INTEGER NOT NULL,
+-- Individual sessions (Patient <-> Doctor/AI)
+CREATE TABLE sessions (
+	id				UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+	patient_id		BIGINT REFERENCES users(id) ON DELETE SET NULL,
+	doctor_id		BIGINT REFERENCES users(id) ON DELETE SET NULL,
+	scenario_id		BIGINT REFERENCES scenarios(id) ON DELETE RESTRICT,
+	mode			session_mode NOT NULL,
+	status			session_status NOT NULL DEFAULT 'WAITING',
+	created_at		TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at		TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	ended_at		TIMESTAMPTZ,
+	final_metrics	JSONB	-- snapshot: trust, stress, compliance, mood
 );
 
-CREATE TABLE userlist (
-	userlist_id				INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-	userlist_tournament_id	INTEGER NOT NULL,
-	userlist_userid			INTEGER NOT NULL
+CREATE INDEX idx_sessions_patient ON sessions (patient_id);
+CREATE INDEX idx_sessions_doctor ON sessions (doctor_id);
+CREATE INDEX idx_sessions_scenario ON sessions (scenario_id);
+CREATE INDEX idx_sessions_status ON sessions (status);
+
+-- Event sourcing log: one row per GameEvent
+CREATE TABLE event_logs (
+	id				BIGSERIAL PRIMARY KEY,
+	session_id		UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+	sequence_id		INTEGER NOT NULL,
+	event_type		TEXT NOT NULL,
+	emitter_id		BIGINT REFERENCES users(id) ON DELETE SET NULL,
+	payload			JSONB NOT NULL,
+	created_at		TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE (session_id, sequence_id)
 );
 
-CREATE TABLE matches (
-	match_id			INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
-	match_tournament_id	INTEGER,
-	match_status		TEXT NOT NULL CHECK(match_status IN('upcoming', 'ongoing', 'ended', 'forfeit'))
-	match_user1_id		INTEGER NOT NULL,
-	match_user1_score	INTEGER NOT NULL DEFAULT 0,
-	match_user2_id		INTEGER NOT NULL,
-	match_user2_score	INTEGER NOT NULL DEFAULT 0,
-	match_winner		INTEGER,
-	match_date_start	DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	match_date_end		DATETIME
-);
-
-CREATE TABLE stats (
-	stat_userid				INTEGER PRIMARY KEY,
-	stat_games_played		INTEGER NOT NULL DEFAULT 0,
-	stat_games_won			INTEGER NOT NULL DEFAULT 0,
-	stat_games_lost			INTEGER NOT NULL DEFAULT 0,
-	stat_points_scored		INTEGER NOT NULL DEFAULT 0,
-	stat_points_conceded	INTEGER NOT NULL DEFAULT 0,
-	stat_tournaments_played	INTEGER NOT NULL DEFAULT 0,
-	stat_tournaments_won	INTEGER NOT NULL DEFAULT 0,
-	stat_last_played	DATETIME,
-
-	FOREIGN KEY (stat_userid) REFERENCES users (user_id)
-		ON DELETE CASCADE
-);
-
-ALTER TABLE users ADD FOREIGN KEY (user_settings) REFERENCES settings (settings_id);
-
-ALTER TABLE tournaments ADD FOREIGN KEY (tournament_userlist) REFERENCES userlist (userlist_id);
-
-ALTER TABLE userlist ADD FOREIGN KEY (userlist_userid) REFERENCES users (user_id);
-
-ALTER TABLE matches ADD FOREIGN KEY (match_tournament_id) REFERENCES tournaments (tournament_id);
-ALTER TABLE matches ADD FOREIGN KEY (match_user1_id, match_user2_id) REFERENCES users (user_id, user_id);
-
-ALTER TABLE user_keys ADD FOREIGN KEY (key_userid) REFERENCES users (user_id);
+CREATE INDEX idx_event_logs_session_seq ON event_logs (session_id, sequence_id);
+CREATE INDEX idx_event_logs_emitter ON event_logs (emitter_id);
+CREATE INDEX idx_event_logs_type ON event_logs (event_type);
+	
