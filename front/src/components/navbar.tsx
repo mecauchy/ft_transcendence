@@ -1,17 +1,18 @@
-import './styles/navbar.css'
+import '../styles/navbar.css'
 
 function Navbar({setPage, username}: {setPage: (page: string) => void, username: string | null}) {
 	  return (
 		<nav className="navbar">
-  			<div className="nav_logo">ft_transcendance</div>
+  			<div className="nav_logo">
+				<img src="/controler.png" alt="Logo" className="logo_image" />
+				ft_transcendance
+			</div>
 
   			<div className="nav_left">
-  			  <button className="nav_button tournament_box" onClick={() => setPage("tournament")}>
-  			    Tournament
-  			  </button>
-  			  <button className="nav_button nav_button_play" onClick={() => setPage("game")}>
+  			  <button className="nav_button tournament_box" onClick={() => setPage("game")}>
   			    Play
   			  </button>
+
   			</div>
 
   			<div className="nav_right">
