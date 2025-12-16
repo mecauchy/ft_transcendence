@@ -1,4 +1,4 @@
-.PHONY: help up down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
 
 # Colors for output
 BLUE := \033[0;34m
@@ -18,7 +18,8 @@ help:
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(GREEN)🚀 Runtime:$(NC)"
-	@echo "  make up                   - Start all containers"
+	@echo "  make up                   - Start all containers (including monitoring)"
+	@echo "  make dev                  - Start base containers (no monitoring)"
 	@echo "  make down                 - Stop all containers"
 	@echo "  make restart              - Restart all containers"
 	@echo ""
@@ -27,6 +28,15 @@ help:
 	@echo "  make build-local          - Same as 'make build'"
 	@echo "  make build-docker         - Rebuild Docker images"
 	@echo "  make secrets              - Generate missing development secrets"
+	@echo ""
+	@echo "$(GREEN)🔐 Secrets & Webhooks:$(NC)"
+	@echo "  ./scripts/webhook-manager.sh save '<url>'  - Save Discord webhook URL locally"
+	@echo "  ./scripts/webhook-manager.sh load          - Load webhook from file into Vault"
+	@echo "  ./scripts/webhook-manager.sh show          - Show saved webhook (masked)"
+	@echo "  ./scripts/kuma-password.sh                 - Show Uptime-Kuma admin credentials"
+	@echo ""
+	@echo "$(GREEN)🔧 Uptime-Kuma Setup:$(NC)"
+	@echo "  make kuma-init-password                    - Set Uptime-Kuma admin password from Vault"
 	@echo ""
 	@echo "$(GREEN)📊 Monitoring:$(NC)"
 	@echo "  make logs                 - View live logs from all services"
@@ -48,7 +58,15 @@ help:
 # ============================================================================
 
 up: secrets
-	@echo "$(BLUE)→ Starting containers...$(NC)"
+	@echo "$(BLUE)→ Starting all containers (including monitoring)...$(NC)"
+	@docker compose --profile monitoring up -d
+	@sleep 3
+	@docker compose ps
+	@echo "$(YELLOW)→ Loading secrets into Vault...$(NC)"
+	@./scripts/webhook-manager.sh load 2>/dev/null || echo "$(YELLOW)⚠ No local webhook file found. Use: ./scripts/webhook-manager.sh save '<url>'$(NC)"
+
+dev: secrets
+	@echo "$(BLUE)→ Starting base containers (without monitoring)...$(NC)"
 	@docker compose up -d
 	@sleep 3
 	@docker compose ps
@@ -59,7 +77,7 @@ secrets:
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"
-	@docker compose down
+	@docker compose --profile monitoring down
 
 restart: down up
 	@echo "$(GREEN)✓ Containers restarted$(NC)"
@@ -130,6 +148,29 @@ build-docker:
 	@echo "$(BLUE)→ Building Docker images...$(NC)"
 	@docker compose build --no-cache
 	@echo "$(GREEN)✓ Docker images built$(NC)"
+
+# ============================================================================
+# UPTIME-KUMA SETUP
+# ============================================================================
+
+kuma-init-password:
+	@echo "$(BLUE)→ Setting Uptime-Kuma admin password...$(NC)"
+	@KUMA_PASS=$$(docker exec vault vault kv get -field=password secret/kuma 2>/dev/null); \
+	if [ -z "$$KUMA_PASS" ]; then \
+		echo "$(RED)✗ Failed to retrieve password from Vault$(NC)"; \
+		exit 1; \
+	fi; \
+	docker exec -e "KUMA_ADMIN_PASSWORD=$$KUMA_PASS" uptime-kuma bash /setup-kuma.sh; \
+	echo ""; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"; \
+	echo "$(GREEN)   🎯 Uptime-Kuma Admin Credentials$(NC)"; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"; \
+	echo ""; \
+	echo "URL:      http://localhost:3010"; \
+	echo "Username: kuma_admin"; \
+	echo "Password: $$KUMA_PASS"; \
+	echo ""; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"
 
 # ============================================================================
 # CLEANUP

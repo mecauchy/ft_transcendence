@@ -28,7 +28,7 @@ docker compose --profile monitoring up -d --build
 ============== Acces aux interfaces ==================
 
 Grafana : 
-http://localhost:3000
+http://localhost:3002
 
 Prometheus :
 http://localhost:9090

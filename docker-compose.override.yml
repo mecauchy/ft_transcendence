@@ -15,8 +15,8 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
 
   grafana:
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
+    volumes:
+      - ./infra/secret:/run/secrets:ro
 
   api-gateway:
     environment:
@@ -55,3 +55,8 @@ services:
     ports:
       - "8080:80"   # HTTP
       - "8443:443"  # HTTPS
+
+  uptime-kuma:
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only

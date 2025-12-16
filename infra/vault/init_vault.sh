@@ -46,6 +46,7 @@ CHAT_PASS=$(get_secret_content "/run/secrets/chat_db_pass.txt")
 GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
 GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
+KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -62,10 +63,40 @@ vault secrets list 2>/dev/null | grep -q "^database/" || \
 	echo -e "${YELLOW}⚠ Database engine already enabled${NC}"
 
 # --------------------------------------------------------------------------
+# LOAD POLICIES
+#---------------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}📋 Loading policies...${NC}"
+
+# Load all policies from the policies directory
+for policy_file in /policies/*.hcl; do
+	if [ -f "$policy_file" ]; then
+		policy_name=$(basename "$policy_file" .hcl)
+		vault policy write "$policy_name" "$policy_file" 2>/dev/null && \
+			echo -e "${GREEN}✓ Policy '$policy_name' loaded${NC}" || \
+			echo -e "${YELLOW}⚠ Policy '$policy_name' already exists${NC}"
+	fi
+done
+
+# --------------------------------------------------------------------------
 # STATIC SECRETS (KV STORE) - Database Credentials
 #---------------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW} Storing database credentials in Vault...${NC}"
+
+# Grafana credentials
+vault kv put secret/grafana \
+	username="grafana_admin" \
+	password="${GRAFANA_PASS}" 2>/dev/null && \
+	echo -e "${GREEN}✓ Grafana credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ Grafana credentials already exist${NC}"
+
+# Uptime-Kuma credentials
+vault kv put secret/kuma \
+	username="kuma_admin" \
+	password="${KUMA_PASS}" 2>/dev/null && \
+	echo -e "${GREEN}✓ Uptime-Kuma credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ Uptime-Kuma credentials already exist${NC}"
 
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
@@ -142,11 +173,6 @@ vault write database/roles/auth-role \
 	max_ttl="24h" 2>/dev/null && \
 	echo -e "${GREEN}✓ Auth role created${NC}" || \
 	echo -e "${YELLOW}⚠ Auth role already exists${NC}"
-
-vault kv put secret/grafana \
-	username="grafana_admin" \
-	password="${GRAFANA_PASS}"
-echo -e "${GREEN}✓ Grafana credentials stored${NC}"
 
 # Create token with all policies attached
 vault token create -policy="auth-policy" -id="auth-token"

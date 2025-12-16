@@ -47,6 +47,8 @@ services:
     environment:
       - PORT=3000
       - HOST=0.0.0.0
+    ports:
+      - "3000:3000"
     networks:
       - dmz_net
       - service_mesh
@@ -70,6 +72,12 @@ services:
     environment:
       - VAULT_ADDR=http://0.0.0.0:8200
       - VAULT_SKIP_VERIFY=true
+    volumes:
+      - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/vault/init_vault.sh:/init-vault.sh:ro
+      - ./infra/vault/policies:/policies:ro
+      - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
+    entrypoint: /entrypoint.sh
     networks:
       - service_mesh
     healthcheck:
@@ -160,6 +168,7 @@ services:
     ports:
       - "9093:9093"
     networks:
+      - service_mesh
       - logging_net
 
   grafana:
@@ -171,23 +180,32 @@ services:
       - "monitoring"
     user: "472"
     depends_on:
-      - prometheus
-      - vault
-    # http://localhost:3000 -> voir les graphiques sur le navigateur
+      prometheus:
+        condition: service_started
+      vault:
+        condition: service_healthy
+    # http://localhost:3009 -> voir les graphiques sur le navigateur
     ports:
-      - 3000:3000
+      - 3009:3000
     volumes:
       # l1: persistance, si power off alors comptes utilisateurs et dashboards sauvegardés 
       #l2: script d'automatisation qui évite de configurer grafana a prometheus a la main
       - grafana_data:/var/lib/grafana
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
+      - ./infra/monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
     entrypoint: /entrypoint.sh
     environment:
       - GF_SECURITY_ADMIN_USER=grafana_admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=root_token_dev_only
     networks:
+      - service_mesh
       - logging_net
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -212,7 +230,20 @@ services:
     # persistance des données d'uptime kuma
       - uptime-kuma:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro
+    entrypoint: /entrypoint.sh
     ports:
-      - 3001:3001
+      - 3010:3001
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
     networks:
       - logging_net
+      - service_mesh
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
