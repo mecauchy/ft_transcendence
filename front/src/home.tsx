@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
-import Navbar from "./navbar.tsx";
-import Tournament from "./tournament.tsx";
+import Navbar from "./components/navbar.tsx";
 import Game from "./game.tsx";
 import Profile from "./profile.tsx";
 import Settings from "./settings.tsx";
 
 function Home({ username, onLogout }: { username: string | null, onLogout: () => void }) {
 	//state
-	const [page, setPage] = useState<string>('tournament');
+	const [page, setPage] = useState<string>('game');
 	
 	useEffect(() => {
-		window.history.replaceState({ page: 'tournament' }, "", "/tournament");
+		window.history.replaceState({ page: 'game' }, "", "/game");
 	}, []);
 
 	//handlers
@@ -49,7 +48,6 @@ function Home({ username, onLogout }: { username: string | null, onLogout: () =>
 	  return (
 	<div className='home_container'>
 		<Navbar setPage={changePage} username={username} />
-		{page === 'tournament' && <Tournament />}
 		{page === 'game' && <Game />}
 		{page === 'profile' && <Profile />}
 		{page === 'settings' && <Settings />}
