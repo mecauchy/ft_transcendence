@@ -20,7 +20,7 @@ RUN pnpm install
 COPY packages/backend/api-gateway/src ./src
 
 # Build TypeScript files
-RUN pnpm run build
+RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
 
 # Production stage
 FROM node:18-alpine

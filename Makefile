@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all
 
 # Colors for output
 BLUE := \033[0;34m
@@ -50,7 +50,12 @@ help:
 	@echo "  make redis                - Open Redis CLI"
 	@echo ""
 	@echo "$(GREEN)🧹 Cleanup:$(NC)"
-	@echo "  make clean                - Remove containers and volumes"
+	@echo "  make clean                - Soft clean (stop containers, keep volumes)"
+	@echo "  make clean-soft           - Stop containers and prune unused resources"
+	@echo "  make clean-hard           - Remove containers & volumes, rebuild images"
+	@echo "  make clean-volumes        - Remove all volumes (⚠️  data loss)"
+	@echo "  make clean-images         - Remove all project images"
+	@echo "  make clean-all            - Nuclear option: remove everything"
 	@echo ""
 
 # ============================================================================
@@ -176,9 +181,60 @@ kuma-init-password:
 # CLEANUP
 # ============================================================================
 
-clean:
-	@echo "$(BLUE)→ Removing containers and volumes...$(NC)"
-	@docker compose down -v
-	@echo "$(GREEN)✓ Cleanup complete$(NC)"
+clean: clean-soft
+	@echo "$(GREEN)✓ Soft cleanup complete$(NC)"
+
+clean-soft:
+	@echo "$(BLUE)→ Soft clean: Stopping containers and pruning unused resources...$(NC)"
+	@docker compose down
+	@echo "$(YELLOW)→ Pruning unused Docker resources...$(NC)"
+	@docker system prune -f
+	@echo "$(GREEN)✓ Soft cleanup complete (volumes preserved)$(NC)"
+
+clean-hard: down
+	@echo "$(BLUE)→ Hard clean: Removing containers, volumes, and rebuilding images...$(NC)"
+	@echo "$(YELLOW)⚠️  This will delete all data in volumes!$(NC)"
+	@docker compose down -v --remove-orphans
+	@echo "$(YELLOW)→ Removing project images...$(NC)"
+	@docker image rm ft_transcendence-api-gateway ft_transcendence-waf 2>/dev/null || true
+	@echo "$(YELLOW)→ Pruning all Docker system resources...$(NC)"
+	@docker system prune -af
+	@echo "$(YELLOW)→ Rebuilding Docker images...$(NC)"
+	@docker compose build --no-cache
+	@echo "$(GREEN)✓ Hard cleanup and rebuild complete$(NC)"
+
+clean-volumes:
+	@echo "$(RED)⚠️  WARNING: This will DELETE all persistent data!$(NC)"
+	@echo "$(YELLOW)Continuing in 5 seconds... Press Ctrl+C to cancel$(NC)"
+	@sleep 5
+	@echo "$(BLUE)→ Removing all volumes...$(NC)"
+	@docker volume ls -q --filter label=com.docker.compose.project=$(PROJECT_NAME) | xargs -r docker volume rm 2>/dev/null || true
+	@docker compose down -v --remove-orphans
+	@echo "$(GREEN)✓ All volumes removed$(NC)"
+
+clean-images:
+	@echo "$(BLUE)→ Removing project Docker images...$(NC)"
+	@docker compose down
+	@docker image rm -f ft_transcendence-api-gateway ft_transcendence-waf 2>/dev/null || true
+	@docker images --filter reference='ft_transcendence-*' -q | xargs -r docker image rm -f
+	@echo "$(GREEN)✓ Project images removed$(NC)"
+
+clean-all:
+	@echo "$(RED)🔥 NUCLEAR OPTION: Removing EVERYTHING for this project!$(NC)"
+	@echo "$(RED)This will delete:$(NC)"
+	@echo "  - All containers"
+	@echo "  - All volumes (data loss!)"
+	@echo "  - All images"
+	@echo "$(RED)Continuing in 10 seconds... Press Ctrl+C to cancel$(NC)"
+	@sleep 10
+	@echo "$(BLUE)→ Stopping and removing containers...$(NC)"
+	@docker compose down -v --remove-orphans 2>/dev/null || true
+	@echo "$(BLUE)→ Removing all project images...$(NC)"
+	@docker images --filter reference='ft_transcendence-*' -q | xargs -r docker image rm -f
+	@echo "$(BLUE)→ Removing all project volumes...$(NC)"
+	@docker volume ls -q --filter label=com.docker.compose.project=$(PROJECT_NAME) | xargs -r docker volume rm 2>/dev/null || true
+	@echo "$(BLUE)→ Full system prune...$(NC)"
+	@docker system prune -af --volumes
+	@echo "$(GREEN)✓ Complete nuclear cleanup finished$(NC)"
 
 .DEFAULT_GOAL := help
