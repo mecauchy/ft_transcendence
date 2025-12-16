@@ -160,7 +160,17 @@ kuma-init-password:
 		echo "$(RED)✗ Failed to retrieve password from Vault$(NC)"; \
 		exit 1; \
 	fi; \
-	docker exec -e "KUMA_ADMIN_PASSWORD=$$KUMA_PASS" uptime-kuma bash /setup-kuma.sh
+	docker exec -e "KUMA_ADMIN_PASSWORD=$$KUMA_PASS" uptime-kuma bash /setup-kuma.sh; \
+	echo ""; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"; \
+	echo "$(GREEN)   🎯 Uptime-Kuma Admin Credentials$(NC)"; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"; \
+	echo ""; \
+	echo "URL:      http://localhost:3010"; \
+	echo "Username: kuma_admin"; \
+	echo "Password: $$KUMA_PASS"; \
+	echo ""; \
+	echo "$(GREEN)════════════════════════════════════════════════$(NC)"
 
 # ============================================================================
 # CLEANUP
