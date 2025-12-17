@@ -1,21 +1,21 @@
 import Phaser from "phaser";
 
+type CardData = {
+	container: Phaser.GameObjects.Container;
+	bg: Phaser.GameObjects.Image;
+	text: Phaser.GameObjects.Text;
+	nx: number;
+	ny: number;
+};
+
 export default class CoffeeScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
 	private readonly CARD_SCALE = 1.9;
-	private readonly CARD_SIZE = 200;
 
 	private gameSize = 0;
 
-	// private card!: Phaser.GameObjects.Text;
-	private cardContainer!: Phaser.GameObjects.Container;
-	private cardText!: Phaser.GameObjects.Text;
-	private cardBg!: Phaser.GameObjects.Image;
 	private bg!: Phaser.GameObjects.Image;
-	private cardBaseScale = 1;
-
-	private cardNX = 0.5;
-	private cardNY = 0.5;
+	private cards: CardData[] = [];
 
 	constructor() {
 		super({ key: "CoffeeScene" });
@@ -28,7 +28,12 @@ export default class CoffeeScene extends Phaser.Scene {
 
 	create(): void {
 		this.bg = this.add.image(0, 0, "coffee_bg").setOrigin(0.5);
-		this.createCard();
+
+		// Example cards
+		this.createCard("Coffee Scene");
+		this.createCard("Important thought");
+		this.createCard("Not important");
+
 		this.centerScene();
 
 		this.scale.on("resize", this.onResize, this);
@@ -37,60 +42,68 @@ export default class CoffeeScene extends Phaser.Scene {
 		});
 	}
 
-	private createCard() {
-		this.cardBg = this.add.image(0, 0, "card_bg");
+	// --------------------------------------------------
+	// Card factory
+	// --------------------------------------------------
 
-		const baseFontSize = (this.cardBg.width / this.BASE_SIZE) * 50;
-		this.cardText = this.add.text(0, 0, "Coffee Scene", {
+	private createCard(text: string) {
+		const bg = this.add.image(0, 0, "card_bg");
+
+		const baseFontSize = 8;
+		const txt = this.add.text(0, 0, text, {
 			fontSize: `${baseFontSize}px`,
 			color: "#000000",
 			align: "center",
-			wordWrap: { width: this.cardBg.width * 0.8 }
+			wordWrap: { width: bg.width * 0.8 }
 		}).setOrigin(0.5);
 
-		this.cardContainer = this.add.container(0, 0, [
-			this.cardBg,
-			this.cardText
-		]);
+		const container = this.add.container(0, 0, [bg, txt]);
 
-		this.cardContainer.setInteractive(
+		// Random normalized position (inside safe area)
+		const nx = Phaser.Math.FloatBetween(0.2, 0.8);
+		const ny = Phaser.Math.FloatBetween(0.2, 0.8);
+
+		const card: CardData = { container, bg, text: txt, nx, ny };
+		this.cards.push(card);
+
+		container.setInteractive(
 			new Phaser.Geom.Rectangle(
-				-this.cardBg.width / 2,
-				-this.cardBg.height / 2,
-				this.cardBg.width,
-				this.cardBg.height
+				-bg.width / 2,
+				-bg.height / 2,
+				bg.width,
+				bg.height
 			),
 			Phaser.Geom.Rectangle.Contains
 		);
 
-		this.input.setDraggable(this.cardContainer);
+		this.input.setDraggable(container);
 
 		this.input.on("drag", (_p, obj, x, y) => {
-			if (obj !== this.cardContainer) return;
+			if (obj !== container) return;
 
 			const cx = this.scale.width / 2;
 			const cy = this.scale.height / 2;
 
-			this.cardNX = Phaser.Math.Clamp((x - cx) / this.gameSize + 0.5, 0, 1);
-			this.cardNY = Phaser.Math.Clamp((y - cy) / this.gameSize + 0.5, 0, 1);
+			card.nx = Phaser.Math.Clamp((x - cx) / this.gameSize + 0.5, 0, 1);
+			card.ny = Phaser.Math.Clamp((y - cy) / this.gameSize + 0.5, 0, 1);
 
-			this.updateCardPosition();
+			this.updateSingleCardPosition(card);
 		});
 
-		this.cardContainer.on("dragstart", () => {
+		container.on("dragstart", () => {
 			this.tweens.add({
-				targets: this.cardBg,
-				scale: this.cardBaseScale * 1.05,
+				targets: bg,
+				scale: bg.scale * 1.05,
 				angle: Phaser.Math.Between(-2, 2),
 				duration: 100,
 				ease: "Power2"
 			});
 		});
 
-		this.cardContainer.on("dragend", () => {
+		container.on("dragend", () => {
 			this.tweens.add({
-				targets: this.cardBg,
-				scale: this.cardBaseScale,
+				targets: bg,
+				scale: bg.scale / 1.05,
 				angle: 0,
 				duration: 100,
 				ease: "Power2"
@@ -98,10 +111,12 @@ export default class CoffeeScene extends Phaser.Scene {
 		});
 	}
 
+	// --------------------------------------------------
+	// Layout
+	// --------------------------------------------------
+
 	private onResize() {
 		if (!this.scene.isActive()) return;
-		if (!this.cardContainer) return;
-
 		this.centerScene();
 	}
 
@@ -109,26 +124,30 @@ export default class CoffeeScene extends Phaser.Scene {
 		const size = Math.min(this.scale.width, this.scale.height);
 		this.gameSize = size;
 
+		// Square background
 		this.bg.setDisplaySize(size, size);
-		this.bg.setPosition(this.scale.width / 2, this.scale.height / 2);
+		this.bg.setPosition(
+			Math.round(this.scale.width / 2),
+			Math.round(this.scale.height / 2)
+		);
 
-		const scaleFactor = size / this.BASE_SIZE;
-		this.cardBaseScale = scaleFactor * this.CARD_SCALE;
-		this.cardBg.setScale(this.cardBaseScale);
-		this.cardContainer.setScale(1);
+		const scaleFactor = (size / this.BASE_SIZE) * this.CARD_SCALE;
 
-		const baseFontSize = 8;
-		this.cardText.setFontSize(Math.round(baseFontSize * this.cardBaseScale));
-		this.cardText.setWordWrapWidth(this.cardBg.width * this.cardBaseScale * 0.8);
+		for (const card of this.cards) {
+			card.bg.setScale(scaleFactor);
+			card.text.setFontSize(Math.round(8 * scaleFactor));
+			card.text.setWordWrapWidth(card.bg.width * scaleFactor * 0.8);
+			card.container.setScale(1);
 
-		this.updateCardPosition();
+			this.updateSingleCardPosition(card);
+		}
 	}
 
-	private updateCardPosition() {
-		const centerX = this.scale.width / 2;
-		const centerY = this.scale.height / 2;
+	private updateSingleCardPosition(card: CardData) {
+		const cx = this.scale.width / 2;
+		const cy = this.scale.height / 2;
 
-		this.cardContainer.x = centerX + (this.cardNX - 0.5) * this.gameSize;
-		this.cardContainer.y = centerY + (this.cardNY - 0.5) * this.gameSize;
+		card.container.x = cx + (card.nx - 0.5) * this.gameSize;
+		card.container.y = cy + (card.ny - 0.5) * this.gameSize;
 	}
 }
