@@ -14,6 +14,7 @@ volumes:
   postgres_data:
   redis_data:
   vault_data:
+  es_data:
 
 services:
   #WAF SERVICE - ModSecurity WAF with nginx reverse proxy
@@ -82,7 +83,7 @@ services:
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
       - ./infra/vault/policies:/policies:ro
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     networks:
       - service_mesh
     healthcheck:
@@ -188,7 +189,7 @@ services:
       - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
       - alertmanager_data:/alertmanager
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
       - VAULT_ADDR=http://vault:8200
@@ -225,7 +226,7 @@ services:
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
       - ./infra/monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     environment:
       - GF_SECURITY_ADMIN_USER=grafana_admin
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -290,3 +291,57 @@ services:
 secrets:
   vault_token:
     file: ./infra/secret/vault_token.txt
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    profiles:
+      - "monitoring"
+    ports:
+      - "9200:9200"
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    networks:
+      - logging_net
+      - service_mesh
+    volumes:
+      - ./infra/monitoring/elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./infra/monitoring/elk/elasticsearch/entrypoint.sh:/entrypoint.sh:ro
+      - es_data:/usr/share/elasticsearch/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:8.12.0
+  #   container_name: logstash
+  #   profiles:
+  #     - "monitoring"
+  #   ports:
+  #     - "5044:5044"
+  #   networks:
+  #     - logging_net
+  #     - service_mesh
+  #   volumes:
+  #     - ./infra/monitoring/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+  #     - ./infra/monitoring/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+  #     - ./infra/monitoring/elk/logstash/entrypoint.sh:/entrypoint.sh:ro
+  #   entrypoint: ["/bin/bash", "/entrypoint.sh"]
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://elasticsearch:9200/_cluster/health || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 30s

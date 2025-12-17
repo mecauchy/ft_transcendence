@@ -47,6 +47,7 @@ GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
 GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
 KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
+ELASTICSEARCH_PASS=$(get_secret_content "/run/secrets/elasticsearch_pass.txt")
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -97,6 +98,13 @@ vault kv put secret/kuma \
 	password="${KUMA_PASS}" 2>/dev/null && \
 	echo -e "${GREEN}✓ Uptime-Kuma credentials stored${NC}" || \
 	echo -e "${YELLOW}⚠ Uptime-Kuma credentials already exist${NC}"
+
+# Elasticsearch credentials
+vault kv put secret/elasticsearch \
+	username="elastic_admin" \
+	password="${ELASTICSEARCH_PASS}" 2>/dev/null && \
+	echo -e "${GREEN}✓ Elasticsearch credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ Elasticsearch credentials already exist${NC}"
 
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
