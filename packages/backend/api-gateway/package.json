@@ -1,19 +1,21 @@
 {
-	"name" : "@speak-up/api-gateway",
-	"version" : "1.0.0",
+	"name": "@speak-up/api-gateway",
+	"version": "1.0.0",
 	"description": "API Gateway - Unified entry point with SSL termination and rate limiting",
-	"main" : "dist/index.js",
-	"scripts" : {
-		"dev" : "tsx watch src/index.ts",
-		"build" : "tsc",
-		"start" : "node dist/index.js",
-		"lint" : "eslint src --ext .ts"
+	"main": "dist/index.js",
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"lint": "eslint src --ext .ts"
 	},
 	"dependencies": {
+		"@fastify/cookie": "^11.0.2",
 		"@fastify/cors": "^10.0.1",
 		"@fastify/helmet": "^12.0.1",
 		"@fastify/http-proxy": "^10.0.0",
 		"@fastify/rate-limit": "^10.1.1",
+		"@fastify/session": "^11.1.1",
 		"@fastify/websocket": "^11.0.1",
 		"@speak-up/shared": "file:../../shared/types",
 		"fastify": "^5.2.0",

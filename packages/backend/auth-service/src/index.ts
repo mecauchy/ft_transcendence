@@ -16,7 +16,7 @@ fastify.post<{ Reply: IAuthResponse }>('/auth/token', async (request: FastifyReq
 			alias: "maxime", 
 			username: "maxime", 
 			email: "maxime@example.com", 
-			avatarUrl: "http://example.com/avatar.jpg", 
+			avatarUrl: "https://example.com/avatar.jpg", 
 			role: UserRole.ADMIN, // Add a valid role
 			preferences: {
 				language: "en", // or "fr"
@@ -39,7 +39,7 @@ fastify.post<{ Reply: IAuthResponse }>('/auth/token', async (request: FastifyReq
 const start = async () => {
 	try {
 		await fastify.listen({ port: 3001, host: '0.0.0.0' });
-		fastify.log.info('Auth Service listening on http://0.0.0.0:3001');
+		fastify.log.info('Auth Service listening on https://0.0.0.0:3001');
 	} catch (err) {
 		fastify.log.error(err);
 		process.exit(1);

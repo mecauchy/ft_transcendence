@@ -4,6 +4,7 @@ Auto-login script for Grafana
 Opens Grafana in the browser and logs in automatically
 """
 import sys
+import os
 import json
 import urllib.request
 import urllib.error
@@ -50,11 +51,26 @@ def login_to_grafana(grafana_url, username, password):
         return False, None
 
 if __name__ == "__main__":
-    vault_addr = "http://localhost:8200"
-    vault_token = "root_token_dev_only"
-    grafana_url = "http://localhost:3002"
+    vault_addr = "https://localhost:8200"
+    # Prefer VAULT_TOKEN env var, then token file (infra/secret/vault_token.txt), else fail
+    vault_token = None
+    if 'VAULT_TOKEN' in os.environ and os.environ['VAULT_TOKEN'].strip() != '':
+        vault_token = os.environ['VAULT_TOKEN']
+    else:
+        token_file = os.environ.get('VAULT_TOKEN_FILE', './infra/secret/vault_token.txt')
+        try:
+            with open(token_file, 'r') as f:
+                vault_token = f.read().strip()
+        except Exception:
+            vault_token = None
+
+    grafana_url = "https://localhost:3002"
     username = "grafana_admin"
     
+    if not vault_token:
+        print("ERROR: No Vault token available. Set VAULT_TOKEN env var or provide vault token file at ./infra/secret/vault_token.txt")
+        sys.exit(1)
+
     print("Fetching Grafana password from Vault...")
     password = get_grafana_password_from_vault(vault_addr, vault_token)
     

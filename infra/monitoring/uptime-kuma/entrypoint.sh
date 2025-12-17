@@ -12,7 +12,22 @@ VAULT_RESPONSE=""
 KUMA_PASS=""
 
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-root_token_dev_only}"
+# Prefer mounted secret file, then environment variable, then fallback (not recommended)
+DEFAULT_TOKEN_FILE=${VAULT_TOKEN_FILE:-/run/secrets/vault_token}
+if [ -f "$DEFAULT_TOKEN_FILE" ]; then
+  VAULT_TOKEN="$(cat "$DEFAULT_TOKEN_FILE")"
+  echo "Using Vault token from file: $DEFAULT_TOKEN_FILE"
+elif [ -f "/tmp/vault_token" ]; then
+  VAULT_TOKEN="$(cat "/tmp/vault_token")"
+  echo "Using Vault token from /tmp/vault_token"
+else
+  VAULT_TOKEN="${VAULT_TOKEN:-}"
+  if [ -z "$VAULT_TOKEN" ]; then
+    echo "WARNING: No Vault token found (no secret file and VAULT_TOKEN unset). Requests to Vault will fail.";
+  else
+    echo "Using Vault token from VAULT_TOKEN environment variable (ensure this is not hardcoded)."
+  fi
+fi
 
 while [ $ATTEMPTS -lt $MAX_ATTEMPTS ] && [ -z "$KUMA_PASS" ]; do
   VAULT_RESPONSE=$(curl -s -k \

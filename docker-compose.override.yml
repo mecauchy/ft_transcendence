@@ -11,8 +11,7 @@ services:
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
       - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
     environment:
-      VAULT_ADDR: http://0.0.0.0:8200
-      VAULT_DEV_ROOT_TOKEN_ID: root_token_dev_only
+      VAULT_ADDR: https://0.0.0.0:8200
 
   grafana:
     volumes:
@@ -23,11 +22,10 @@ services:
       - LOG_LEVEL=debug
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - USER_SERVICE_URL=http://user-service:3002
-      - GAME_SERVICE_URL=http://game-service:3003
+      - VAULT_ADDR=https://vault:8200
+      - AUTH_SERVICE_URL=https://auth-service:3001
+      - USER_SERVICE_URL=https://user-service:3002
+      - GAME_SERVICE_URL=https://game-service:3003
       - CORS_ORIGIN=*
       - RATE_LIMIT_MAX=100
       - RATE_LIMIT_WINDOW=1 minute
@@ -52,5 +50,4 @@ services:
 
   uptime-kuma:
     environment:
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
+      - VAULT_ADDR=https://vault:8200

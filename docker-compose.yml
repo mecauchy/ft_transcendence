@@ -38,7 +38,7 @@ services:
       - api-gateway
       - front
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null https://127.0.0.1/api/health || exit 1"]
+      test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null http://127.0.0.1/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,6 +86,7 @@ services:
     networks:
       - service_mesh
     healthcheck:
+      # In dev mode Vault is not configured with TLS; use HTTP for local healthcheck.
       test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
       interval: 10s
       timeout: 5s
@@ -187,8 +188,11 @@ services:
     entrypoint: /entrypoint.sh
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
     ports:
       - "9093:9093"
     networks:
@@ -208,7 +212,7 @@ services:
         condition: service_started
       vault:
         condition: service_healthy
-    # http://localhost:3009 -> voir les graphiques sur le navigateur
+    # https://localhost:3009 -> voir les graphiques sur le navigateur
     ports:
       - 3009:3000
     volumes:
@@ -226,8 +230,11 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
     networks:
       - service_mesh
       - logging_net
@@ -262,8 +269,11 @@ services:
     ports:
       - 3010:3001
     environment:
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
     networks:
       - logging_net
       - service_mesh
@@ -273,3 +283,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+secrets:
+  vault_token:
+    file: ./infra/secret/vault_token.txt

@@ -1,24 +1,52 @@
 #!/bin/sh
 
 # Start Vault server in the background
+# Determine dev root token: prefer explicit VAULT_TOKEN_FILE, then common secret mounts,
+# then VAULT_DEV_ROOT_TOKEN_ID env var; otherwise fail with a helpful message.
+VAULT_TOKEN_FILE=${VAULT_TOKEN_FILE:-}
+if [ -n "$VAULT_TOKEN_FILE" ] && [ -f "$VAULT_TOKEN_FILE" ]; then
+  DEV_ROOT_TOKEN="$(cat "$VAULT_TOKEN_FILE")"
+  echo "Using Vault dev root token from VAULT_TOKEN_FILE: $VAULT_TOKEN_FILE" 2>&1
+elif [ -f "/run/secrets/vault_token" ]; then
+  DEV_ROOT_TOKEN="$(cat /run/secrets/vault_token)"
+  echo "Using Vault dev root token from /run/secrets/vault_token" 2>&1
+elif [ -f "/run/secrets/vault_token.txt" ]; then
+  DEV_ROOT_TOKEN="$(cat /run/secrets/vault_token.txt)"
+  echo "Using Vault dev root token from /run/secrets/vault_token.txt" 2>&1
+elif [ -f "/tmp/vault_token" ]; then
+  DEV_ROOT_TOKEN="$(cat /tmp/vault_token)"
+  echo "Using Vault dev root token from /tmp/vault_token" 2>&1
+elif [ -n "${VAULT_DEV_ROOT_TOKEN_ID:-}" ]; then
+  DEV_ROOT_TOKEN="$VAULT_DEV_ROOT_TOKEN_ID"
+  echo "Using Vault dev root token from VAULT_DEV_ROOT_TOKEN_ID environment variable" 2>&1
+else
+  echo "ERROR: No Vault dev root token provided. Set VAULT_TOKEN_FILE, mount /run/secrets/vault_token, or set VAULT_DEV_ROOT_TOKEN_ID." 2>&1
+  exit 1
+fi
+
 vault server -dev \
   -dev-listen-address=0.0.0.0:8200 \
-  -dev-root-token-id=root_token_dev_only &
+  -dev-root-token-id="$DEV_ROOT_TOKEN" &
 
 VAULT_PID=$!
 
 # Wait for Vault to be ready
 echo "" 2>&1
 echo "Waiting for Vault to start..." 2>&1
-sleep 3
+# Export address so the CLI knows how to reach the dev server while we wait
+export VAULT_ADDR="http://127.0.0.1:8200"
+# Export token early so any init tooling can use it while Vault finishes startup
+export VAULT_TOKEN="$DEV_ROOT_TOKEN"
+
+sleep 1
 i=1
-while [ $i -le 30 ]; do
+while [ $i -le 60 ]; do
   if vault status > /dev/null 2>&1; then
     echo "✓ Vault started successfully" 2>&1
     break
   fi
-  if [ $i -eq 30 ]; then
-    echo "✗ Vault failed to start after 30 seconds" 2>&1
+  if [ $i -eq 60 ]; then
+    echo "✗ Vault failed to start after 60 seconds" 2>&1
     exit 1
   fi
   sleep 1
@@ -27,7 +55,8 @@ done
 
 # Set environment variables for init script
 export VAULT_ADDR="http://localhost:8200"
-export VAULT_TOKEN="root_token_dev_only"
+# Export token for convenience to init script and other local tooling
+export VAULT_TOKEN="$DEV_ROOT_TOKEN"
 
 # Run the initialization script
 echo "" 2>&1
