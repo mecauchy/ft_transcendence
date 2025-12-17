@@ -57,15 +57,14 @@ if [ "$COUNT" -eq 0 ]; then
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'API Gateway', 'http://api-gateway:3000/health', 'http', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, hostname, port, type, interval, active) VALUES ($ADMIN_ID, 'PostgreSQL', 'postgres', 5432, 'port', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, hostname, port, type, interval, active) VALUES ($ADMIN_ID, 'Redis', 'redis', 6379, 'port', 60, 1);"
-    sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'Vault', 'http://vault:8200/v1/sys/health', 'http', 60, 1);"
-    sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'WAF', 'http://waf:8080', 'http', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'Prometheus', 'http://prometheus:9090/-/healthy', 'http', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'Alertmanager', 'http://alertmanager:9093/-/healthy', 'http', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'Grafana', 'http://grafana:3000/api/health', 'http', 60, 1);"
-    
+
     log_success "All monitors added"
 fi
 
+# Remove WAF monitor if it exists
+sqlite3 "$DB" "DELETE FROM monitor WHERE name = 'WAF';" 2>/dev/null
+
 log_success "Setup complete"
-
-

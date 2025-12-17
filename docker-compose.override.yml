@@ -50,12 +50,6 @@ services:
     ports:
       - "6378:6379" # Expose for local development (RedisInsight, CLI)
 
-  # WAF SERVICE - DEV MODE
-  waf:
-    ports:
-      - "8080:80"   # HTTP
-      - "8443:443"  # HTTPS
-
   uptime-kuma:
     environment:
       - VAULT_ADDR=http://vault:8200
