@@ -119,12 +119,13 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parkingLabel = this.add.text(0, 0, "Parking", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
 		this.coffeeLabel = this.add.text(0, 0, "Coffee", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
 
+		this.createPopup();
 		this.centerScene();
 
 
-		this.scale.on("resize", () => {
-			this.centerScene();
-			this.layoutPopup();
+		this.scale.on("resize", this.onResize, this);
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			this.scale.off("resize", this.onResize, this);
 		});
 		this.createNurseAnimations();
 		const canvas = this.game.canvas;
@@ -135,7 +136,15 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.house.setData("label", this.houseLabel);
 		this.parking.setData("label", this.parkingLabel);
 		this.coffee.setData("label", this.coffeeLabel);
-		this.createPopup();
+	}
+
+	private onResize() {
+		if (!this.scene.isActive()) return;
+		if (!this.player || !this.bg) return;	
+		this.centerScene();
+		if (this.popupContainer && this.popupBg && this.popupText) {
+			this.layoutPopup();
+		}
 	}
 
 	private createPopup() {
