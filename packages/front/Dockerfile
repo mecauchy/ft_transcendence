@@ -26,8 +26,8 @@ RUN corepack enable
 WORKDIR /app
 # Create a non-root user for rootless execution
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs
-# Copy package.json for production dependencies
-COPY packages/front/package.json ./
+# Copy package.json and lockfile for production dependencies
+COPY packages/front/package.json packages/front/pnpm-lock.yaml ./
 # Install all dependencies (including dev dependencies needed for preview)
 RUN pnpm install
 # Copy built files from the builder stage
