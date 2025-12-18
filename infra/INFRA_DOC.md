@@ -13,16 +13,16 @@ docker compose exec vault sh
 docker compose exec -T vault vault status
 
 # List all stored secrets
-docker compose exec -T vault sh -c 'export VAULT_TOKEN=root_token_dev_only && vault kv list secret/database/'
+docker compose exec -T vault sh -c 'export VAULT_TOKEN=<REDACTED> && vault kv list secret/database/'
 
 # Read specific database credentials
-docker compose exec -T vault sh -c 'export VAULT_TOKEN=root_token_dev_only && vault kv get secret/database/postgres'
+docker compose exec -T vault sh -c 'export VAULT_TOKEN=<REDACTED> && vault kv get secret/database/postgres'
 
 # List AppRole authentication roles
-docker compose exec -T vault sh -c 'export VAULT_TOKEN=root_token_dev_only && vault list auth/approle/role/'
+docker compose exec -T vault sh -c 'export VAULT_TOKEN=<REDACTED> && vault list auth/approle/role/'
 
 # Get AppRole RoleID for a service
-docker compose exec -T vault sh -c 'export VAULT_TOKEN=root_token_dev_only && vault read auth/approle/role/auth-role/role-id'
+docker compose exec -T vault sh -c 'export VAULT_TOKEN=<REDACTED> && vault read auth/approle/role/auth-role/role-id'
 
 
 📌 POSTGRESQL - Database Access & Management

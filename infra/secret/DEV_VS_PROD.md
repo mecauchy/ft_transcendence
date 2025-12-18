@@ -24,7 +24,7 @@ infra/secret/
 **Vault Configuration:**
 - Runs in **dev mode** with auto-unseal
 - Uses in-memory storage (data is lost on restart)
-- Root token: `root_token_dev_only` (hardcoded for convenience)
+- Root token: <REDACTED> (hardcoded for convenience)
 - Reads secrets from mounted `infra/secret/` directory
 - Automatically initializes on startup via `entrypoint.sh`
 
@@ -92,7 +92,7 @@ docker compose exec vault vault operator unseal
 | **Secret Generation** | Automatic via script | Manual/External systems |
 | **Vault Mode** | Dev (auto-unseal) | Production (sealed) |
 | **Storage** | In-memory | File-based persistent |
-| **Root Token** | Hardcoded `root_token_dev_only` | Generated during init |
+| **Root Token** | Hardcoded <REDACTED> | Generated during init |
 | **TLS** | Disabled (HTTP) | Enabled (HTTPS) |
 | **Ports Exposed** | Yes (for debugging) | No (internal only) |
 | **Secret Files** | Auto-generated, local files | Never used, external sources |

@@ -3,7 +3,7 @@
 # This keeps secrets safe without committing them to git
 
 set -e
-
+VAULT_ADDR=${VAULT_ADDR:-http://vault:8200}
 SECRETS_DIR="/home/macauchy/ft_transcendence/infra/secret"
 WEBHOOK_FILE="$SECRETS_DIR/alertmanager_webhook.txt"
 
@@ -31,7 +31,7 @@ case "$1" in
         if docker ps | grep -q vault; then
             echo "🔐 Loading webhook into Vault..."
             # Ensure the Vault CLI inside the container uses HTTP (the server is served over plain HTTP)
-            docker exec vault env VAULT_ADDR=http://127.0.0.1:8200 vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL" > /dev/null 2>&1
+            docker exec vault env VAULT_ADDR=$VAULT_ADDR vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL" > /dev/null 2>&1
             echo "✅ Webhook loaded into Vault"
         fi
         ;;

@@ -80,11 +80,11 @@ if (opts.https || opts.cert) {
   const key = fs.readFileSync(keyPath);
   const server = https.createServer({ key, cert }, requestHandler);
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Listening (HTTPS) on https://0.0.0.0:${PORT}`);
+    console.log(`Listening (HTTPS) on ${PORT}`);
   });
 } else {
   const server = http.createServer(requestHandler);
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Listening (HTTP) on http://0.0.0.0:${PORT}`);
+    console.log(`Listening (HTTP) on ${PORT}`);
   });
 }

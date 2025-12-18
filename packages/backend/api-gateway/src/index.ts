@@ -60,7 +60,14 @@ async function start() {
 
 
 		// Vault client for secret management
-		const vault = new VaultClient(config.vault);
+		const vaultConfig = {
+			...config.vault,
+			token:
+				typeof config.vault.token === 'function'
+					? config.vault.token()
+					: config.vault.token,
+		};
+		const vault = new VaultClient(vaultConfig);
 		await vault.authenticate();
 
 		// Register cookie and session middleware
