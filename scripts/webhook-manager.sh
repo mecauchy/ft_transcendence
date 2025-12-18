@@ -30,7 +30,8 @@ case "$1" in
         # Also load it into Vault if containers are running
         if docker ps | grep -q vault; then
             echo "🔐 Loading webhook into Vault..."
-            docker exec vault vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL" > /dev/null 2>&1
+            # Ensure the Vault CLI inside the container uses HTTP (the server is served over plain HTTP)
+            docker exec vault env VAULT_ADDR=http://127.0.0.1:8200 vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL" > /dev/null 2>&1
             echo "✅ Webhook loaded into Vault"
         fi
         ;;
@@ -56,7 +57,8 @@ case "$1" in
         fi
         
         echo "🔐 Loading webhook from $WEBHOOK_FILE into Vault..."
-        docker exec vault vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL"
+        # Force the Vault CLI inside the container to connect using HTTP to avoid HTTPS mismatch
+        docker exec vault env VAULT_ADDR=http://127.0.0.1:8200 vault kv put secret/alertmanager discord_webhook_url="$WEBHOOK_URL"
         echo "✅ Webhook loaded into Vault"
         ;;
         
