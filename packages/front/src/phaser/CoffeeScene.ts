@@ -17,6 +17,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	private bg!: Phaser.GameObjects.Image;
 	private stopButton!: Phaser.GameObjects.Image;
 	private forgiveButton!: Phaser.GameObjects.Image;
+	private buttonBaseScale = 1;
 	private cards: CardData[] = [];
 
 	constructor() {
@@ -34,6 +35,8 @@ export default class CoffeeScene extends Phaser.Scene {
 		this.bg = this.add.image(0, 0, "coffee_bg").setOrigin(0.5);
 		this.stopButton = this.add.image(0, 0, "stop_button").setOrigin(0.5);
 		this.forgiveButton = this.add.image(0, 0, "forgive_button").setOrigin(0.5);
+		this.buttonOverEffect(this.stopButton);
+		this.buttonOverEffect(this.forgiveButton);
 
 		// Example cards
 		this.createCard("Coffee Scene");
@@ -46,6 +49,50 @@ export default class CoffeeScene extends Phaser.Scene {
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.scale.off("resize", this.onResize, this);
 		});
+	}
+
+	private buttonOverEffect(buttonObject: Phaser.GameObjects.Image)
+		{
+		buttonObject.setInteractive();
+		buttonObject.on("pointerover", () => {
+			this.tweens.add({
+				targets: buttonObject,
+				scale: buttonObject.scale * 1.1,
+				duration: 100,
+				ease: "Power2"
+			});
+		});
+		buttonObject.on("pointerout", () => {
+			this.tweens.add({
+				targets: buttonObject,
+				scale: this.buttonBaseScale,
+				duration: 100,
+				ease: "Power2"
+			});
+		});
+		if (buttonObject === this.forgiveButton) {
+			buttonObject.on("pointerdown", () => {
+				this.scene.start("WorldMapScene");
+				console.log("Forgive button clicked");
+			});
+		}
+		else if (buttonObject === this.stopButton) {
+			buttonObject.on("pointerdown", () => {
+				console.log("Stop button clicked");
+				this.endGame();
+			});
+		}
+	}
+
+	private endGame() {
+		const cardsPositions = this.cards.map(card => ({
+			text: card.text.text,
+			nx: card.nx,
+			ny: card.ny
+		}));
+		console.log("Cards positions at game end:", cardsPositions);
+		// Logic to end the game or return to main menu
+		this.scene.start("WorldMapScene");
 	}
 
 	// --------------------------------------------------
@@ -129,6 +176,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	private centerScene() {
 		const size = Math.min(this.scale.width, this.scale.height);
 		this.gameSize = size;
+		const scaleButton = size / 400;
 
 		// Square background
 		this.bg.setDisplaySize(size, size);
@@ -144,8 +192,9 @@ export default class CoffeeScene extends Phaser.Scene {
 			Math.round(this.scale.width / 2) + size / 4,
 			size / 8
 		);
-		this.stopButton.setScale(size / 400);
-		this.forgiveButton.setScale(size / 400);
+		this.buttonBaseScale = scaleButton;
+		this.stopButton.setScale(this.buttonBaseScale);
+		this.forgiveButton.setScale(this.buttonBaseScale);
 
 		const scaleFactor = (size / this.BASE_SIZE) * this.CARD_SCALE;
 
