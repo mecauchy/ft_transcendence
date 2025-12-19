@@ -1,16 +1,90 @@
-# --- DEVOPS & infra ---
-.github/             @mcauchy-
-Dockerfile           @mcauchy-
-docker-compose.yml   @mcauchy-
-Makefile             @mcauchy-
-elk/                 @mcauchy-
-prometheus/          @mcauchy-
+# =============================================================================
+#                            CODEOWNERS - ft_transcendence
+#                            42 Paris - Cercle 6 Project
+# =============================================================================
+#
+# This file defines code ownership for automated review assignments.
+# GitHub will automatically request reviews from the designated owners
+# when a pull request modifies files matching the specified patterns.
+#
+# =============================================================================
+#                               TEAM MEMBERS
+# =============================================================================
+#
+#   Melissa Cauchy      @mecauchy                 (DevOps & Infrastructure)
+#   Maxime Cauchy       @maxime-c16               (DevSecOps & Infrastructure)
+#   Leny Garcia         @lewwny                   (Frontend & Backend)
+#   Omar Ben Hamza      @floppy727                (Backend & DB)
+#
+# =============================================================================
 
-# --- BACKEND ---
-/backend/    @Login-BackendDev1 @Login-BackendDev2 @Login-TechLead
+# -----------------------------------------------------------------------------
+#                         DEVOPS & INFRASTRUCTURE
+# -----------------------------------------------------------------------------
+# Owners: Melissa (primary), Maxime (co-owner)
 
-# --- FRONTEND ---
-/frontend/   @Login-FrontendDev1 @Login-FrontendDev2
+# GitHub Actions & CI/CD
+.github/                                @mecauchy @maxime-c16
 
-# --- DOCUMENTATION & CONFIG ---
-README.md    @mcauchy-
+# Docker & Orchestration
+docker-compose.yml                      @mecauchy @maxime-c16
+docker-compose.override.yml             @mecauchy @maxime-c16
+docker-compose.prod.yml                 @mecauchy @maxime-c16
+Makefile                                @mecauchy @maxime-c16
+
+# Infrastructure Configuration
+infra/                                  @mecauchy @maxime-c16
+infra/vault/                            @maxime-c16
+infra/secret/                           @maxime-c16
+infra/db/                               @floppy727
+
+# Monitoring Stack (Prometheus, Grafana, Alertmanager, ELK)
+infra/monitoring/                       @mecauchy
+infra/monitoring/prometheus/            @mecauchy
+infra/monitoring/alertmanager/          @mecauchy
+infra/monitoring/grafana/               @mecauchy
+infra/monitoring/elk/                   @mecauchy
+
+# Security (WAF)
+infra/waf/                              @maxime-c16
+
+# Utility Scripts
+scripts/                                @mecauchy @maxime-c16
+
+# -----------------------------------------------------------------------------
+#                              BACKEND SERVICES
+# -----------------------------------------------------------------------------
+# Owners: Omar (primary)
+
+packages/backend/                       @floppy727
+
+# Database & SQL
+packages/sql/                           @floppy727
+
+# -----------------------------------------------------------------------------
+#                              SHARED PACKAGES
+# -----------------------------------------------------------------------------
+# Owners: Leny & Omar (primary)
+
+packages/shared/                        @lewwny @floppy727
+
+# -----------------------------------------------------------------------------
+#                                 FRONTEND
+# -----------------------------------------------------------------------------
+# Owners: Leny (primary)
+
+packages/front/                         @lewwny
+
+# -----------------------------------------------------------------------------
+#                        PROJECT CONFIGURATION
+# -----------------------------------------------------------------------------
+# Owners: Melissa & Maxime
+
+.gitignore                              @mecauchy @maxime-c16
+
+# -----------------------------------------------------------------------------
+#                             DOCUMENTATION
+# -----------------------------------------------------------------------------
+# Owners: Everyone
+
+README.md                               @mecauchy @maxime-c16 @lewwny @floppy727
