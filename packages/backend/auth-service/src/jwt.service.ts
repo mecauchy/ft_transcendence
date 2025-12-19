@@ -17,12 +17,12 @@ export class JwtService {
   }
 
   static verifyToken(token: string) {
-    try {
-      return jwt.verify(token, JWT_SECRET as string);
-    } catch (err) {
-      throw err;
-    }
+    return jwt.verify(token, JWT_SECRET as string);
   }
+}
+
+export default JwtService;
+
 }
 
 export default JwtService;
