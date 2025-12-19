@@ -1,119 +1,102 @@
-# Secrets Directory
+# Hybrid Secret Management (Development Environment)
 
-## Overview
-This directory contains sensitive credentials and secrets used by the application services.
+> [!WARNING]
+> **DEVELOPMENT ONLY**
+> The files generated in this directory contain **sensitive credentials** (passwords, tokens).
+> * **Do NOT** commit `.txt` files to version control.
+> * **Do NOT** use these mechanisms in Production.
+> * **Do NOT** share these secrets over insecure channels.
+> 
+> 
 
-⚠️ **IMPORTANT**: This directory is protected by `.gitignore` and should NEVER be committed to git.
+---
 
-## Automatic Generation (Development)
+## ⚡ Quick Start (TL;DR)
 
-Missing secret files are **automatically generated** when you run:
-```bash
-make up
-```
+If you just need to log in to a service, run these commands from the repository root:
 
-The `generate_dev_secrets.sh` script will create any missing secret files with secure random passwords.
-You can also manually generate secrets by running:
-```bash
-make secrets
-```
+### 1. Generate Secrets (First Run Only)
 
-## File Structure
+If you are setting up the project for the first time:
 
-```
-infra/secrets/
-├── README.md                  # This file
-├── .gitkeep                   # Placeholder for git tracking
-├── postgres_db_pass.txt       # PostgreSQL root password
-├── auth_db_pass.txt           # Auth service database password
-├── chat_db_pass.txt           # Chat service database password
-├── game_db_pass.txt           # Game service database password
-└── user_db_pass.txt           # User service database password
-```
+`./scripts/generate_dev_secrets.sh`
 
-## Permissions
+### 2. View Credentials
 
-All files in this directory are protected with strict permissions:
+To see a safe summary of where credentials are stored and their login URLs:
 
-```
-drwx------  (700) - Directory: Owner only (r/w/x)
--rw-------  (600) - Files: Owner read/write only
-```
+`./scripts/show_creds.sh`
 
-## Security
+### 3. Reveal Passwords
 
-These files contain sensitive information:
-- 🔐 Database passwords
-- 🔐 API credentials (when added)
-- 🔐 Encryption keys (when added)
-- 🔐 Tokens (when added)
+To see the **actual raw passwords** (e.g., to copy-paste into a login form):
 
-### Best Practices
+`./scripts/show_creds.sh --reveal`
 
-1. ✅ **Never** commit these files to version control
-2. ✅ **Always** use strong, randomly generated passwords
-3. ✅ **Rotate** passwords regularly in production
-4. ✅ **Store** backups securely offline
-5. ✅ **Use** environment variables or Vault for production
-6. ✅ **Monitor** access to these files
+---
 
-## Generation
+## 🔄 The Secret Workflow
 
-To generate new secrets with secure random values:
+We use a **Hybrid Injection** model. Secrets are generated locally, stored in git-ignored files, and then "seeded" into HashiCorp Vault when containers start.
 
-```bash
-# Generate a single password
-openssl rand -base64 32 > infra/secrets/my_secret.txt
-chmod 600 infra/secrets/my_secret.txt
+**The Flow:**
 
-# Or use the Makefile
-make vault-init
-```
+1. **Generate:** `generate_dev_secrets.sh` creates cryptographically secure random values.
+2. **Store:** Values are written to `./infra/secret/*.txt` (Git-Ignored).
+3. **Mount:** Docker Compose mounts this directory into `/run/secrets` inside containers.
+4. **Seed:** Entrypoint scripts (like `init_vault.sh`) read these files and push them into the Vault API.
+5. **Consume:** Services (Backend, Grafana, etc.) fetch their secrets from Vault at runtime.
 
-## Usage in Docker Compose
+---
 
-Secrets are mounted as files in containers and read at startup:
+## 🛠️ Usage Guide
 
-```yaml
-services:
-  postgres:
-    environment:
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-    volumes:
-      - ./infra/secrets/postgres_db_pass.txt:/run/secrets/postgres_password:ro
-```
+### Generative Scripts
 
-## For Production
+The `generate_dev_secrets.sh` script handles the creation of all required passwords.
 
-In production environments, **DO NOT** use file-based secrets. Instead:
+* **Location:** `./scripts/generate_dev_secrets.sh` (Symlinked from `infra/secret/`).
+* **Behavior:** It checks if a secret exists. If not, it generates a high-entropy string and saves it. It sets file permissions to `600` (User Read/Write Only).
 
-- Use **HashiCorp Vault** (already configured in this project)
-- Use **AWS Secrets Manager** or similar cloud services
-- Use **Kubernetes Secrets** if running on K8s
-- Use environment variables from CI/CD secrets management
+### The Credential Viewer (`show_creds.sh`)
 
-See `infra/vault/` for Vault configuration.
+This utility is the standard way to access credentials.
 
-## Troubleshooting
+| Command | Description |
+| --- | --- |
+| `./scripts/show_creds.sh` | **Safe Mode.** Shows Service names, Usernames, and file paths. Use this for presentations or screen sharing. |
+| `./scripts/show_creds.sh --reveal` | **Unsafe Mode.** Prints the raw secret values in the table. Use only in a private terminal. |
 
-### Permissions Error
-```bash
-# Fix if you get "Permission denied"
-chmod 700 infra/secrets/
-chmod 600 infra/secrets/*.txt
-```
+---
 
-### File Not Found
-```bash
-# Regenerate missing files
-make up  # This will fail, but you can see which are missing
-# Then regenerate with openssl or the Makefile
-```
+## ⚙️ Vault Integration Details
 
-### Git Accidentally Tracked Secrets
-```bash
-# Remove from git history (IMMEDIATELY)
-git rm --cached infra/secrets/*.txt
-git commit -m "Remove accidentally tracked secrets"
-git push --force-with-lease origin [branch]
-```
+For developers debugging `vault` or `entrypoint` issues:
+
+* **Initialization:** The local Vault instance is stateless. It is re-initialized on every `docker compose up` by `infra/vault/init_vault.sh`.
+* **Root Token:** The root token is hardcoded in the generator for dev convenience but is **never used in production configuration**.
+* **Service Access:** Backend services do not read text files. They authenticate to Vault using the token seeded during the build/init process.
+
+---
+
+## ❓ Troubleshooting
+
+**"I ran `show_creds.sh` but it says 'Not Found'"**
+
+> You haven't generated the secrets yet. Run `./scripts/generate_dev_secrets.sh`.
+
+**"Services are failing with 'Permission Denied' on secrets"**
+
+> Check file permissions. The container user must be able to read the mounted files.
+> Fix: `chmod 600 infra/secret/*.txt`
+
+**"I changed a password file, but the service uses the old one"**
+
+> Docker volumes are persistent. You must restart the container to pick up the change, and for Vault-backed services, you may need to restart Vault to re-seed the value.
+> `docker compose restart vault <service_name>`
+
+---
+
+## 📞 Contact
+
+For production secret provisioning or CI/CD pipeline questions, please contact the **DevSecOps Lead**.
