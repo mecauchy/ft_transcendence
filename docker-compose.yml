@@ -51,6 +51,7 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     environment:
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
       - PORT=3000
       - HOST=0.0.0.0
     ports:
@@ -62,12 +63,49 @@ services:
     depends_on:
       - vault
       - redis
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    # Run entrypoint to populate env vars from mounted secrets, then start CMD
+    volumes:
+      - ./infra/api/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    command: ["node", "dist/index.js"]
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
+
+  # AUTH SERVICE - Provides token issuance and auth endpoints
+  auth-service:
+    build:
+      context: .
+      dockerfile: packages/backend/auth-service/Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - HOST=0.0.0.0
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+      - VAULT_ADDR=http://vault:8200
+    ports:
+      - "3001:3001"
+    networks:
+      - service_mesh
+      - dmz_net
+    depends_on:
+      - vault
+      - redis
+    # Production images use the package CMD; no custom entrypoint required
+    volumes:
+      - ./infra/api/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    command: ["node", "dist/index.js"]
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3001/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 10s
 
   vault:
     image: hashicorp/vault:1.13.3
@@ -290,3 +328,5 @@ services:
 secrets:
   vault_token:
     file: ./infra/secret/vault_token.txt
+  jwt_secret:
+    file: ./infra/secret/jwt_secret.txt

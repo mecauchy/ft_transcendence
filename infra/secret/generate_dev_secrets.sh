@@ -32,6 +32,7 @@ REQUIRED_SECRETS=(
 	"vault_token.txt"
 	"postgres_db_pass.txt"
 	"redis_password.txt"
+	"jwt_secret.txt"
 )
 
 # Counter for generated secrets
