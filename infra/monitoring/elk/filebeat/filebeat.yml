@@ -1,0 +1,131 @@
+# ======================== Filebeat Configuration =============================
+# Filebeat for ft_transcendence - Collects Docker container logs
+# =============================================================================
+
+# ================================== Inputs ===================================
+
+filebeat.inputs:
+
+# --------------- Docker Container Logs (stdout/stderr) -----------------------
+- type: container
+  enabled: true
+  paths:
+    # Docker logs - 42 school goinfre path (primary)
+    - /goinfre/*/docker/containers/*/*.log
+  
+  # JSON parsing for Docker log format
+  json.keys_under_root: true
+  json.add_error_key: true
+  json.message_key: log
+  
+  # Multiline support for stack traces (Node.js, Python, Java)
+  multiline.type: pattern
+  multiline.pattern: '^\s+|^Traceback|^\t|^    at |^Caused by:|^\s*at '
+  multiline.negate: false
+  multiline.match: after
+  multiline.max_lines: 100
+
+# ================================ Processors =================================
+
+processors:
+  # Add Docker metadata (container name, image, labels)
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+      match_fields:
+        - log.file.path
+  
+  # Add host metadata
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+
+  # Parse timestamp from Docker logs
+  - timestamp:
+      field: time
+      layouts:
+        - '2006-01-02T15:04:05.999999999Z07:00'
+      test:
+        - '2024-01-01T12:00:00.000000000Z'
+      ignore_missing: true
+      ignore_failure: true
+
+  # Extract service name from container name
+  - script:
+      lang: javascript
+      source: |
+        function process(event) {
+          var containerName = event.Get("container.name");
+          if (containerName) {
+            event.Put("service.name", containerName);
+            
+            // Categorize by service type
+            if (containerName.includes("api") || containerName.includes("gateway")) {
+              event.Put("service.type", "backend");
+            } else if (containerName.includes("front")) {
+              event.Put("service.type", "frontend");
+            } else if (containerName.includes("postgres") || containerName.includes("redis")) {
+              event.Put("service.type", "database");
+            } else if (containerName.includes("waf") || containerName.includes("nginx")) {
+              event.Put("service.type", "proxy");
+            } else if (containerName.includes("vault")) {
+              event.Put("service.type", "security");
+            } else {
+              event.Put("service.type", "infrastructure");
+            }
+          }
+          return event;
+        }
+
+  # Drop empty or health check logs (reduce noise)
+  - drop_event:
+      when:
+        or:
+          - equals:
+              message: ""
+          - contains:
+              message: "health"
+          - contains:
+              message: "/health"
+
+# ================================== Output ===================================
+
+# Option 1: Direct to Elasticsearch (simpler, recommended for dev)
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  # Authentication disabled in dev mode
+  # username: "elastic"
+  # password: "${ELASTICSEARCH_PASSWORD}"
+  
+  # Index naming
+  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  
+  # Bulk settings for performance
+  bulk_max_size: 1000
+  worker: 1
+
+# Option 2: Via Logstash (uncomment to use instead)
+# output.logstash:
+#   hosts: ["logstash:5044"]
+#   loadbalance: true
+
+# ================================= Template ==================================
+
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0
+
+# Disable ILM for simpler setup
+setup.ilm.enabled: false
+
+# ================================= Logging ===================================
+
+logging.level: info
+logging.to_stderr: true
+logging.metrics.enabled: true
+logging.metrics.period: 30s
+
+# ================================= Monitoring ================================
+
+# Disable self-monitoring to reduce overhead
+monitoring.enabled: false

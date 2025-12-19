@@ -1,0 +1,32 @@
+# ======================== Logstash Configuration =============================
+# Configuration for ft_transcendence logging stack
+# =============================================================================
+
+# Node identity
+node.name: logstash-transcendence
+
+# Pipeline configuration
+path.config: /usr/share/logstash/pipeline
+
+# Data persistence
+path.data: /usr/share/logstash/data
+
+# Log settings
+path.logs: /usr/share/logstash/logs
+log.level: info
+log.format: plain
+
+# Pipeline settings
+pipeline.workers: 2
+pipeline.batch.size: 125
+pipeline.batch.delay: 50
+
+# HTTP API settings
+http.host: "0.0.0.0"
+http.port: 9600
+
+# Monitoring (disabled for simpler setup)
+monitoring.enabled: false
+
+# Dead letter queue (for failed events)
+dead_letter_queue.enable: false
