@@ -15,6 +15,9 @@ volumes:
   redis_data:
   vault_data:
   es_data:
+  filebeat_data:
+  logstash_data:
+  kibana_data:
 
 services:
   #WAF SERVICE - ModSecurity WAF with nginx reverse proxy
@@ -321,27 +324,98 @@ secrets:
       retries: 5
       start_period: 30s
 
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:8.12.0
-  #   container_name: logstash
-  #   profiles:
-  #     - "monitoring"
-  #   ports:
-  #     - "5044:5044"
-  #   networks:
-  #     - logging_net
-  #     - service_mesh
-  #   volumes:
-  #     - ./infra/monitoring/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
-  #     - ./infra/monitoring/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-  #     - ./infra/monitoring/elk/logstash/entrypoint.sh:/entrypoint.sh:ro
-  #   entrypoint: ["/bin/bash", "/entrypoint.sh"]
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://elasticsearch:9200/_cluster/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 30s
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    profiles:
+      - "monitoring"
+    user: root
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - ELASTICSEARCH_PASSWORD=changeme123
+    volumes:
+      # Filebeat configuration
+      - ./infra/monitoring/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
+      # Docker logs - 42 school goinfre path (contains Docker data)
+      - /goinfre:/goinfre:ro
+      # Docker socket for metadata enrichment
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Filebeat data persistence
+      - filebeat_data:/usr/share/filebeat/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "filebeat test config -e || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    profiles:
+      - "monitoring"
+    ports:
+      - "5044:5044"   # Beats input
+      - "5000:5000"   # TCP input
+      - "9600:9600"   # Logstash API
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - LS_JAVA_OPTS=-Xmx256m -Xms256m
+    volumes:
+      - ./infra/monitoring/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./infra/monitoring/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./infra/monitoring/elk/logstash/entrypoint.sh:/entrypoint.sh:ro
+      - logstash_data:/usr/share/logstash/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    profiles:
+      - "monitoring"
+    ports:
+      - "5601:5601"
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana-transcendence
+    volumes:
+      - ./infra/monitoring/elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana_data:/usr/share/kibana/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
