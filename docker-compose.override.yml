@@ -31,8 +31,6 @@ services:
       - RATE_LIMIT_WINDOW=1 minute
     ports:
       - "3000:3000" # Expose for local development
-    volumes:
-      - ./infra/secret:/run/secrets:ro
 
   auth-service:
     environment:
@@ -43,8 +41,6 @@ services:
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
     ports:
       - "3001:3001"
-    volumes:
-      - ./infra/secret:/run/secrets:ro
 
   # PostgreSQL SERVICE - DEV MODE
   postgres:

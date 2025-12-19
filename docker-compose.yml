@@ -63,6 +63,9 @@ services:
     depends_on:
       - vault
       - redis
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
     # Run entrypoint to populate env vars from mounted secrets, then start CMD
     volumes:
       - ./infra/api/entrypoint.sh:/entrypoint.sh:ro
@@ -95,6 +98,9 @@ services:
     depends_on:
       - vault
       - redis
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
     # Production images use the package CMD; no custom entrypoint required
     volumes:
       - ./infra/api/entrypoint.sh:/entrypoint.sh:ro

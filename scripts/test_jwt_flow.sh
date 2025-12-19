@@ -4,7 +4,7 @@ set -euo pipefail
 # Test JWT authentication flow against local gateway (WAF) for development
 # Requirements: curl, jq, node (optional)
 
-GATEWAY_URL=${GATEWAY_URL:-https://localhost}
+GATEWAY_URL=${GATEWAY_URL:-http://localhost:3000}
 AUTH_ENDPOINT=${AUTH_ENDPOINT:-/api/auth/token}
 PROTECTED_ENDPOINT=${PROTECTED_ENDPOINT:-/api/users/me}
 
