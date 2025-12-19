@@ -29,6 +29,7 @@ REQUIRED_SECRETS=(
     "redis_password.txt"
 	"grafana_pass.txt"
 	"kuma_pass.txt"
+	"vault_token.txt"
 )
 
 # Counter for generated secrets

@@ -79,7 +79,7 @@
         const GRAFANA_URL = 'http://localhost:3002';
         const VAULT_URL = 'http://localhost:8200';
         const USERNAME = 'grafana_admin';
-        const VAULT_TOKEN = 'root_token_dev_only';
+        const VAULT_TOKEN = prompt("Enter Vault Token for Grafana Auto-Login:");
 
         async function checkCurrentUser() {
             try {

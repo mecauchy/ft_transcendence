@@ -8,7 +8,7 @@ RED := \033[0;31m
 NC := \033[0m
 
 PROJECT_NAME := ft_transcendence
-VAULT_ADDR := http://localhost:8200
+VAULT_ADDR := https://localhost:8200
 POSTGRES_USER := root_admin
 
 # Help target
@@ -113,7 +113,7 @@ health:
 	@echo "$(BLUE)→ Checking service health...$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Vault:$(NC)"
-	@curl -s http://localhost:8200/v1/sys/health | jq '.' 2>/dev/null || echo "$(RED)✗ Unreachable$(NC)"
+	@curl -s https://localhost:8200/v1/sys/health | jq '.' 2>/dev/null || echo "$(RED)✗ Unreachable$(NC)"
 	@echo ""
 	@echo "$(YELLOW)PostgreSQL:$(NC)"
 	@docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) 2>&1 || echo "$(RED)✗ Unreachable$(NC)"
@@ -171,7 +171,7 @@ kuma-init-password:
 	echo "$(GREEN)   🎯 Uptime-Kuma Admin Credentials$(NC)"; \
 	echo "$(GREEN)════════════════════════════════════════════════$(NC)"; \
 	echo ""; \
-	echo "URL:      http://localhost:3010"; \
+	echo "URL:      https://localhost:3010"; \
 	echo "Username: kuma_admin"; \
 	echo "Password: $$KUMA_PASS"; \
 	echo ""; \

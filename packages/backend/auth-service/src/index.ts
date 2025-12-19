@@ -16,7 +16,7 @@ fastify.post<{ Reply: IAuthResponse }>('/auth/token', async (request: FastifyReq
 			alias: "maxime", 
 			username: "maxime", 
 			email: "maxime@example.com", 
-			avatarUrl: "http://example.com/avatar.jpg", 
+			avatarUrl: "https://example.com/avatar.jpg", 
 			role: UserRole.ADMIN, // Add a valid role
 			preferences: {
 				language: "en", // or "fr"

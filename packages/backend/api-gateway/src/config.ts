@@ -10,14 +10,28 @@ export const config = {
   },
 
   vault: {
-    address: process.env.VAULT_ADDR || 'http://vault:8200',
-    token: process.env.VAULT_TOKEN || 'root_token_dev_only', // Dev only!
+    address:
+      process.env.VAULT_ADDRESS ??
+      (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
+      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
   },
 
   services: {
-    authService: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
-    userService: process.env.USER_SERVICE_URL || 'http://user-service:3002',
-    gameService: process.env.GAME_SERVICE_URL || 'http://game-service:3003',
+    authService:
+      process.env.AUTH_SERVICE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://auth:3001'
+        : 'http://auth:3001'),
+    userService:
+      process.env.USER_SERVICE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://user:3002'
+        : 'http://user:3002'),
+    gameService:
+      process.env.GAME_SERVICE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://game:3003'
+        : 'http://game:3003'),
   },
 
   cors: {

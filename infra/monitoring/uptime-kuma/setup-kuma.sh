@@ -54,7 +54,7 @@ COUNT=$(sqlite3 "$DB" "SELECT COUNT(*) FROM monitor;" 2>/dev/null || echo 0)
 if [ "$COUNT" -eq 0 ]; then
     log_info "Adding monitors..."
     
-    sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'API Gateway', 'http://api-gateway:3000/health', 'http', 60, 1);"
+    sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'API Gateway', 'https://api-gateway:3000/health', 'http', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, hostname, port, type, interval, active) VALUES ($ADMIN_ID, 'PostgreSQL', 'postgres', 5432, 'port', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, hostname, port, type, interval, active) VALUES ($ADMIN_ID, 'Redis', 'redis', 6379, 'port', 60, 1);"
     sqlite3 "$DB" "INSERT INTO monitor (user_id, name, url, type, interval, active) VALUES ($ADMIN_ID, 'Prometheus', 'http://prometheus:9090/-/healthy', 'http', 60, 1);"

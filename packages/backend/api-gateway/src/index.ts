@@ -6,6 +6,8 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import proxy from '@fastify/http-proxy';
 import websocket from '@fastify/websocket';
+import fastifyCookie from '@fastify/cookie';
+import session from '@fastify/session';
 import Redis from 'ioredis';
 import { config } from './config';
 import { VaultClient } from './vault/client';
@@ -58,8 +60,27 @@ async function start() {
 
 
 		// Vault client for secret management
-		const vault = new VaultClient(config.vault);
+		const vaultConfig = {
+			...config.vault,
+			token:
+				typeof config.vault.token === 'function'
+					? config.vault.token()
+					: config.vault.token,
+		};
+		const vault = new VaultClient(vaultConfig);
 		await vault.authenticate();
+
+		// Register cookie and session middleware
+		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json
+		await fastify.register(fastifyCookie);
+		await fastify.register(session, {
+			secret: process.env.SESSION_SECRET || 'dev-session-secret',
+			cookie: {
+				secure: process.env.NODE_ENV === 'production',
+				httpOnly: true,
+				sameSite: 'lax',
+			},
+		});
 		
 		// =====================================================
 		// MIDDLEWARE
