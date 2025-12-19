@@ -78,7 +78,7 @@ packages/front/                         @lewwny
 # -----------------------------------------------------------------------------
 #                        PROJECT CONFIGURATION
 # -----------------------------------------------------------------------------
-# Owner: Everyone
+# Owners: Melissa & Maxime
 
 .gitignore                              @mecauchy @maxime-c16
 
