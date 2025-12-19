@@ -10,6 +10,14 @@ services:
     secrets: []  # Override base compose secrets
 
   grafana:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+
+  alertmanager:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
     volumes:
       - ./infra/secret:/run/secrets:ro
 

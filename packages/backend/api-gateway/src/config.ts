@@ -26,15 +26,8 @@ export const config = {
   vault: {
     address:
       process.env.VAULT_ADDRESS ??
-      (process.env.NODE_ENV === 'production' ? 'http://vault:8200' : 'http://vault:8200'),
-      // In development return a sane default token; in production make it explicit (function throws)
-      token:
-        process.env.VAULT_TOKEN ||
-        (process.env.NODE_ENV === 'production'
-          ? (() => {
-              throw new Error('VAULT_TOKEN must be set in production');
-            })
-          : (() => 'root_token_dev_only')),
+      (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
+      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
   },
 
   services: {
@@ -69,6 +62,12 @@ export const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // requests per window
     timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
     ban: parseInt(process.env.RATE_LIMIT_BAN || '10'), // ban after violations
+  },
+
+  session: {
+    // Session secret must be at least 32 characters
+    secret: getSecret('SESSION_SECRET', 'SESSION_SECRET_FILE', false) || 
+      'dev-session-secret-minimum-32-characters-long',
   },
 
   security: {

@@ -477,3 +477,9 @@ secrets:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+# ==================== SECRETS ====================
+
+secrets:
+  vault_token:
+    file: ./infra/secret/vault_token.txt

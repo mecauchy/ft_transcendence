@@ -52,10 +52,7 @@ async function start() {
 		// Vault client for secret management
 		const vaultConfig = {
 			...config.vault,
-			token:
-				typeof config.vault.token === 'function'
-					? config.vault.token()
-					: config.vault.token,
+			token: config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
 		await vault.init();
@@ -64,7 +61,7 @@ async function start() {
 		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json
 		await fastify.register(fastifyCookie);
 		await fastify.register(session, {
-			secret: process.env.SESSION_SECRET || 'dev-session-secret',
+			secret: config.session.secret,
 			cookie: {
 				secure: process.env.NODE_ENV === 'production',
 				httpOnly: true,
