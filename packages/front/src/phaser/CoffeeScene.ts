@@ -15,6 +15,8 @@ export default class CoffeeScene extends Phaser.Scene {
 	private gameSize = 0;
 
 	private bg!: Phaser.GameObjects.Image;
+	private stopButton!: Phaser.GameObjects.Image;
+	private forgiveButton!: Phaser.GameObjects.Image;
 	private cards: CardData[] = [];
 
 	constructor() {
@@ -30,6 +32,8 @@ export default class CoffeeScene extends Phaser.Scene {
 
 	create(): void {
 		this.bg = this.add.image(0, 0, "coffee_bg").setOrigin(0.5);
+		this.stopButton = this.add.image(0, 0, "stop_button").setOrigin(0.5);
+		this.forgiveButton = this.add.image(0, 0, "forgive_button").setOrigin(0.5);
 
 		// Example cards
 		this.createCard("Coffee Scene");
@@ -132,6 +136,16 @@ export default class CoffeeScene extends Phaser.Scene {
 			Math.round(this.scale.width / 2),
 			Math.round(this.scale.height / 2)
 		);
+		this.stopButton.setPosition(
+			Math.round(this.scale.width / 2) - size / 4,
+			size / 8
+		);
+		this.forgiveButton.setPosition(
+			Math.round(this.scale.width / 2) + size / 4,
+			size / 8
+		);
+		this.stopButton.setScale(size / 400);
+		this.forgiveButton.setScale(size / 400);
 
 		const scaleFactor = (size / this.BASE_SIZE) * this.CARD_SCALE;
 
