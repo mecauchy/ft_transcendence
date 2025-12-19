@@ -17,7 +17,7 @@ jobs:
           if [ -d node_modules ]; then echo " Error: node_modules detected in repo!"; exit 1; fi
           echo " Repository is clean."
 
-  build-and-test:
+  build-test:
     needs: check-repository
     runs-on: ubuntu-latest
     steps:
