@@ -22,8 +22,10 @@ export default class CoffeeScene extends Phaser.Scene {
 	}
 
 	preload() {
-		this.load.image("coffee_bg", "assets/CoffeBg.png");
-		this.load.image("card_bg", "assets/card.png");
+		this.load.image("coffee_bg", "assets/coffee/CoffeBg.png");
+		this.load.image("card_bg", "assets/coffee/card.png");
+		this.load.image("stop_button", "assets/coffee/stop_button.png");
+		this.load.image("forgive_button", "assets/coffee/forgive_button.png");
 	}
 
 	create(): void {
