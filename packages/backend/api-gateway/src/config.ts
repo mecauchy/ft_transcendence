@@ -1,4 +1,30 @@
 // packages/backend/api-gateway/src/config.ts
+import { readFileSync } from 'fs';
+
+// Helper function to read secret from file or env var
+function getSecret(envVar: string, fileEnvVar: string, required: boolean = true): string {
+  // First, check if file path is provided
+  const filePath = process.env[fileEnvVar];
+  if (filePath) {
+    try {
+      return readFileSync(filePath, 'utf-8').trim();
+    } catch (err) {
+      console.error(`Failed to read secret from ${filePath}:`, err);
+    }
+  }
+  
+  // Fall back to direct env var
+  const value = process.env[envVar];
+  if (value) {
+    return value;
+  }
+  
+  if (required) {
+    throw new Error(`${envVar} or ${fileEnvVar} must be set`);
+  }
+  return '';
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   host: process.env.HOST || '0.0.0.0',
@@ -11,9 +37,9 @@ export const config = {
 
   vault: {
     address:
-      process.env.VAULT_ADDRESS ??
+      process.env.VAULT_ADDRESS ?? process.env.VAULT_ADDR ??
       (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
-      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
+    token: getSecret('VAULT_TOKEN', 'VAULT_TOKEN_FILE', true),
   },
 
   services: {
@@ -48,6 +74,12 @@ export const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // requests per window
     timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
     ban: parseInt(process.env.RATE_LIMIT_BAN || '10'), // ban after violations
+  },
+
+  session: {
+    // Session secret must be at least 32 characters
+    secret: getSecret('SESSION_SECRET', 'SESSION_SECRET_FILE', false) || 
+      'dev-session-secret-minimum-32-characters-long',
   },
 
   security: {

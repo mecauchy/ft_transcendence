@@ -25,8 +25,8 @@ services:
     image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "80:80"     # Access HTTP traffic (host 80 -> container 80)
-      - "443:443"   # Access HTTPS traffic (host 443 -> container 443)
+      - "8080:80"   # Access HTTP traffic (host 8080 -> container 80)
+      - "8443:443"  # Access HTTPS traffic (host 8443 -> container 443)
     volumes:
       - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
@@ -291,9 +291,7 @@ services:
       retries: 5
       start_period: 60s
 
-secrets:
-  vault_token:
-    file: ./infra/secret/vault_token.txt
+  # ==================== ELK STACK ====================
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -419,3 +417,9 @@ secrets:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+# ==================== SECRETS ====================
+
+secrets:
+  vault_token:
+    file: ./infra/secret/vault_token.txt

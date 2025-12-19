@@ -2,7 +2,14 @@
 
 echo "Grafana entrypoint starting..."
 echo "VAULT_ADDR=$VAULT_ADDR"
-echo "VAULT_TOKEN=$VAULT_TOKEN"
+
+# Read vault token from file if provided
+if [ -n "$VAULT_TOKEN_FILE" ] && [ -f "$VAULT_TOKEN_FILE" ]; then
+  VAULT_TOKEN=$(cat "$VAULT_TOKEN_FILE")
+  echo "Loaded VAULT_TOKEN from $VAULT_TOKEN_FILE"
+fi
+
+echo "VAULT_TOKEN=${VAULT_TOKEN:+[SET]}"
 
 # Fetch Grafana password from Vault
 echo "Fetching Grafana password from Vault..."

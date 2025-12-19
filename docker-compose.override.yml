@@ -14,6 +14,14 @@ services:
       VAULT_ADDR: http://0.0.0.0:8200
 
   grafana:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+
+  alertmanager:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
     volumes:
       - ./infra/secret:/run/secrets:ro
 
@@ -23,6 +31,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
+      - SESSION_SECRET_FILE=/run/secrets/session_secret.txt
       - AUTH_SERVICE_URL=https://auth-service:3001
       - USER_SERVICE_URL=https://user-service:3002
       - GAME_SERVICE_URL=https://game-service:3003
@@ -32,7 +42,7 @@ services:
     ports:
       - "3000:3000" # Expose for local development
     volumes:
-      - ./packages/backend/api-gateway:/app:ro
+      - ./infra/secret:/run/secrets:ro
 
   # PostgreSQL SERVICE - DEV MODE
   postgres:

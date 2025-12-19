@@ -62,10 +62,7 @@ async function start() {
 		// Vault client for secret management
 		const vaultConfig = {
 			...config.vault,
-			token:
-				typeof config.vault.token === 'function'
-					? config.vault.token()
-					: config.vault.token,
+			token: config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
 		await vault.authenticate();
@@ -74,7 +71,7 @@ async function start() {
 		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json
 		await fastify.register(fastifyCookie);
 		await fastify.register(session, {
-			secret: process.env.SESSION_SECRET || 'dev-session-secret',
+			secret: config.session.secret,
 			cookie: {
 				secure: process.env.NODE_ENV === 'production',
 				httpOnly: true,
@@ -324,7 +321,18 @@ async function start() {
 
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
-		fastify.log.error({ error }, 'Error starting server');
+		console.error('Error starting server:', {
+			message: error.message,
+			stack: error.stack,
+			name: error.name,
+			cause: (error as any).cause,
+			raw: err,
+		});
+		fastify.log.error({ 
+			message: error.message,
+			stack: error.stack,
+			name: error.name 
+		}, 'Error starting server');
 		process.exit(1);
 	}
 }

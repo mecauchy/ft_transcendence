@@ -27,12 +27,11 @@ REQUIRED_SECRETS=(
     "game_db_pass.txt"
     "user_db_pass.txt"
     "redis_password.txt"
-	"grafana_pass.txt"
-	"kuma_pass.txt"
-	"vault_token.txt"
-	"postgres_db_pass.txt"
-	"redis_password.txt"
-	"elasticsearch_pass.txt"
+    "grafana_pass.txt"
+    "kuma_pass.txt"
+    "vault_token.txt"
+    "elasticsearch_pass.txt"
+    "session_secret.txt"
 )
 
 # Counter for generated secrets
@@ -47,14 +46,16 @@ for secret in "${REQUIRED_SECRETS[@]}"; do
     else
         # Generate a secure random password using base64
         openssl rand -base64 32 | tr -d '\n' > "$secret"
-        chmod 600 "$secret"
         echo -e "${YELLOW}✓${NC} Generated $secret"
         GENERATED=$((GENERATED + 1))
     fi
 done
 
-# Set proper permissions on directory
-chmod 700 .
+# Set proper permissions on directory and files
+# For development with rootless Docker, containers run as different UIDs
+# so we need world-readable permissions (this is fine for dev only)
+chmod 755 .
+chmod 644 *.txt 2>/dev/null || true
 
 echo ""
 echo -e "${BLUE}Summary:${NC}"
