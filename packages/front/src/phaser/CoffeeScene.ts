@@ -1,5 +1,10 @@
 import Phaser from "phaser";
 
+type EndData = {
+	name: string;
+	end: boolean;
+}
+
 type CardData = {
 	container: Phaser.GameObjects.Container;
 	bg: Phaser.GameObjects.Image;
@@ -72,6 +77,7 @@ export default class CoffeeScene extends Phaser.Scene {
 		});
 		if (buttonObject === this.forgiveButton) {
 			buttonObject.on("pointerdown", () => {
+				
 				this.scene.start("WorldMapScene");
 				console.log("Forgive button clicked");
 			});
