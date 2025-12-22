@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import Popup from "./ui/Popup";
 
 type CardData = {
 	container: Phaser.GameObjects.Container;
@@ -20,9 +21,13 @@ export default class CoffeeScene extends Phaser.Scene {
 	private buttonBaseScale = 1;
 	private cards: CardData[] = [];
 
+	private popup!: Popup;
+
 	private importantThoughts: string[];
 	private notImportantThoughts: string[];
 	private neutralThoughts: string[];
+
+	private game_started = false;
 
 	constructor() {
 		super({ key: "CoffeeScene" });
@@ -46,6 +51,23 @@ export default class CoffeeScene extends Phaser.Scene {
 		this.notImportantThoughts = [];
 		this.neutralThoughts = [];
 
+		this.popup = new Popup(this);
+
+		if (!this.game_started) {
+			this.popup.show(
+				"Drag your thoughts to categorize them if you want. Click 'STOP' to accept.",
+				[
+					{
+						label: "Got it!",
+						onClick: () => {
+							this.popup.hide();
+							this.game_started = true;
+						}
+					}
+				]
+			);
+		}
+
 		// Example cards
 		this.createCard("Coffee Scene");
 		this.createCard("Important thought");
@@ -56,8 +78,18 @@ export default class CoffeeScene extends Phaser.Scene {
 		this.scale.on("resize", this.onResize, this);
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.scale.off("resize", this.onResize, this);
+			this.popup.destroy();
+			this.cleanup()
 		});
 	}
+
+	private cleanup() {
+		for (const card of this.cards) {
+			card.container.destroy(true);
+		}
+		this.cards = [];
+	}
+
 
 	private buttonOverEffect(buttonObject: Phaser.GameObjects.Image)
 		{

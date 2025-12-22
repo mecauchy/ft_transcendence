@@ -1,8 +1,11 @@
 import Phaser from "phaser";
+import Popup from "./ui/Popup";
 
 export default class WorldMapScene extends Phaser.Scene {
 	private player!: Phaser.GameObjects.Sprite;
 	private bg!: Phaser.GameObjects.Image;
+
+	private popup!: Popup;
 
 	private shop!: Phaser.GameObjects.Sprite;
 	private hospital!: Phaser.GameObjects.Sprite;
@@ -14,10 +17,6 @@ export default class WorldMapScene extends Phaser.Scene {
 	private houseLabel!: Phaser.GameObjects.Text;
 	private parkingLabel!: Phaser.GameObjects.Text;
 	private coffeeLabel!: Phaser.GameObjects.Text;
-
-	private popupContainer!: Phaser.GameObjects.Container;
-	private popupBg!: Phaser.GameObjects.Rectangle;
-	private popupText!: Phaser.GameObjects.Text;
 
 	// Normalized player position (0–1)
 	private playerNX = 0.5;
@@ -119,7 +118,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parkingLabel = this.add.text(0, 0, "Parking", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
 		this.coffeeLabel = this.add.text(0, 0, "Coffee", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
 
-		this.createPopup();
+		this.popup = new Popup(this);
 		this.centerScene();
 
 
@@ -142,94 +141,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		if (!this.scene.isActive()) return;
 		if (!this.player || !this.bg) return;	
 		this.centerScene();
-		if (this.popupContainer && this.popupBg && this.popupText) {
-			this.layoutPopup();
-		}
 	}
-
-	private createPopup() {
-
-		this.popupBg = this.add.rectangle(0, 0, 10, 10, 0x000000, 0.7);
-		this.popupBg.setStrokeStyle(2, 0xffffff);
-		this.popupBg.setOrigin(0.5);
-		
-		this.popupText = this.add.text(0, 0, "Welcome to the World Map!", {
-			fontFamily: 'GameFont',
-			fontSize: '20px',
-			color: '#ffffffff',
-			align: 'center',
-		})
-		.setOrigin(0.5)
-		
-		this.popupContainer = this.add.container(0, 0, [this.popupBg, this.popupText]);
-		this.popupContainer.setDepth(1000);
-		this.popupContainer.setVisible(false);
-		this.layoutPopup();
-	}
-
-	private typeText(fullText: string, speed: number = 50, onComplete?: () => void) {
-		this.popupText.setText("");
-		let index = 0;
-
-		this.time.addEvent({
-			delay: speed,
-			repeat: fullText.length - 1,
-			callback: () => {
-				this.popupText.text += fullText[index];
-				index++;
-
-				if (index === fullText.length && onComplete) {
-						onComplete();
-				}
-			}
-		});
-	}
-
-	private createPopupButton(
-		label: string,
-		x: number,
-		y: number,
-		callback : () => void
-	) {
-		const button = this.add.text(x, y, label, {
-			fontFamily: 'GameFont',
-			fontSize: '18px',
-			color: "#ffffaa"
-		})
-		.setInteractive()
-		.on("pointerover", () => button.setScale(1.1))
-		.on("pointerout", () => button.setScale(1.0))
-		.on("pointerdown", callback);
-
-		this.popupContainer.add(button);
-	}
-
-	private showPopup(
-		text: string,
-		buttons: { label: string; onClick: () => void }[]
-	) {
-		this.popupContainer.setVisible(true);
-		this.popupText.setText("");
-
-		this.popupContainer.list
-			.filter(obj => obj !== this.popupBg && obj !== this.popupText)
-			.forEach(obj => obj.destroy());
-
-		this.typeText(text, 30, () => {
-			const startY = this.popupBg.height / 2 - 40;
-			const spacing = 140;
-
-			buttons.forEach((btn, i) => {
-				this.createPopupButton(
-					btn.label,
-					(-buttons.length / 2 + i + 0.5) * spacing,
-					startY,
-					btn.onClick
-				);
-			});
-		});
-	}
-
 
 	// Places a building using normalized coordinates relative to the map
 	private placeBuilding(
@@ -326,7 +238,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		});
 
 		sprite.on("pointerdown", () => {
-			if (this.isMoving || this.popupContainer.visible) return;
+			if (this.isMoving || this.popup.visible) return;
 			console.log(`Clicked on ${sprite.texture.key}`);
 			const destinationKey = sprite.texture.key;
 			this.moveTo(destinationKey);
@@ -447,16 +359,6 @@ export default class WorldMapScene extends Phaser.Scene {
 		// this.makeAllInteractiveBuildings();
 	}
 
-	private layoutPopup() {
-		const width = this.scale.width * 0.8;
-		const height = this.scale.height * 0.25;
-
-		this.popupBg.setSize(width, height);
-		this.popupText.setWordWrapWidth(width * 0.9);
-		this.popupContainer.setPosition(0, -height * 0.2);
-
-		this.popupContainer.setPosition(this.scale.width / 2, this.scale.height * 0.75);
-	}
 
 	private playWalkAnimation(dx: number, dy: number) {
 		if (Math.abs(dx) > Math.abs(dy)) {
@@ -486,14 +388,14 @@ export default class WorldMapScene extends Phaser.Scene {
 
 		if (locationName === "") return;
 		
-		this.showPopup(
+		this.popup.show(
 			`You have arrived at the ${locationName}. What would you like to do?`,
 			[
 				{
 					label: "Enter",
 					onClick: () => {
 						console.log(`Entering the ${locationName}...`);
-						this.popupContainer.setVisible(false);
+						this.popup.hide();
 						this.scene.start(`${locationName}Scene`);
 						this.moveToCenter();
 					},
@@ -502,7 +404,7 @@ export default class WorldMapScene extends Phaser.Scene {
 					label: "Leave",
 					onClick: () => {
 						console.log(`Leaving the ${locationName}...`);
-						this.popupContainer.setVisible(false);
+						this.popup.hide();
 						this.moveToCenter();
 					},
 				},
