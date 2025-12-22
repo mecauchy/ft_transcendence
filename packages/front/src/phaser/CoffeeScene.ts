@@ -1,10 +1,5 @@
 import Phaser from "phaser";
 
-type EndData = {
-	name: string;
-	end: boolean;
-}
-
 type CardData = {
 	container: Phaser.GameObjects.Container;
 	bg: Phaser.GameObjects.Image;

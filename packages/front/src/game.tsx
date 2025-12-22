@@ -41,9 +41,9 @@ export default function Game() {
 				mode: Phaser.Scale.RESIZE,
 				autoCenter: Phaser.Scale.CENTER_BOTH,
 			},
-			scene: [WorldMapScene,
+			scene: [HouseScene,
 				ShopScene,
-				HouseScene,
+				WorldMapScene,
 				CoffeeScene,
 				ParkingScene,
 				HospitalScene

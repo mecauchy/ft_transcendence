@@ -9,6 +9,13 @@ export default class HouseScene extends Phaser.Scene {
 	private readonly BALL_SIZE_N = 0.03;
 	private readonly PADDLE_SPEED_N = 0.01;
 
+	private game_started = false;
+	private welcome_shown = false;
+	private ia_mode = false;
+
+	private ia_move_up = false;
+	private ia_move_down = false;
+
 	private paddle1!: Phaser.GameObjects.Rectangle;
 	private paddle2!: Phaser.GameObjects.Rectangle;
 	private ball!: Phaser.GameObjects.Ellipse;
@@ -17,6 +24,10 @@ export default class HouseScene extends Phaser.Scene {
 	private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 	private scoreText1!: Phaser.GameObjects.Text;
 	private scoreText2!: Phaser.GameObjects.Text;
+
+	private popupContainer!: Phaser.GameObjects.Container;
+	private popupBg!: Phaser.GameObjects.Rectangle;
+	private popupText!: Phaser.GameObjects.Text;
 
 	private gameSize = 0;
 	private offsetX = 0;
@@ -50,12 +61,144 @@ export default class HouseScene extends Phaser.Scene {
 		this.borders = this.add.graphics();
 		this.renderScore();
 
+		this.createPopup();
 		this.centerScene();
 
 		this.listenKeys();
 		this.scale.on("resize", this.onResize, this);
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.scale.off("resize", this.onResize, this);
+		});
+	}
+
+	private createPopup() {
+
+		this.popupBg = this.add.rectangle(0, 0, 10, 10, 0x000000, 0.7);
+		this.popupBg.setStrokeStyle(2, 0xffffff);
+		this.popupBg.setOrigin(0.5);
+		
+		this.popupText = this.add.text(0, 0, "Welcome to the World Map!", {
+			fontFamily: 'GameFont',
+			fontSize: '20px',
+			color: '#ffffffff',
+			align: 'center',
+		})
+		.setOrigin(0.5)
+		
+		this.popupContainer = this.add.container(0, 0, [this.popupBg, this.popupText]);
+		this.popupContainer.setDepth(1000);
+		this.popupContainer.setVisible(false);
+		this.layoutPopup();
+	}
+
+	private layoutPopup() {
+		const width = this.scale.width * 0.8;
+		const height = this.scale.height * 0.25;
+
+		this.popupBg.setSize(width, height);
+		this.popupText.setWordWrapWidth(width * 0.9);
+		this.popupContainer.setPosition(0, -height * 0.2);
+
+		this.popupContainer.setPosition(this.scale.width / 2, this.scale.height * 0.75);
+	}
+
+	private showWelcomePopup() {
+		this.showPopup(
+			"Welcome to the House! Get ready to play Pong!",
+			[
+				{
+					label: "IA Opponent",
+					onClick: () => {
+						this.popupContainer.setVisible(false);
+						this.game_started = true;
+						this.ia_mode = true;
+						this.paddle1.setStrokeStyle(3, 0xff0000);
+						const keyboard = this.input.keyboard;
+						keyboard.removeCapture([
+							Phaser.Input.Keyboard.KeyCodes.W,
+							Phaser.Input.Keyboard.KeyCodes.S
+						]);
+						this.keyW.destroy();
+						this.keyS.destroy();
+					}
+				},
+				{
+					label: "Two Players",
+					onClick: () => {
+						this.popupContainer.setVisible(false);
+						this.game_started = true;
+					}
+				},
+				{
+					label: "Forgive",
+					onClick: () => {
+						this.scene.start("WorldMapScene");
+					}
+				}
+			]
+		);
+	}
+
+	private typeText(fullText: string, speed: number = 50, onComplete?: () => void) {
+		this.popupText.setText("");
+		let index = 0;
+
+		this.time.addEvent({
+			delay: speed,
+			repeat: fullText.length - 1,
+			callback: () => {
+				this.popupText.text += fullText[index];
+				index++;
+
+				if (index === fullText.length && onComplete) {
+						onComplete();
+				}
+			}
+		});
+	}
+
+	private createPopupButton(
+		label: string,
+		x: number,
+		y: number,
+		callback : () => void
+	) {
+		const button = this.add.text(x, y, label, {
+			fontFamily: 'GameFont',
+			fontSize: '.8125rem',
+			color: "#ffffaa"
+		})
+		.setInteractive()
+		.on("pointerover", () => button.setScale(1.1))
+		.on("pointerout", () => button.setScale(1.0))
+		.on("pointerdown", callback);
+
+		this.popupContainer.add(button);
+	}
+
+	private showPopup(
+		text: string,
+		buttons: { label: string; onClick: () => void }[]
+	) {
+		this.popupContainer.setVisible(true);
+		this.popupText.setText("");
+
+		this.popupContainer.list
+			.filter(obj => obj !== this.popupBg && obj !== this.popupText)
+			.forEach(obj => obj.destroy());
+
+		this.typeText(text, 30, () => {
+			const startY = this.popupBg.height / 2 - 40;
+			const spacing = 150;
+
+			buttons.forEach((btn, i) => {
+				this.createPopupButton(
+					btn.label,
+					(-buttons.length / 2 + i + 0.5) * spacing,
+					startY,
+					btn.onClick
+				);
+			});
 		});
 	}
 
@@ -77,6 +220,9 @@ export default class HouseScene extends Phaser.Scene {
 	private onResize() {
 		if (!this.scene.isActive()) return;
 		this.centerScene();
+		if (this.popupContainer.visible) {
+			this.layoutPopup();
+		}
 	}
 
 	private listenKeys() {
@@ -148,7 +294,14 @@ export default class HouseScene extends Phaser.Scene {
 	}
 
 	update(): void {
-		this.checkMocvement();
+		if (!this.game_started) {
+			if (this.welcome_shown) return;
+			this.welcome_shown = true;
+			this.showWelcomePopup();
+			return;
+		}
+		if (this.ia_mode) this.ia_actions();
+		this.checkMovement();
 		this.ballx_n += this.ballSpeedX_n;
 		this.bally_n += this.ballSpeedY_n;
 		if (this.bally_n <= 0 || this.bally_n >= 1) {
@@ -160,17 +313,34 @@ export default class HouseScene extends Phaser.Scene {
 		this.pointScored();
 	}
 
-	private checkMocvement() {
+	private ia_actions() {
+		const targetY = this.bally_n;
+		const diff = targetY - this.paddle1y_n;
+		const threshold = 0.02;
+
+		if (Math.abs(diff) < threshold) {
+			this.ia_move_up = false;
+			this.ia_move_down = false;
+		} else if (diff < 0) {
+			this.ia_move_up = true;
+			this.ia_move_down = false;
+		} else {
+			this.ia_move_up = false;
+			this.ia_move_down = true;
+		}
+	}
+
+	private checkMovement() {
 		if (this.cursors.up?.isDown) {
 			this.paddle2y_n -= this.PADDLE_SPEED_N;
 		}
 		if (this.cursors.down?.isDown) {
 			this.paddle2y_n += this.PADDLE_SPEED_N;
 		}
-		if (this.keyW?.isDown) {
+		if (this.keyW?.isDown || (this.ia_mode && this.ia_move_up)) {
 			this.paddle1y_n -= this.PADDLE_SPEED_N;
 		}
-		if (this.keyS?.isDown) {
+		if (this.keyS?.isDown || (this.ia_mode && this.ia_move_down)) {
 			this.paddle1y_n += this.PADDLE_SPEED_N;
 		}
 		const halfH1 = (this.paddle1.height / this.gameSize) / 2;
@@ -182,20 +352,30 @@ export default class HouseScene extends Phaser.Scene {
 	}
 
 	private checkCollision() {
+		const maxBounce = 0.012;
+
 		if (this.ballx_n <= this.PADDLE_MARGIN_N + this.PADDLE_WIDTH_N) {
-			// collision with left paddle
-			const paddleTop = this.paddle1y_n - (this.PADDLE_HEIGHT_N / 2);
-			const paddleBottom = this.paddle1y_n + (this.PADDLE_HEIGHT_N / 2);
+			const paddleTop = this.paddle1y_n - this.PADDLE_HEIGHT_N / 2;
+			const paddleBottom = this.paddle1y_n + this.PADDLE_HEIGHT_N / 2;
 			if (this.bally_n >= paddleTop && this.bally_n <= paddleBottom) {
-				this.ballSpeedX_n = -this.ballSpeedX_n;
+				const impact = this.bally_n - this.paddle1y_n;
+				const normalized = impact / (this.PADDLE_HEIGHT_N / 2);
+				this.ballSpeedY_n = normalized * maxBounce;
+				this.ballSpeedX_n = Math.abs(this.ballSpeedX_n);
+				this.ballSpeedX_n += 0.0005;
+				this.ballSpeedY_n += 0.0005;
 			}
 		}
 		else if (this.ballx_n >= 1 - this.PADDLE_MARGIN_N - this.PADDLE_WIDTH_N) {
-			// collision with right paddle
-			const paddleTop = this.paddle2y_n - (this.PADDLE_HEIGHT_N / 2);
-			const paddleBottom = this.paddle2y_n + (this.PADDLE_HEIGHT_N / 2);
+			const paddleTop = this.paddle2y_n - this.PADDLE_HEIGHT_N / 2;
+			const paddleBottom = this.paddle2y_n + this.PADDLE_HEIGHT_N / 2;
 			if (this.bally_n >= paddleTop && this.bally_n <= paddleBottom) {
-				this.ballSpeedX_n = -this.ballSpeedX_n;
+				const impact = this.bally_n - this.paddle2y_n;
+				const normalized = impact / (this.PADDLE_HEIGHT_N / 2);
+				this.ballSpeedY_n = normalized * maxBounce;
+				this.ballSpeedX_n = -Math.abs(this.ballSpeedX_n);
+				this.ballSpeedX_n -= 0.0005;
+				this.ballSpeedY_n -= 0.0005;
 			}
 		}
 	}
@@ -216,6 +396,8 @@ export default class HouseScene extends Phaser.Scene {
 	private resetBall() {
 		this.ballx_n = 0.5;
 		this.bally_n = 0.5;
+		this.ballSpeedX_n = Phaser.Math.Between(0, 1) ? 0.005 : -0.005;
+		this.ballSpeedY_n = Phaser.Math.Between(-0.005, 0.005);
 	}
 
 	private updateScore() {
