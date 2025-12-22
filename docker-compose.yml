@@ -66,10 +66,6 @@ services:
     secrets:
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
-    # Run entrypoint to populate env vars from mounted secrets, then start CMD
-    volumes:
-      - ./infra/api/entrypoint.sh:/entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     command: ["node", "dist/index.js"]
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/health"]
@@ -101,10 +97,6 @@ services:
     secrets:
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
-    # Production images use the package CMD; no custom entrypoint required
-    volumes:
-      - ./infra/api/entrypoint.sh:/entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     command: ["node", "dist/index.js"]
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3001/health"]

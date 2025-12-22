@@ -3,54 +3,102 @@
 import Vault from 'node-vault';
 
 interface VaultConfig {
-	address: string;
+	address?: string;
 	token?: string;
 }
 
-// Define a minimal interface for the Vault client
 interface IVaultClient {
-	read(path: string): Promise<{ data: any }>;
-	health(): Promise<{ sealed: boolean; initialized: boolean }>;
-	token?: string;
+	init(): Promise<void>;
+	getSecret<T = any>(path: string): Promise<T>;
+	isHealthy(): Promise<boolean>;
 }
 
-export class VaultClient {
-	private client: IVaultClient;
-	private config: VaultConfig;
+export class VaultClient implements IVaultClient {
+	private address: string;
+	private token?: string;
+	private client: any;
 
-	constructor(config: VaultConfig) {
-		this.config = config;
-		this.client = Vault({
-			apiVersion: 'v1',
-			endpoint: this.config.address,
-		});
+	constructor(config: VaultConfig = {}) {
+		this.address = config.address || process.env.VAULT_ADDRESS || 'http://vault:8200';
+		this.token = config.token || process.env.VAULT_TOKEN;
+		this.client = Vault({ apiVersion: 'v1', endpoint: this.address });
 	}
 
-	async authenticate(): Promise<void> {
-		try {
-			if (this.config.token) {
-				this.client.token = this.config.token;
-				console.log('Vault authenticated using provided token (development mode).');
-				return;
-			}
+	async init(): Promise<void> {
+		await this.authenticate();
+	}
 
-			throw new Error('No authentication method provided for Vault.');
-		} catch (error) {
-			console.error('Vault authentication failed:', error);
-			throw error;
+	private async authenticate(): Promise<void> {
+		const env = process.env.NODE_ENV || 'development';
+		const roleId = process.env.VAULT_ROLE_ID;
+		const secretId = process.env.VAULT_SECRET_ID;
+
+		// In production, AppRole is required
+		if (env === 'production') {
+			if (!roleId || !secretId) {
+				throw new Error('VAULT_ROLE_ID and VAULT_SECRET_ID must be provided in production');
+			}
+			await this.loginWithAppRole(roleId, secretId);
+			return;
 		}
+
+		// Development: prefer AppRole if provided, else fallback to VAULT_TOKEN
+		if (roleId && secretId) {
+			try {
+				await this.loginWithAppRole(roleId, secretId);
+				return;
+			} catch (err) {
+				if (this.token) {
+					this.client.token = this.token;
+					console.warn('AppRole login failed in development, falling back to VAULT_TOKEN');
+					return;
+				}
+				throw err;
+			}
+		}
+
+		if (this.token) {
+			this.client.token = this.token;
+			console.log('Using VAULT_TOKEN for Vault authentication');
+			return;
+		}
+
+		// Last resort in dev: look for mounted secret files (handled by entrypoint normally)
+		throw new Error('No Vault authentication available');
 	}
 
-	async getSecret(path: string): Promise<any> {
+	private async loginWithAppRole(roleId: string, secretId: string): Promise<void> {
+		const url = `${this.address.replace(/\/$/, '')}/v1/auth/approle/login`;
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ role_id: roleId, secret_id: secretId }),
+		});
+
+		if (!res.ok) {
+			const body = await res.text().catch(() => '<non-text response>');
+			throw new Error(`Vault AppRole login failed (${res.status}): ${body}`);
+		}
+
+		const payload = await res.json();
+		const clientToken = payload?.auth?.client_token;
+		if (!clientToken) {
+			throw new Error('Vault AppRole login did not return client_token');
+		}
+
+		this.token = clientToken;
+		this.client.token = clientToken;
+	}
+
+	async getSecret<T = any>(path: string): Promise<T> {
 		try {
-			const result = await this.client.read(path);
-			return result.data;
-		} catch (error) {
-			if (error instanceof Error) {
-				console.error(`Failed to retrieve secret from path ${path} [${error.name}]: ${error.message}`);
-			} else {
-				console.error(`Failed to retrieve secret from path ${path}:`, error);
+			if (!this.client.token) {
+				await this.authenticate();
 			}
+			const result = await this.client.read(path);
+			return result.data as T;
+		} catch (error) {
+			console.error(`Failed to retrieve secret from path ${path}:`, error);
 			throw error;
 		}
 	}
