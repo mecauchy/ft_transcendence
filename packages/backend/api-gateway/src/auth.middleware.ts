@@ -12,7 +12,7 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) {
     }
 
     const token = auth.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET as string);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Attach decoded token to request for downstream services
     (request as any).user = decoded;
