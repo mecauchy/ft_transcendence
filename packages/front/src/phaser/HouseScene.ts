@@ -15,6 +15,7 @@ export default class HouseScene extends Phaser.Scene {
 
 	private ia_move_up = false;
 	private ia_move_down = false;
+	private ia_difficulty = 0;
 
 	private paddle1!: Phaser.GameObjects.Rectangle;
 	private paddle2!: Phaser.GameObjects.Rectangle;
@@ -110,7 +111,6 @@ export default class HouseScene extends Phaser.Scene {
 					label: "IA Opponent",
 					onClick: () => {
 						this.popupContainer.setVisible(false);
-						this.game_started = true;
 						this.ia_mode = true;
 						this.paddle1.setStrokeStyle(3, 0xff0000);
 						const keyboard = this.input.keyboard;
@@ -120,6 +120,7 @@ export default class HouseScene extends Phaser.Scene {
 						]);
 						this.keyW.destroy();
 						this.keyS.destroy();
+						this.ia_popup();
 					}
 				},
 				{
@@ -137,6 +138,38 @@ export default class HouseScene extends Phaser.Scene {
 				}
 			]
 		);
+	}
+
+	private ia_popup() {
+		this.showPopup(
+			"Choose your difficulty:",
+			[
+				{
+					label: "Easy",
+					onClick: () => {
+						this.ia_difficulty = 0.7;
+						this.popupContainer.setVisible(false);
+						this.game_started = true;
+					}
+				},
+				{
+					label: "Medium",
+					onClick: () => {
+						this.ia_difficulty = 0.3;
+						this.popupContainer.setVisible(false);
+						this.game_started = true;
+					}
+				},
+				{
+					label: "Hard",
+					onClick: () => {
+						this.ia_difficulty = 0.0;
+						this.popupContainer.setVisible(false);
+						this.game_started = true;
+					}
+				}
+			]
+		)
 	}
 
 	private typeText(fullText: string, speed: number = 50, onComplete?: () => void) {
@@ -318,6 +351,12 @@ export default class HouseScene extends Phaser.Scene {
 		const diff = targetY - this.paddle1y_n;
 		const threshold = 0.02;
 
+		if (Math.random() <= this.ia_difficulty) {
+			this.ia_move_up = false;
+			this.ia_move_down = false;
+			return;
+		}
+
 		if (Math.abs(diff) < threshold) {
 			this.ia_move_up = false;
 			this.ia_move_down = false;
@@ -337,10 +376,10 @@ export default class HouseScene extends Phaser.Scene {
 		if (this.cursors.down?.isDown) {
 			this.paddle2y_n += this.PADDLE_SPEED_N;
 		}
-		if (this.keyW?.isDown || (this.ia_mode && this.ia_move_up)) {
+		if ((this.keyW?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_up)) {
 			this.paddle1y_n -= this.PADDLE_SPEED_N;
 		}
-		if (this.keyS?.isDown || (this.ia_mode && this.ia_move_down)) {
+		if ((this.keyS?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_down)) {
 			this.paddle1y_n += this.PADDLE_SPEED_N;
 		}
 		const halfH1 = (this.paddle1.height / this.gameSize) / 2;
@@ -404,10 +443,33 @@ export default class HouseScene extends Phaser.Scene {
 		this.scoreText1.setText(this.score1.toString());
 		this.scoreText2.setText(this.score2.toString());
 		if (this.score1 >= 10 || this.score2 >= 10) {
-			this.score1 = 0;
-			this.score2 = 0;
-			this.updateScore();
-			this.scene.start('WorldMapScene');
+			this.game_started = false;
+			if (!this.ia_mode) {
+				this.showPopup(
+					`Game Over! ${this.score1 >= 10 ? 'Player 1' : 'Player 2'} wins!`,
+					[
+						{
+							label: "OK",
+							onClick: () => {
+								this.scene.start("WorldMapScene");
+							}
+						}
+					]
+				)
+			}
+			else {
+				this.showPopup(
+					`Game Over! ${this.score1 >= 10 ? 'You win!' : 'IA wins!'}`,
+					[
+						{
+							label: "OK",
+							onClick: () => {
+								this.scene.start("WorldMapScene");
+							}
+						}
+					]
+				)
+			}
 		}
 	}
 }

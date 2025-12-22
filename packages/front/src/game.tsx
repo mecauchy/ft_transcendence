@@ -41,14 +41,14 @@ export default function Game() {
 				mode: Phaser.Scale.RESIZE,
 				autoCenter: Phaser.Scale.CENTER_BOTH,
 			},
-			scene: [HouseScene,
+			scene: [WorldMapScene,
 				ShopScene,
-				WorldMapScene,
 				CoffeeScene,
+				HouseScene,
 				ParkingScene,
 				HospitalScene
 			],
-			backgroundColor: "#000"
+			backgroundColor: "#353131ff"
 		});
 	}, [gameInPlay]);
 

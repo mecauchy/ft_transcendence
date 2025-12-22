@@ -20,6 +20,10 @@ export default class CoffeeScene extends Phaser.Scene {
 	private buttonBaseScale = 1;
 	private cards: CardData[] = [];
 
+	private importantThoughts: string[];
+	private notImportantThoughts: string[];
+	private neutralThoughts: string[];
+
 	constructor() {
 		super({ key: "CoffeeScene" });
 	}
@@ -37,6 +41,10 @@ export default class CoffeeScene extends Phaser.Scene {
 		this.forgiveButton = this.add.image(0, 0, "forgive_button").setOrigin(0.5);
 		this.buttonOverEffect(this.stopButton);
 		this.buttonOverEffect(this.forgiveButton);
+
+		this.importantThoughts = [];
+		this.notImportantThoughts = [];
+		this.neutralThoughts = [];
 
 		// Example cards
 		this.createCard("Coffee Scene");
@@ -91,8 +99,21 @@ export default class CoffeeScene extends Phaser.Scene {
 			nx: card.nx,
 			ny: card.ny
 		}));
-		console.log("Cards positions at game end:", cardsPositions);
 		// Logic to end the game or return to main menu
+		for (const card of this.cards) {
+			if (card.nx > 0.5 && card.nx < 0.95 && card.ny > 0.3 && card.ny < 0.8) {
+				this.notImportantThoughts.push(card.text.text);
+			}
+			else if (card.nx >= 0.05 && card.nx <= 0.5 && card.ny > 0.3 && card.ny < 0.8) {
+				this.importantThoughts.push(card.text.text);
+			}
+			else {
+				this.neutralThoughts.push(card.text.text);
+			}
+		}
+		console.log("Important Thoughts:", this.importantThoughts);
+		console.log("Not Important Thoughts:", this.notImportantThoughts);
+		console.log("Neutral Thoughts:", this.neutralThoughts);
 		this.scene.start("WorldMapScene");
 	}
 
