@@ -101,7 +101,6 @@ export default class HospitalScene extends Phaser.Scene {
 			if (!this.document_open) return;
 			this.document_open = false;
 			const size = Math.min(this.scale.width, this.scale.height);
-			const cx = Math.round(this.scale.width / 2);
 			const cy = Math.round(this.scale.height / 2);
 			this.tweens.add({
 				targets: document,
@@ -147,7 +146,7 @@ export default class HospitalScene extends Phaser.Scene {
 			folder.x = dragX;
 			folder.y = dragY;
 		});
-		folder.on("dragend", (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+		folder.on("dragend", () => {
 			const size = Math.min(this.scale.width, this.scale.height);
 			const cx = Math.round(this.scale.width / 2);
 			const cy = Math.round(this.scale.height / 2);
@@ -241,7 +240,6 @@ export default class HospitalScene extends Phaser.Scene {
 	private openDocument(document: Phaser.GameObjects.Sprite) {
 		if (this.document_open) return;
 		this.document_open = true;
-		const cx = Math.round(this.scale.width / 2);
 		const cy = Math.round(this.scale.height / 2);
 		document.setVisible(true);
 		document.setDepth(1000);

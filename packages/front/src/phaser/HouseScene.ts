@@ -348,11 +348,11 @@ export default class HouseScene extends Phaser.Scene {
 	private updateScore() {
 		this.scoreText1.setText(this.score1.toString());
 		this.scoreText2.setText(this.score2.toString());
-		if (this.score1 >= 10 || this.score2 >= 10) {
+		if (this.score1 >= 5 || this.score2 >= 5) {
 			this.game_started = false;
 			if (!this.ia_mode) {
 				this.popup.show(
-					`Game Over! ${this.score1 >= 10 ? 'Player 1' : 'Player 2'} wins!`,
+					`Game Over! ${this.score1 >= 5 ? 'Player 1' : 'Player 2'} wins!`,
 					[
 						{
 							label: "OK",
@@ -368,7 +368,7 @@ export default class HouseScene extends Phaser.Scene {
 			}
 			else {
 				this.popup.show(
-					`Game Over! ${this.score2 >= 10 ? 'You win!' : 'IA wins!'}`,
+					`Game Over! ${this.score2 >= 5 ? 'You win!' : 'IA wins!'}`,
 					[
 						{
 							label: "OK",

@@ -6,12 +6,18 @@ import Settings from "./settings.tsx";
 
 function Home({ username, onLogout }: { username: string | null, onLogout: () => void }) {
 	//state
-	const [page, setPage] = useState<string>('game');
-	
+	const getInitialPage = (): string => {
+		const current = window.location.pathname.replace("/", "");
+		if (["tournament", "game", "profile", "settings"].includes(current)) {
+			return current;
+		}
+		return "game";
+	};
+	const [page, setPage] = useState<string>(getInitialPage());	
 	useEffect(() => {
 		window.history.replaceState({ page: 'game' }, "", "/game");
 	}, []);
-
+	
 	//handlers
 	useEffect(() => {
 		if (page === 'logout') {
@@ -34,19 +40,6 @@ function Home({ username, onLogout }: { username: string | null, onLogout: () =>
 		setPage(newPage);
 		window.history.pushState({ page: newPage }, '', `/${newPage}`);
 	}
-
-	useEffect(() => {
-		setPage(prev => {
-			const current = window.location.pathname.replace("/", "");
-			if (["tournament","game","profile","settings"].includes(current)) {
-				window.history.replaceState({ page: current }, "", `/${current}`);
-				return current;
-			}
-			return prev;
-		});
-	}, []);
-
-
 
 	//render
 	  return (
