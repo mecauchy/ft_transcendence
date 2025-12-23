@@ -222,6 +222,8 @@ export default class HospitalScene extends Phaser.Scene {
 	}
 
 	private end_game() {
+		if (this.popup_active) return;
+		this.popup_active = true;
 		this.popup.show(
 			"Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients.",
 			[
@@ -229,6 +231,7 @@ export default class HospitalScene extends Phaser.Scene {
 					label: "Finish",
 					onClick: () => {
 						this.popup.hide();
+						this.popup_active = false;
 						this.scene.start("WorldMapScene");
 						this.popup.destroy();
 					},

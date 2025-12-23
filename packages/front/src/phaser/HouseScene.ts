@@ -52,6 +52,8 @@ export default class HouseScene extends Phaser.Scene {
 	preload() {}
 
 	create(): void {
+		this.resetState();
+		this.listenKeys();
 		this.paddle1 = this.add.rectangle(0, 0, 0, 0, 0xffffff);
 		this.paddle2 = this.add.rectangle(0, 0, 0, 0, 0xffffff);
 		this.ball = this.add.ellipse(0, 0, 0, 0, 0xffffff);
@@ -63,13 +65,28 @@ export default class HouseScene extends Phaser.Scene {
 		this.popup = new Popup(this);
 		this.centerScene();
 
-		this.listenKeys();
 		this.scale.on("resize", this.onResize, this);
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
 			this.scale.off("resize", this.onResize, this);
 		});
 	}
 
+	private resetState () {
+		this.game_started = false;
+		this.welcome_shown = false;
+		this.ia_mode = false;
+		this.ia_move_up = false;
+		this.ia_move_down = false;
+		this.ia_difficulty = 0;
+		this.paddle2y_n = 0.5;
+		this.paddle1y_n = 0.5;
+		this.ballx_n = 0.5;
+		this.bally_n = 0.5;
+		this.ballSpeedX_n = 0.005;
+		this.ballSpeedY_n = 0.005;
+		this.score1 = 0;
+		this.score2 = 0;
+	}
 
 	private showWelcomePopup() {
 		this.popup.show(
