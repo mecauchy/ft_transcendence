@@ -12,7 +12,7 @@ RUN corepack enable
 WORKDIR /app
 
 # Copy dependency files
-COPY packages/front/package.json packages/front/pnpm-lock.yaml ./
+COPY pnpm-lock.yaml ./
 
 # Install dependencies using pnpm
 # Use --no-frozen-lockfile to avoid build failures when lockfile is out-of-sync; update the repo lockfile

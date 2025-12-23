@@ -44,7 +44,7 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 # 3. Install Production Dependencies Only
 COPY packages/backend/api-gateway/package.json ./
-COPY packages/backend/api-gateway/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
 COPY packages/shared/types ../shared/types
 # Use --no-frozen-lockfile for now; update pnpm-lock.yaml in repo to restore --frozen-lockfile
 RUN pnpm install --prod --no-frozen-lockfile
