@@ -51,8 +51,8 @@ export default class ParkingScene extends Phaser.Scene {
 		const keyboard = this.input.keyboard;
 		if (!keyboard) return;
 		keyboard.once("keydown-ESC", () => {
-			this.scene.start("WorldMapScene");
 			this.popup.destroy();
+			this.scene.start("WorldMapScene");
 		});
 	}
 
