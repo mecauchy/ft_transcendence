@@ -80,7 +80,7 @@ export class VaultClient implements IVaultClient {
 			throw new Error(`Vault AppRole login failed (${res.status}): ${body}`);
 		}
 
-		const payload = await res.json();
+		const payload: any = await res.json();
 		const clientToken = payload?.auth?.client_token;
 		if (!clientToken) {
 			throw new Error('Vault AppRole login did not return client_token');

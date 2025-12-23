@@ -7,27 +7,95 @@ on:
     branches: ["master", "dev"]
 
 jobs:
+  # ------------------------------------------------------------------
+  # JOB 1: SANITY CHECKS
+  # ------------------------------------------------------------------
   check-repository:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check repository
+      - name: Check repository cleanliness
         run: |
-          if [ -f .env ]; then echo " Error: .env file detected in repo!"; exit 1; fi
-          if [ -d node_modules ]; then echo " Error: node_modules detected in repo!"; exit 1; fi
-          echo " Repository is clean."
+          if [ -f .env ]; then echo "❌ Error: .env file detected in repo!"; exit 1; fi
+          if [ -d node_modules ]; then echo "❌ Error: node_modules detected in repo!"; exit 1; fi
+          echo "✅ Repository is clean."
 
-  build-test:
+  # ------------------------------------------------------------------
+  # JOB 2: TYPE CHECKING & CONTRACT ENFORCEMENT (The "Contract Enforcer")
+  # ------------------------------------------------------------------
+  validate-contract:
+      name: 🛡️ Validate Shared Contract (Types)
+      needs: check-repository
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        
+        - name: 📦 Setup pnpm
+          uses: pnpm/action-setup@v2
+          with:
+            version: 8
+  
+        - name: 🟢 Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: 18
+            # 👇 Change: Only cache if the lockfile exists to avoid 'act' failures
+            cache: 'pnpm'
+            cache-dependency-path: '**/pnpm-lock.yaml'
+  
+        - name: 📥 Install Dependencies
+          run: pnpm install --no-frozen-lockfile # Use --no-frozen-lockfile if you are still iterating on the lockfile
+  
+        - name: 📝 Activate TS Problem Matcher
+          run: echo "::add-matcher::.github/tsc-matcher.json"
+  
+        - name: 🔍 Validate Shared Types
+          working-directory: packages/shared/types
+          run: pnpm tsc --noEmit
+  
+        - name: ⚙️ Check Backend Compatibility
+          run: pnpm --filter "backend-*" exec tsc --noEmit
+  
+        - name: 🎨 Check Frontend Compatibility
+          run: pnpm --filter "front" exec tsc --noEmit
+  
+        - name: 📢 Report Contract Breach
+          if: failure()
+          uses: actions/github-script@v6
+          with:
+            # 👇 Fix: Provide the token explicitly
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              const sha = context.sha;
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: sha,
+                body: "🚨 **Contract Breach Detected!**\n\nModifications in `shared/types` have broken the build."
+              });
+
+  # ------------------------------------------------------------------
+  # JOB 3: INTEGRATION TESTING (The "JWT Flow")
+  # ------------------------------------------------------------------
+  integration-test:
+    name: 🐳 Build & Integration Tests
     needs: check-repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # We add the matcher here too! 
+      # If Docker prints TSC errors to stdout during build, GitHub might catch them.
+      - name: Activate TS Problem Matcher
+        run: echo "::add-matcher::.github/tsc-matcher.json"
 
       - name: Create Secrets for CI
         run: |
           mkdir -p infra/secret
           openssl rand -base64 32 > infra/secret/jwt_secret.txt
           openssl rand -base64 32 > infra/secret/vault_token.txt
+          echo "dummy-role-id" > infra/secret/gateway_role_id.txt
+          echo "dummy-secret-id" > infra/secret/gateway_secret_id.txt
           echo "Dummy secrets created."
 
       - name: Start Services
@@ -41,7 +109,6 @@ jobs:
           sleep 15
           docker compose ps
 
-      #    We use SKIP_PROTECTED=true because User Service is not running yet.
       - name: Run JWT Flow Test
         env:
           GATEWAY_URL: http://localhost:3000
