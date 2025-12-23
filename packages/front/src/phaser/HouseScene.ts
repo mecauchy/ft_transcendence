@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
-import WorldMapScene from "./WorldMapScene";
 
 export default class HouseScene extends Phaser.Scene {
 

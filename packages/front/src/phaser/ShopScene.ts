@@ -17,7 +17,7 @@ export default class ShopScene extends Phaser.Scene {
 	private readonly ITEMS_LAYOUT = [
 		{ item: "duck", x: 0.1, y: 0.15 },
 		{ item: "ball", x: 0.3, y: 0.15 },
-		{ item: "anxiety", x: 0.5, y: 0.15 },
+		{ item: "anxiety pills", x: 0.5, y: 0.15 },
 		{ item: "bear", x: 0.7, y: 0.15 },
 		{ item: "book", x: 0.88, y: 0.15 },
 		{ item: "camera", x: 0.1, y: 0.37 },
@@ -25,8 +25,8 @@ export default class ShopScene extends Phaser.Scene {
 		{ item: "controller", x: 0.5, y: 0.37 },
 		{ item: "flower", x: 0.7, y: 0.37 },
 		{ item: "phone", x: 0.88, y: 0.37 },
-		{ item: "sleep", x: 0.1, y: 0.57 },
-		{ item: "swamp", x: 0.35, y: 0.57 },
+		{ item: "sleeping pills", x: 0.1, y: 0.57 },
+		{ item: "soap", x: 0.35, y: 0.57 },
 		{ item: "water", x: 0.65, y: 0.57 },
 		{ item: "wine", x: 0.88, y: 0.57 },
 	];
@@ -43,7 +43,7 @@ export default class ShopScene extends Phaser.Scene {
 		this.load.image("shop_bg", "assets/shop/ShopBg.png");
 		this.load.image("duck", "assets/shop/duck.png");
 		this.load.image("ball", "assets/shop/ball.png");
-		this.load.image("anxiety", "assets/shop/anxiety.png");
+		this.load.image("anxiety pills", "assets/shop/anxiety.png");
 		this.load.image("bear", "assets/shop/bear.png");
 		this.load.image("book", "assets/shop/book.png");
 		this.load.image("camera", "assets/shop/camera.png");
@@ -51,8 +51,8 @@ export default class ShopScene extends Phaser.Scene {
 		this.load.image("controller", "assets/shop/controller.png");
 		this.load.image("flower", "assets/shop/flower.png");
 		this.load.image("phone", "assets/shop/phone.png");
-		this.load.image("sleep", "assets/shop/sleep.png");
-		this.load.image("swamp", "assets/shop/swamp.png");
+		this.load.image("sleeping pills", "assets/shop/sleep.png");
+		this.load.image("soap", "assets/shop/soap.png");
 		this.load.image("water", "assets/shop/water.png");
 		this.load.image("wine", "assets/shop/wine.png");
 	}
@@ -61,7 +61,7 @@ export default class ShopScene extends Phaser.Scene {
 		this.bg = this.add.image(0, 0, "shop_bg").setOrigin(0.5);
 		this.items.duck = this.add.sprite(0, 0, "duck")
 		this.items.ball = this.add.sprite(0, 0, "ball")
-		this.items.anxiety = this.add.sprite(0, 0, "anxiety")
+		this.items["anxiety pills"] = this.add.sprite(0, 0, "anxiety pills")
 		this.items.bear = this.add.sprite(0, 0, "bear")
 		this.items.book = this.add.sprite(0, 0, "book")
 		this.items.camera = this.add.sprite(0, 0, "camera")
@@ -69,8 +69,8 @@ export default class ShopScene extends Phaser.Scene {
 		this.items.controller = this.add.sprite(0, 0, "controller")
 		this.items.flower = this.add.sprite(0, 0, "flower")
 		this.items.phone = this.add.sprite(0, 0, "phone")
-		this.items.sleep = this.add.sprite(0, 0, "sleep")
-		this.items.swamp = this.add.sprite(0, 0, "swamp")
+		this.items["sleeping pills"] = this.add.sprite(0, 0, "sleeping pills")
+		this.items.soap = this.add.sprite(0, 0, "soap")
 		this.items.water = this.add.sprite(0, 0, "water")
 		this.items.wine = this.add.sprite(0, 0, "wine")
 		this.popup = new Popup(this);
@@ -131,7 +131,6 @@ export default class ShopScene extends Phaser.Scene {
 						label: "Buy",
 						onClick: () => {
 							this.popup.hide();
-							this.popup_active = false;
 							item.setData("picked", true);
 							this.tweens.add({
 								targets: item,
@@ -143,6 +142,7 @@ export default class ShopScene extends Phaser.Scene {
 								ease: 'Cubic.easeIn',
 								onComplete: () => {
 									item.setVisible(false);
+									this.popup_active = false;
 									this.items_picks.push(itemName);
 									if (this.items_picks.length >= 3) {
 										this.show_purchase_popup();
@@ -183,6 +183,8 @@ export default class ShopScene extends Phaser.Scene {
 	}
 
 	private end_shopping() {
+		if (this.popup_active) return;
+		this.popup_active = true;
 		this.popup.show(
 			"Returning to the world map.",
 			[
@@ -216,16 +218,15 @@ export default class ShopScene extends Phaser.Scene {
 		const itemSize = size * 0.15;
 		for (const layout of this.ITEMS_LAYOUT) {
 			const item = this.items[layout.item];
-			if (item || !item.getData("picked")) {
-				const texture = item.texture.getSourceImage() as HTMLImageElement;
-				const baseScale = itemSize / Math.max(texture.width, texture.height);
-				item.setScale(baseScale);
-				item.setData("baseScale", baseScale);
-				item.setPosition(
-					Math.round(cx - size / 2 + layout.x * size),
-					Math.round(cy - size / 2 + layout.y * size)
-				);
-			}
+			if (!item || item.getData("picked")) continue;
+			const texture = item.texture.getSourceImage() as HTMLImageElement;
+			const baseScale = itemSize / Math.max(texture.width, texture.height);
+			item.setScale(baseScale);
+			item.setData("baseScale", baseScale);
+			item.setPosition(
+				Math.round(cx - size / 2 + layout.x * size),
+				Math.round(cy - size / 2 + layout.y * size)
+			);
 		}
 	}
 }

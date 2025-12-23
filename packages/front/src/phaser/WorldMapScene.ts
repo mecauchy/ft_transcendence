@@ -423,7 +423,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.isMoving = true;
 	}
 
-	update(_: any, delta: number) {
+	update(_: unknown, delta: number) {
 		if (!this.isMoving || this.moveQueue.length === 0) return;
 		
 		const target = this.moveQueue[0];

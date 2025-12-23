@@ -126,11 +126,6 @@ export default class CoffeeScene extends Phaser.Scene {
 	}
 
 	private endGame() {
-		const cardsPositions = this.cards.map(card => ({
-			text: card.text.text,
-			nx: card.nx,
-			ny: card.ny
-		}));
 		// Logic to end the game or return to main menu
 		for (const card of this.cards) {
 			if (card.nx > 0.5 && card.nx < 0.95 && card.ny > 0.3 && card.ny < 0.8) {

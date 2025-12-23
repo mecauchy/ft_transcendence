@@ -36,12 +36,16 @@ function Home({ username, onLogout }: { username: string | null, onLogout: () =>
 	}
 
 	useEffect(() => {
-		const current = window.location.pathname.replace("/", "");
-		if (["tournament","game","profile","settings"].includes(current)) {
-			setPage(current);
-			window.history.replaceState({ page: current }, "", `/${current}`);
-		}
+		setPage(prev => {
+			const current = window.location.pathname.replace("/", "");
+			if (["tournament","game","profile","settings"].includes(current)) {
+				window.history.replaceState({ page: current }, "", `/${current}`);
+				return current;
+			}
+			return prev;
+		});
 	}, []);
+
 
 
 	//render
