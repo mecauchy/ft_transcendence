@@ -30,7 +30,7 @@
 		"@types/node": "^24.10.1",
 		"@types/jsonwebtoken": "^9.0.1",
 		"tsx": "^4.19.2",
-		"typescript": "^5.7.2",
+		"typescript": "^5.9.3",
 		"rimraf": "^5.0.0"
 	}
 }
