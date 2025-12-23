@@ -369,7 +369,7 @@ export default class HouseScene extends Phaser.Scene {
 			}
 			else {
 				this.popup.show(
-					`Game Over! ${this.score1 >= 10 ? 'You win!' : 'IA wins!'}`,
+					`Game Over! ${this.score2 >= 10 ? 'You win!' : 'IA wins!'}`,
 					[
 						{
 							label: "OK",
