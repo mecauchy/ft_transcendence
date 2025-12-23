@@ -23,56 +23,56 @@ jobs:
   # ------------------------------------------------------------------
   # JOB 2: TYPE CHECKING & CONTRACT ENFORCEMENT (The "Contract Enforcer")
   # ------------------------------------------------------------------
-validate-contract:
-    name: 🛡️ Validate Shared Contract (Types)
-    needs: check-repository
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          # 👇 Change: Only cache if the lockfile exists to avoid 'act' failures
-          cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-
-      - name: 📥 Install Dependencies
-        run: pnpm install --no-frozen-lockfile # Use --no-frozen-lockfile if you are still iterating on the lockfile
-
-      - name: 📝 Activate TS Problem Matcher
-        run: echo "::add-matcher::.github/tsc-matcher.json"
-
-      - name: 🔍 Validate Shared Types
-        working-directory: packages/shared/types
-        run: pnpm tsc --noEmit
-
-      - name: ⚙️ Check Backend Compatibility
-        run: pnpm --filter "backend-*" exec tsc --noEmit
-
-      - name: 🎨 Check Frontend Compatibility
-        run: pnpm --filter "front" exec tsc --noEmit
-
-      - name: 📢 Report Contract Breach
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          # 👇 Fix: Provide the token explicitly
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const sha = context.sha;
-            await github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: sha,
-              body: "🚨 **Contract Breach Detected!**\n\nModifications in `shared/types` have broken the build."
-            });
+  validate-contract:
+      name: 🛡️ Validate Shared Contract (Types)
+      needs: check-repository
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        
+        - name: 📦 Setup pnpm
+          uses: pnpm/action-setup@v2
+          with:
+            version: 8
+  
+        - name: 🟢 Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: 18
+            # 👇 Change: Only cache if the lockfile exists to avoid 'act' failures
+            cache: 'pnpm'
+            cache-dependency-path: '**/pnpm-lock.yaml'
+  
+        - name: 📥 Install Dependencies
+          run: pnpm install --no-frozen-lockfile # Use --no-frozen-lockfile if you are still iterating on the lockfile
+  
+        - name: 📝 Activate TS Problem Matcher
+          run: echo "::add-matcher::.github/tsc-matcher.json"
+  
+        - name: 🔍 Validate Shared Types
+          working-directory: packages/shared/types
+          run: pnpm tsc --noEmit
+  
+        - name: ⚙️ Check Backend Compatibility
+          run: pnpm --filter "backend-*" exec tsc --noEmit
+  
+        - name: 🎨 Check Frontend Compatibility
+          run: pnpm --filter "front" exec tsc --noEmit
+  
+        - name: 📢 Report Contract Breach
+          if: failure()
+          uses: actions/github-script@v6
+          with:
+            # 👇 Fix: Provide the token explicitly
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              const sha = context.sha;
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: sha,
+                body: "🚨 **Contract Breach Detected!**\n\nModifications in `shared/types` have broken the build."
+              });
 
   # ------------------------------------------------------------------
   # JOB 3: INTEGRATION TESTING (The "JWT Flow")
