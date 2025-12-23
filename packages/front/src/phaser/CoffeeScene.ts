@@ -69,9 +69,26 @@ export default class CoffeeScene extends Phaser.Scene {
 		}
 
 		// Example cards
-		this.createCard("Coffee Scene");
-		this.createCard("Important thought");
-		this.createCard("Not important");
+		this.createCard("Time changes everything");
+		this.createCard("People disappoint often");
+		this.createCard("Effort matters more");
+		this.createCard("Feelings fade away");
+		this.createCard("Silence feels heavy");
+		this.createCard("Trust breaks easily");
+		this.createCard("Nothing lasts forever");
+		this.createCard("Memories lie sometimes");
+		this.createCard("Words leave scars");
+		this.createCard("Choices have consequences");
+		this.createCard("Love feels risky");
+		this.createCard("Regret comes late");
+		this.createCard("Pain teaches lessons");
+		this.createCard("Comfort kills growth");
+		this.createCard("Fear limits dreams");
+		this.createCard("Happiness feels temporary");
+		this.createCard("Loneliness feels familiar");
+		this.createCard("Attention feels addictive");
+		this.createCard("Control is illusion");
+		this.createCard("Meaning is personal");
 
 		this.centerScene();
 
