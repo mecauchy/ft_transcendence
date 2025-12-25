@@ -2,8 +2,9 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { config } from './config';
-import { authRoutes } from './routes/auth';
-import { twoFactorRoutes } from './routes/2fa';
+import { xpRoutes } from './routes/xp';
+import { achievementRoutes } from './routes/achievements';
+import { leaderboardRoutes } from './routes/leaderboard';
 
 const fastify = Fastify({
 	logger: {
@@ -21,29 +22,30 @@ const fastify = Fastify({
 
 async function start() {
 	try {
-		// Security middleware
+		// security middleware
 		await fastify.register(helmet);
 		await fastify.register(cors, {
 			origin: config.cors.origin,
 			credentials: true,
 		});
 
-		// health check
+		// healthcheck
 		fastify.get('/health', async () => ({
 			status: 'healthy',
-			service: 'auth-service',
+			service: 'gamification-service',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
 		}));
 
-		// register routes
-		await fastify.register(authRoutes, { prefix: '/api/auth' });
-		await fastify.register(twoFactorRoutes, { prefix: '/api/auth/2fa' });
+		// REST Routes
+		await fastify.register(xpRoutes, { prefix: '/api/xp' });
+		await fastify.register(achievementRoutes, { prefix: '/api/achievements' });
+		await fastify.register(leaderboardRoutes, { prefix: '/api/leaderboard' });
 
-		// error handler
+		// handle errors
 		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
 			request.log.error({ error }, 'Unhandled error');
-			
+
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({
 				statusCode,
@@ -59,28 +61,37 @@ async function start() {
 		});
 
 		fastify.log.info(`
-|Auth Service - Speak Up Platform|
+|Gamification Service - Speak Up Platform|
+
 Server:	${address}
 
-Endpoints:
-POST /api/auth/login/42		- OAuth login with 42 API
-POST /api/auth/refresh		- Refresh access token
-POST /api/auth/logout		- Invalidate session
-POST /api/auth/2fa/setup	- Enable 2FA
-POST /api/auth/2fa/verify	- Verify 2FA code
-POST /api/auth/2fa/disable	- Disable 2FA
+XP Endpoints:
+GET		/api/xp/me		- Get user XP summary
+GET		/api/xp/history	- Get XP history
+GET		/api/xp/daily	- Get daily XP breakdown
+POST	/api/xp/award	- Award XP (admin)
 
-Database:	${config.database.host}:${config.database.port}
-Vault:		${config.vault.address}
+Achievement Endpoints:
+GET	/api/achievements			- List all achievements
+GET	/api/achievements/me		- Get user's achievements
+GET	/api/achievements/:id		- Get achievement details
+GET	/api/achievements/progress	- Get progress
+
+Leaderboard Endpoints:
+GET	/api/leaderboard				- Global leaderboard
+GET	/api/leaderboard/friends		- Friends leaderboard
+GET	/api/leaderboard/scenario/:id	- Scenario leaderboard
+GET	/api/leaderboard/me				- User rank
+
+  Database: ${config.database.host}:${config.database.port}
 		`);
-
 	} catch (err) {
-		fastify.log.error(err, 'Failed to start auth service');
+		fastify.log.error(err, 'Failed to start gamification service');
 		process.exit(1);
 	}
 }
 
-// shutdown without breaking
+// shutdown
 const signals = ['SIGINT', 'SIGTERM'];
 signals.forEach((signal) => {
 	process.on(signal, async () => {

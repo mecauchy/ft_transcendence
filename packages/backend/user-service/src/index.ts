@@ -1,9 +1,12 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import { config } from './config';
-import { authRoutes } from './routes/auth';
-import { twoFactorRoutes } from './routes/2fa';
+import { profileRoutes } from './routes/profile';
+import { friendsRoutes } from './routes/friends';
+import { gdprRoutes } from './routes/gdpr';
+import { settingsRoutes } from './routes/settings';
 
 const fastify = Fastify({
 	logger: {
@@ -21,24 +24,33 @@ const fastify = Fastify({
 
 async function start() {
 	try {
-		// Security middleware
+		// middleware security
 		await fastify.register(helmet);
 		await fastify.register(cors, {
 			origin: config.cors.origin,
 			credentials: true,
 		});
 
-		// health check
+		// support file uploading
+		await fastify.register(multipart, {
+			limits: {
+				fileSize: config.upload.maxFileSize,
+			},
+		});
+
+		// healthcheck
 		fastify.get('/health', async () => ({
 			status: 'healthy',
-			service: 'auth-service',
+			service: 'user-service',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
 		}));
 
 		// register routes
-		await fastify.register(authRoutes, { prefix: '/api/auth' });
-		await fastify.register(twoFactorRoutes, { prefix: '/api/auth/2fa' });
+		await fastify.register(profileRoutes, { prefix: '/api/users' });
+		await fastify.register(friendsRoutes, { prefix: '/api/users/friends' });
+		await fastify.register(gdprRoutes, { prefix: '/api/users/gdpr' });
+		await fastify.register(settingsRoutes, { prefix: '/api/users/settings' });
 
 		// error handler
 		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
@@ -59,28 +71,30 @@ async function start() {
 		});
 
 		fastify.log.info(`
-|Auth Service - Speak Up Platform|
+|User Service - Speak Up Platform|
 Server:	${address}
 
 Endpoints:
-POST /api/auth/login/42		- OAuth login with 42 API
-POST /api/auth/refresh		- Refresh access token
-POST /api/auth/logout		- Invalidate session
-POST /api/auth/2fa/setup	- Enable 2FA
-POST /api/auth/2fa/verify	- Verify 2FA code
-POST /api/auth/2fa/disable	- Disable 2FA
+GET		/api/users/me			- Get current user profile
+PUT		/api/users/me			- Update profile
+PUT		/api/users/me/avatar	- Upload avatar
+GET		/api/users/friends		- List friends
+POST	/api/users/friends		- Send friend request
+PUT		/api/users/friends/:id	- Accept/reject request
+DELETE	/api/users/friends/:id	- Remove friend
+GET		/api/users/gdpr/export	- Export user data (GDPR)
+DELETE	/api/users/gdpr/delete	- Delete account (GDPR)
 
-Database:	${config.database.host}:${config.database.port}
-Vault:		${config.vault.address}
+Database: ${config.database.host}:${config.database.port}
 		`);
 
 	} catch (err) {
-		fastify.log.error(err, 'Failed to start auth service');
+		fastify.log.error(err, 'Failed to start user service');
 		process.exit(1);
 	}
 }
 
-// shutdown without breaking
+//shutdown
 const signals = ['SIGINT', 'SIGTERM'];
 signals.forEach((signal) => {
 	process.on(signal, async () => {
