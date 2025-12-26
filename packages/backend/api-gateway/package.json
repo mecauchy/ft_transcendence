@@ -20,11 +20,13 @@
 		"@speak-up/shared": "file:../../shared/types",
 		"fastify": "^5.2.0",
 		"ioredis": "^5.4.2",
+		"jsonwebtoken": "^9.0.2",
 		"node-vault": "^0.10.2",
 		"pino": "^9.5.0",
 		"pino-pretty": "^13.0.0"
 	},
 	"devDependencies": {
+		"@types/jsonwebtoken": "^9.0.7",
 		"@types/node": "^24.10.1",
 		"tsx": "^4.19.2",
 		"typescript": "^5.7.2"

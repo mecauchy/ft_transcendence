@@ -1,6 +1,6 @@
 // packages/backend/api-gateway/src/index.ts
 
-import Fastify, { FastifyRequest } from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -9,8 +9,10 @@ import websocket from '@fastify/websocket';
 import fastifyCookie from '@fastify/cookie';
 import session from '@fastify/session';
 import Redis from 'ioredis';
+import jwt from 'jsonwebtoken';
 import { config } from './config';
 import { VaultClient } from './vault/client';
+import { authGuard, optionalAuth } from './middleware/auth';
 
 // Import shared contracts for type safety
 import type {
@@ -187,24 +189,61 @@ async function start() {
 		});
 
 		// =====================================================
-		// ROUTE: USER SERVICE (/api/users/*)
+		// ROUTE: USER SERVICE (/api/users/*) - PROTECTED
 		// =====================================================
-		await fastify.register( proxy, {
+		await fastify.register(proxy, {
 			upstream: config.services.userService,
 			prefix: '/api/users',
 			rewritePrefix: '/api/users',
 			http2: false,
-			preHandler: async (request: FastifyRequest) => {
-				// TODO: validate JWT token before proxying from Authorization header
+			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+				await authGuard(request, reply);
+				if (reply.sent) return; // Stop if authGuard sent a response
 				request.log.info(
-					{ path: request.url, method: request.method },
-					'Proxying request to User Service'
+					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					'Proxying authenticated request to User Service'
 				);
 			},
 		});
 
 		// =====================================================
-		// ROUTE: GAME/INVESTIGATION ENDPOINTS
+		// ROUTE: GAME SERVICE (/api/game/*) - PROTECTED
+		// =====================================================
+		await fastify.register(proxy, {
+			upstream: config.services.gameService,
+			prefix: '/api/game',
+			rewritePrefix: '/api/game',
+			http2: false,
+			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+				await authGuard(request, reply);
+				if (reply.sent) return;
+				request.log.info(
+					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					'Proxying authenticated request to Game Service'
+				);
+			},
+		});
+
+		// =====================================================
+		// ROUTE: GAMIFICATION SERVICE (/api/gamification/*) - PROTECTED
+		// =====================================================
+		await fastify.register(proxy, {
+			upstream: config.services.gamificationService,
+			prefix: '/api/gamification',
+			rewritePrefix: '/api/gamification',
+			http2: false,
+			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+				await authGuard(request, reply);
+				if (reply.sent) return;
+				request.log.info(
+					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					'Proxying authenticated request to Gamification Service'
+				);
+			},
+		});
+
+		// =====================================================
+		// ROUTE: WEBSOCKET - INVESTIGATION (PROTECTED)
 		// =====================================================
 		await fastify.register(async (fastify) => {
 			fastify.get('/investigation', { websocket: true as any }, async (connection: any, request: FastifyRequest) => {
@@ -215,9 +254,51 @@ async function start() {
 					'New WebSocket connection to Investigation Service'
 				);
 
-				// TODO: Validate JWT token
-				// TODO: Extract userId and sessionId from token
-				// TODO: Forward Websocket to game service
+				// Validate JWT token from query params
+				if (!token) {
+					request.log.warn({ ip: request.ip }, 'WebSocket connection rejected: missing token');
+					connection.socket.send(JSON.stringify({
+						type: 'ERROR',
+						code: 'AUTH_REQUIRED',
+						message: 'Authentication token required. Pass ?token=<jwt> in query string.',
+					}));
+					connection.socket.close(4001, 'Authentication required');
+					return;
+				}
+
+				let userId: string;
+				let userRole: string;
+
+				try {
+					const decoded = jwt.verify(token, config.security.jwtSecret, {
+						algorithms: ['HS256'],
+					}) as { userId: string; role: string; requires2FA?: boolean; twoFAVerified?: boolean };
+
+					// Check 2FA
+					if (decoded.requires2FA && !decoded.twoFAVerified) {
+						connection.socket.send(JSON.stringify({
+							type: 'ERROR',
+							code: '2FA_REQUIRED',
+							message: '2FA verification required before connecting.',
+						}));
+						connection.socket.close(4003, '2FA required');
+						return;
+					}
+
+					userId = decoded.userId;
+					userRole = decoded.role;
+					request.log.info({ userId, role: userRole }, 'WebSocket authenticated');
+
+				} catch (err) {
+					request.log.warn({ ip: request.ip, error: (err as Error).message }, 'WebSocket auth failed');
+					connection.socket.send(JSON.stringify({
+						type: 'ERROR',
+						code: 'AUTH_FAILED',
+						message: 'Invalid or expired token.',
+					}));
+					connection.socket.close(4001, 'Authentication failed');
+					return;
+				}
 
 				connection.socket.on('message', async (message: any) => {
 					try {
@@ -301,23 +382,25 @@ async function start() {
   🚀 Server:        ${address}
   
   📡 Routes:
-	 /api/auth/*    → ${config.services.authService}
-	 /api/users/*   → ${config.services.userService}
-	 /api/session/* → ${config.services.gameService}
-	 /investigation (WebSocket)
+     /api/auth/*         → ${config.services.authService} (public)
+     /api/users/*        → ${config.services.userService} (🔒 protected)
+     /api/game/*         → ${config.services.gameService} (🔒 protected)
+     /api/gamification/* → ${config.services.gamificationService} (🔒 protected)
+     /investigation      → WebSocket (🔒 token required)
   
   🔒 Security:
-	 ✓ Helmet (CSP, HSTS)
-	 ✓ CORS enabled
-	 ✓ Rate limiting (${config.rateLimit.max} req/${config.rateLimit.timeWindow})
+     ✓ AuthGuard (JWT verification at gateway)
+     ✓ Helmet (CSP, HSTS)
+     ✓ CORS enabled
+     ✓ Rate limiting (${config.rateLimit.max} req/${config.rateLimit.timeWindow})
   
   💾 Infrastructure:
-	 Redis:  ${config.redis.host}:${config.redis.port}
-	 Vault:  ${config.vault.address}
+     Redis:  ${config.redis.host}:${config.redis.port}
+     Vault:  ${config.vault.address}
 
-  📊 Monitoring:	 
-	 /health
-	 /metrics
+  📊 Monitoring:
+     /health
+     /metrics
 	 
   Logs at level: ${config.logLevel}
 	`);

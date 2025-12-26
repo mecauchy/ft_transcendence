@@ -21,17 +21,22 @@ export const config = {
       process.env.AUTH_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://auth:3001'
-        : 'http://auth:3001'),
+        : 'http://auth-service:3001'),
     userService:
       process.env.USER_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://user:3002'
-        : 'http://user:3002'),
+        : 'http://user-service:3002'),
     gameService:
       process.env.GAME_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://game:3003'
-        : 'http://game:3003'),
+        : 'http://game-service:3003'),
+    gamificationService:
+      process.env.GAMIFICATION_SERVICE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://gamification:3004'
+        : 'http://gamification-service:3004'),
   },
 
   cors: {
