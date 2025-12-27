@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { generateTOTPSecret, verifyTOTP, generateQRCode } from '../services/totp';
 import { verifyAccessToken, generateTokens } from '../services/jwt';
 import type { I2FAVerifyRequest } from '@speak-up/shared';
@@ -44,12 +44,16 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 
 		try {
 			// check if already enabled
-			const userResult = await query(
-				`SELECT user_twofa_enabled, user_twofa_secret, user_email FROM users WHERE user_id = $1`,
-				[userId]
-			);
+			const user = await prisma.user.findUnique({
+				where: { id: BigInt(userId) },
+				select: {
+					twofaEnabled: true,
+					twofaSecret: true,
+					email: true,
+				},
+			});
 
-			if (userResult.rows.length === 0) {
+			if (!user) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -57,9 +61,7 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const user = userResult.rows[0];
-
-			if (user.user_twofa_enabled) {
+			if (user.twofaEnabled) {
 				return reply.status(400).send({
 					statusCode: 400,
 					error: 'Bad Request',
@@ -68,13 +70,13 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 			}
 
 			// gen new TOTP secret
-			const { secret, otpauthUrl } = generateTOTPSecret(user.user_email);
+			const { secret, otpauthUrl } = generateTOTPSecret(user.email);
 
 			// store secret temp
-			await query(
-				`UPDATE users SET user_twofa_secret = $1 WHERE user_id = $2`,
-				[secret, userId]
-			);
+			await prisma.user.update({
+				where: { id: BigInt(userId) },
+				data: { twofaSecret: secret },
+			});
 
 			// generate QRcode
 			const qrCode = await generateQRCode(otpauthUrl);
@@ -112,12 +114,16 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 
 			try {
 				// fetch 2FA secret for user
-				const userResult = await query(
-					`SELECT user_twofa_secret, user_twofa_enabled, user_role FROM users WHERE user_id = $1`,
-					[userId]
-				);
+				const user = await prisma.user.findUnique({
+					where: { id: BigInt(userId) },
+					select: {
+						twofaSecret: true,
+						twofaEnabled: true,
+						role: true,
+					},
+				});
 
-				if (userResult.rows.length === 0) {
+				if (!user) {
 					return reply.status(404).send({
 						statusCode: 404,
 						error: 'Not Found',
@@ -125,9 +131,7 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				const user = userResult.rows[0];
-
-				if (!user.user_twofa_secret) {
+				if (!user.twofaSecret) {
 					return reply.status(400).send({
 						statusCode: 400,
 						error: 'Bad Request',
@@ -136,7 +140,7 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 				}
 
 				// verify the TOTP code
-				const isValid = verifyTOTP(user.user_twofa_secret, code);
+				const isValid = verifyTOTP(user.twofaSecret, code);
 
 				if (!isValid) {
 					return reply.status(401).send({
@@ -147,18 +151,18 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 				}
 
 				// first-time setup -> enable 2FA
-				if (!user.user_twofa_enabled) {
-					await query(
-						`UPDATE users SET user_twofa_enabled = TRUE WHERE user_id = $1`,
-						[userId]
-					);
+				if (!user.twofaEnabled) {
+					await prisma.user.update({
+						where: { id: BigInt(userId) },
+						data: { twofaEnabled: true },
+					});
 					request.log.info({ userId }, '2FA enabled for user');
 				}
 
 				// generate new tokens
 				const tokens = await generateTokens({
 					userId,
-					role: user.user_role,
+					role: user.role,
 					requires2FA: false, // 2FA verified, full access granted
 				});
 
@@ -196,12 +200,15 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 			}
 
 			try {
-				const userResult = await query(
-					`SELECT user_twofa_secret, user_twofa_enabled FROM users WHERE user_id = $1`,
-					[userId]
-				);
+				const user = await prisma.user.findUnique({
+					where: { id: BigInt(userId) },
+					select: {
+						twofaSecret: true,
+						twofaEnabled: true,
+					},
+				});
 
-				if (userResult.rows.length === 0) {
+				if (!user) {
 					return reply.status(404).send({
 						statusCode: 404,
 						error: 'Not Found',
@@ -209,9 +216,7 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				const user = userResult.rows[0];
-
-				if (!user.user_twofa_enabled) {
+				if (!user.twofaEnabled) {
 					return reply.status(400).send({
 						statusCode: 400,
 						error: 'Bad Request',
@@ -220,7 +225,7 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 				}
 
 				// verify code
-				const isValid = verifyTOTP(user.user_twofa_secret, code);
+				const isValid = verifyTOTP(user.twofaSecret!, code);
 
 				if (!isValid) {
 					return reply.status(401).send({
@@ -231,10 +236,13 @@ export async function twoFactorRoutes(fastify: FastifyInstance) {
 				}
 
 				// disable 2FA
-				await query(
-					`UPDATE users SET user_twofa_enabled = FALSE, user_twofa_secret = NULL WHERE user_id = $1`,
-					[userId]
-				);
+				await prisma.user.update({
+					where: { id: BigInt(userId) },
+					data: {
+						twofaEnabled: false,
+						twofaSecret: null,
+					},
+				});
 
 				request.log.info({ userId }, '2FA disabled for user');
 

@@ -1,27 +1,48 @@
-import { Pool, type QueryResultRow } from 'pg';
+import { PrismaClient, Prisma } from '@prisma/client';
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'postgres',
-  port: Number(process.env.DB_PORT ?? 5432),
-  user: process.env.DB_USER || 'root_admin',
-  password: process.env.DB_PASSWORD || undefined,
-  database: process.env.DB_NAME || 'auth_service',
-  max: Number(process.env.DB_MAX_CLIENTS ?? 10),
-  idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS ?? 30000),
-  // Enforce TLS in production
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
-    : false,
-});
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-export default pool;
-
-export async function query<T extends QueryResultRow = any>(text: string, params?: any[]) {
-  const client = await pool.connect();
-  try {
-    const res = await client.query<T>(text, params);
-    return res;
-  } finally {
-    client.release();
+const getDatabaseUrl = (): string => {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
   }
+  const user = process.env.DB_USER || 'root_admin';
+  const password = process.env.DB_PASSWORD || '';
+  const host = process.env.DB_HOST || 'postgres';
+  const port = process.env.DB_PORT || '5432';
+  const database = process.env.DB_NAME || 'game_db';
+  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' 
+      ? ['query', 'error', 'warn'] 
+      : ['error'],
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
+      },
+    },
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
 }
+
+export default prisma;
+
+// re export custom types
+export { Prisma };
+export type { 
+  User, 
+  OAuth, 
+  UserKey, 
+  Settings,
+  UserRole,
+  TokenType,
+  TokenStatus,
+} from '@prisma/client';

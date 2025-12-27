@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { authMiddleware } from '../middleware/auth';
 
 export async function settingsRoutes(fastify: FastifyInstance) {
@@ -8,16 +8,14 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
 	// get user settings
 	fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 
 		try {
-			const result = await query(
-				`SELECT settings_avatar, settings_colour, settings_locale
-				FROM settings WHERE settings_userid = $1`,
-				[userId]
-			);
+			const settings = await prisma.settings.findUnique({
+				where: { userId },
+			});
 
-			if (result.rows.length === 0) {
+			if (!settings) {
 				// if none found return default config
 				return {
 					avatar: null,
@@ -37,12 +35,10 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 				};
 			}
 
-			const settings = result.rows[0];
-
 			return {
-				avatar: settings.settings_avatar,
-				theme: settings.settings_colour || 'light',
-				language: settings.settings_locale || 'en',
+				avatar: settings.avatar,
+				theme: settings.colour || 'light',
+				language: settings.locale || 'en',
 				accessibility: {
 					highContrast: false,
 					textToSpeech: false,
@@ -83,36 +79,22 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 			};
 		};
 	}>('/', async (request, reply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 		const { theme, language } = request.body;
 
 		try {
-			const updates: string[] = [];
-			const values: unknown[] = [];
-			let paramIndex = 1;
-
-			if (theme) {
-				updates.push(`settings_colour = $${paramIndex++}`);
-				values.push(theme);
-			}
-
-			if (language) {
-				updates.push(`settings_locale = $${paramIndex++}`);
-				values.push(language);
-			}
-
-			if (updates.length > 0) {
-				values.push(userId);
-				
-				// Upsert settings
-				await query(
-					`INSERT INTO settings (settings_userid, settings_colour, settings_locale)
-					VALUES ($${paramIndex}, $1, $2)
-					ON CONFLICT (settings_userid) 
-					DO UPDATE SET ${updates.join(', ')}`,
-					[theme || 'light', language || 'en', userId]
-				);
-			}
+			await prisma.settings.upsert({
+				where: { userId },
+				update: {
+					...(theme && { colour: theme }),
+					...(language && { locale: language }),
+				},
+				create: {
+					userId,
+					colour: theme || 'light',
+					locale: language || 'en',
+				},
+			});
 
 			return { success: true, message: 'Settings updated' };
 		} catch (error) {

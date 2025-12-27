@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { authMiddleware } from '../middleware/auth';
 import { config } from '../config';
 import type { IUserProfile } from '@speak-up/shared';
@@ -14,20 +14,29 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 	// get curr user data
 	fastify.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 
 		try {
-			const result = await query(
-				`SELECT u.user_id, u.user_username, u.user_email, u.user_role, 
-						u.user_twofa_enabled, u.user_creation_date,
-						s.settings_avatar, s.settings_locale, s.settings_colour
-				FROM users u
-				LEFT JOIN settings s ON u.user_id = s.settings_userid
-				WHERE u.user_id = $1`,
-				[userId]
-			);
+			const user = await prisma.user.findUnique({
+				where: { id: userId },
+				select: {
+					id: true,
+					username: true,
+					email: true,
+					role: true,
+					twofaEnabled: true,
+					createdAt: true,
+					settings: {
+						select: {
+							avatar: true,
+							locale: true,
+							colour: true,
+						},
+					},
+				},
+			});
 
-			if (result.rows.length === 0) {
+			if (!user) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -35,28 +44,37 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const user = result.rows[0];
-
 			// fetching user stats
-			const statsResult = await query(
-				`SELECT COUNT(*) as sessions_completed,
-					COALESCE(AVG((final_metrics->>'trust')::numeric), 0) as avg_trust
-				FROM sessions
-				WHERE patient_id = $1 AND status = 'COMPLETED'`,
-				[userId]
-			);
-			const stats = statsResult.rows[0];
+			const sessions = await prisma.session.findMany({
+				where: {
+					patientId: userId,
+					status: 'COMPLETED',
+				},
+				select: {
+					finalMetrics: true,
+				},
+			});
+
+			const sessionsCompleted = sessions.length;
+			let avgTrust = 0;
+			if (sessionsCompleted > 0) {
+				const totalTrust = sessions.reduce((sum, s) => {
+					const metrics = s.finalMetrics as { trust?: number } | null;
+					return sum + (metrics?.trust || 0);
+				}, 0);
+				avgTrust = totalTrust / sessionsCompleted;
+			}
 
 			const profile: IUserProfile = {
-				id: user.user_id.toString(),
-				alias: user.user_username,
-				username: user.user_username,
-				email: user.user_email,
-				avatarUrl: user.settings_avatar || '/assets/default-avatar.png',
-				role: user.user_role as UserRole,
+				id: user.id.toString(),
+				alias: user.username,
+				username: user.username,
+				email: user.email,
+				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
+				role: user.role as UserRole,
 				preferences: {
-					language: (user.settings_locale || 'en') as 'en' | 'fr',
-					theme: (user.settings_colour || 'light') as 'light' | 'dark',
+					language: (user.settings?.locale || 'en') as 'en' | 'fr',
+					theme: (user.settings?.colour || 'light') as 'light' | 'dark',
 					accessibility: {
 						highContrast: false,
 						textToSpeech: false,
@@ -64,8 +82,8 @@ export async function profileRoutes(fastify: FastifyInstance) {
 					},
 				},
 				stats: {
-					sessionsCompleted: parseInt(stats.sessions_completed) || 0,
-					averageTrustScore: parseFloat(stats.avg_trust) || 0,
+					sessionsCompleted,
+					averageTrustScore: avgTrust,
 				},
 			};
 
@@ -96,56 +114,36 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			};
 		};
 	}>('/me', async (request, reply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 		const { username, email, preferences } = request.body;
 
 		try {
-			// update usertable if email or username given
+			// update user table if email or username given
 			if (username || email) {
-				const updates: string[] = [];
-				const values: unknown[] = [];
-				let paramIndex = 1;
-
-				if (username) {
-					updates.push(`user_username = $${paramIndex++}`);
-					values.push(username);
-				}
-				if (email) {
-					updates.push(`user_email = $${paramIndex++}`);
-					values.push(email);
-				}
-
-				updates.push(`user_modification_date = NOW()`);
-				values.push(userId);
-
-				await query(
-					`UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramIndex}`,
-					values
-				);
+				await prisma.user.update({
+					where: { id: userId },
+					data: {
+						...(username && { username }),
+						...(email && { email }),
+						updatedAt: new Date(),
+					},
+				});
 			}
 
 			// update settings if preferences given
 			if (preferences) {
-				const settingsUpdates: string[] = [];
-				const settingsValues: unknown[] = [];
-				let paramIndex = 1;
-
-				if (preferences.language) {
-					settingsUpdates.push(`settings_locale = $${paramIndex++}`);
-					settingsValues.push(preferences.language);
-				}
-				if (preferences.theme) {
-					settingsUpdates.push(`settings_colour = $${paramIndex++}`);
-					settingsValues.push(preferences.theme);
-				}
-
-				if (settingsUpdates.length > 0) {
-					settingsValues.push(userId);
-					await query(
-						`UPDATE settings SET ${settingsUpdates.join(', ')} WHERE settings_userid = $${paramIndex}`,
-						settingsValues
-					);
-				}
+				await prisma.settings.upsert({
+					where: { userId },
+					update: {
+						...(preferences.language && { locale: preferences.language }),
+						...(preferences.theme && { colour: preferences.theme }),
+					},
+					create: {
+						userId,
+						locale: preferences.language || 'en',
+						colour: preferences.theme || 'light',
+					},
+				});
 			}
 
 			return { success: true, message: 'Profile updated successfully' };
@@ -161,7 +159,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 	// file upload -> img
 	fastify.put('/me/avatar', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 
 		try {
 			const file = await request.file();
@@ -187,25 +185,34 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			const fileExt = path.extname(file.filename) || '.png';
 			const newFilename = `${userId}_${uuidv4()}${fileExt}`;
 			const filePath = path.join(config.upload.avatarPath, newFilename);
+
 			// directory sanity
 			await fs.mkdir(config.upload.avatarPath, { recursive: true });
+
 			// save file
 			const buffer = await file.toBuffer();
 			await fs.writeFile(filePath, buffer);
+
+			// get old avatar for cleanup
+			const existingSettings = await prisma.settings.findUnique({
+				where: { userId },
+				select: { avatar: true },
+			});
+
 			// update DB
 			const avatarUrl = `/uploads/avatars/${newFilename}`;
-			await query(
-				`UPDATE settings SET settings_avatar = $1 WHERE settings_userid = $2`,
-				[avatarUrl, userId]
-			);
+			await prisma.settings.upsert({
+				where: { userId },
+				update: { avatar: avatarUrl },
+				create: {
+					userId,
+					avatar: avatarUrl,
+				},
+			});
 
-			// cleanup oldavatar
-			const oldAvatar = await query(
-				`SELECT settings_avatar FROM settings WHERE settings_userid = $1`,
-				[userId]
-			);
-			if (oldAvatar.rows[0]?.settings_avatar && oldAvatar.rows[0].settings_avatar !== avatarUrl) {
-				const oldPath = path.join('/app', oldAvatar.rows[0].settings_avatar);
+			// cleanup old avatar
+			if (existingSettings?.avatar && existingSettings.avatar !== avatarUrl) {
+				const oldPath = path.join('/app', existingSettings.avatar);
 				await fs.unlink(oldPath).catch(() => {}); // ignores error
 			}
 
@@ -225,16 +232,21 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		const { id } = request.params;
 
 		try {
-			const result = await query(
-				`SELECT u.user_id, u.user_username, u.user_role,
-					s.settings_avatar
-				FROM users u
-				LEFT JOIN settings s ON u.user_id = s.settings_userid
-				WHERE u.user_id = $1`,
-				[id]
-			);
+			const user = await prisma.user.findUnique({
+				where: { id: BigInt(id) },
+				select: {
+					id: true,
+					username: true,
+					role: true,
+					settings: {
+						select: {
+							avatar: true,
+						},
+					},
+				},
+			});
 
-			if (result.rows.length === 0) {
+			if (!user) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -242,13 +254,11 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const user = result.rows[0];
-
 			return {
-				id: user.user_id.toString(),
-				username: user.user_username,
-				avatarUrl: user.settings_avatar || '/assets/default-avatar.png',
-				role: user.user_role,
+				id: user.id.toString(),
+				username: user.username,
+				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
+				role: user.role,
 			};
 		} catch (error) {
 			request.log.error({ error }, 'Failed to fetch user profile');

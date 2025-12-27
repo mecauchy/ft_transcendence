@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { authMiddleware } from '../middleware/auth';
 import Redis from 'ioredis';
 import { config } from '../config';
@@ -17,79 +17,108 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 	// list friends + pending
 	fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 
 		try {
-			// get accepted friends
-			const friendsResult = await query(
-				`SELECT 
-					CASE 
-						WHEN f.friend_id = $1 THEN f.friend_userid 
-						ELSE f.friend_id 
-					END as friend_user_id,
-					u.user_username,
-					s.settings_avatar,
-					f.friend_status,
-					f.friend_creation_date
-				FROM friends f
-				JOIN users u ON u.user_id = CASE 
-					WHEN f.friend_id = $1 THEN f.friend_userid 
-					ELSE f.friend_id 
-				END
-				LEFT JOIN settings s ON s.settings_userid = u.user_id
-				WHERE (f.friend_id = $1 OR f.friend_userid = $1)
-					AND f.friend_status = 'ACCEPTED'`,
-				[userId]
-			);
+			// get accepted friends (where user is initiator)
+			const friendsAsInitiator = await prisma.friend.findMany({
+				where: {
+					initiatorId: userId,
+					status: 'ACCEPTED',
+				},
+				include: {
+					receiver: {
+						include: {
+							settings: { select: { avatar: true } },
+						},
+					},
+				},
+			});
 
-			// get pending requests (received)
-			const pendingResult = await query(
-				`SELECT f.friend_id as requester_id, u.user_username, s.settings_avatar, f.friend_creation_date
-				FROM friends f
-				JOIN users u ON u.user_id = f.friend_id
-				LEFT JOIN settings s ON s.settings_userid = u.user_id
-				WHERE f.friend_userid = $1 AND f.friend_status = 'PENDING'`,
-				[userId]
-			);
+			// get accepted friends (where user is receiver)
+			const friendsAsReceiver = await prisma.friend.findMany({
+				where: {
+					receiverId: userId,
+					status: 'ACCEPTED',
+				},
+				include: {
+					initiator: {
+						include: {
+							settings: { select: { avatar: true } },
+						},
+					},
+				},
+			});
 
-			// get sent requests (outgoing)
-			const sentResult = await query(
-				`SELECT f.friend_userid as target_id, u.user_username, s.settings_avatar, f.friend_creation_date
-				FROM friends f
-				JOIN users u ON u.user_id = f.friend_userid
-				LEFT JOIN settings s ON s.settings_userid = u.user_id
-				WHERE f.friend_id = $1 AND f.friend_status = 'PENDING'`,
-				[userId]
-			);
+			// get pending requests (received - user is receiver)
+			const pendingReceived = await prisma.friend.findMany({
+				where: {
+					receiverId: userId,
+					status: 'PENDING',
+				},
+				include: {
+					initiator: {
+						include: {
+							settings: { select: { avatar: true } },
+						},
+					},
+				},
+			});
+
+			// get sent requests (outgoing - user is initiator)
+			const pendingSent = await prisma.friend.findMany({
+				where: {
+					initiatorId: userId,
+					status: 'PENDING',
+				},
+				include: {
+					receiver: {
+						include: {
+							settings: { select: { avatar: true } },
+						},
+					},
+				},
+			});
 
 			// check online status from redis
-			const friends: IFriend[] = await Promise.all(
-				friendsResult.rows.map(async (row) => {
-					const onlineStatus = await redis.get(`presence:${row.friend_user_id}`);
-					const inSession = await redis.get(`session:${row.friend_user_id}`);
-
+			const friends: IFriend[] = await Promise.all([
+				...friendsAsInitiator.map(async (f) => {
+					const friendUser = f.receiver;
+					const onlineStatus = await redis.get(`presence:${friendUser.id}`);
+					const inSession = await redis.get(`session:${friendUser.id}`);
 					return {
-						id: row.friend_user_id.toString(),
-						username: row.user_username,
-						status: inSession ? 'IN_SESSION' : (onlineStatus ? 'ONLINE' : 'OFFLINE') as IFriend['status'],
+						id: friendUser.id.toString(),
+						username: friendUser.username,
+						status: (inSession ? 'IN_SESSION' : (onlineStatus ? 'ONLINE' : 'OFFLINE')) as IFriend['status'],
 						lastSeen: Date.now(),
 					};
-				})
-			);
+				}),
+				...friendsAsReceiver.map(async (f) => {
+					const friendUser = f.initiator;
+					const onlineStatus = await redis.get(`presence:${friendUser.id}`);
+					const inSession = await redis.get(`session:${friendUser.id}`);
+					return {
+						id: friendUser.id.toString(),
+						username: friendUser.username,
+						status: (inSession ? 'IN_SESSION' : (onlineStatus ? 'ONLINE' : 'OFFLINE')) as IFriend['status'],
+						lastSeen: Date.now(),
+					};
+				}),
+			]);
 
 			return {
 				friends,
-				pendingRequests: pendingResult.rows.map((row) => ({
-					id: row.requester_id.toString(),
-					username: row.user_username,
-					avatarUrl: row.settings_avatar,
-					requestedAt: row.friend_creation_date,
+				pendingRequests: pendingReceived.map((f) => ({
+					id: f.initiator.id.toString(),
+					username: f.initiator.username,
+					avatarUrl: f.initiator.settings?.avatar,
+					requestedAt: f.createdAt,
 				})),
-				sentRequests: sentResult.rows.map((row) => ({
-					id: row.target_id.toString(),
-					username: row.user_username,
-					avatarUrl: row.settings_avatar,
-					sentAt: row.friend_creation_date,
+				sentRequests: pendingSent.map((f) => ({
+					id: f.receiver.id.toString(),
+					username: f.receiver.username,
+					avatarUrl: f.receiver.settings?.avatar,
+					sentAt: f.createdAt,
 				})),
 			};
 		} catch (error) {
@@ -104,7 +133,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 	// send friend request using api
 	fastify.post<{ Body: { targetId: string } }>('/', async (request, reply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 		const { targetId } = request.body;
 
 		if (!targetId) {
@@ -115,7 +144,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		if (targetId === userId) {
+		const targetIdBigInt = BigInt(targetId);
+
+		if (targetIdBigInt === userId) {
 			return reply.status(400).send({
 				statusCode: 400,
 				error: 'Bad Request',
@@ -125,12 +156,11 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 		try {
 			// check if target exists
-			const targetResult = await query(
-				`SELECT user_id FROM users WHERE user_id = $1`,
-				[targetId]
-			);
+			const targetUser = await prisma.user.findUnique({
+				where: { id: targetIdBigInt },
+			});
 
-			if (targetResult.rows.length === 0) {
+			if (!targetUser) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -138,16 +168,18 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			// check if friendship exists
-			const existingResult = await query(
-				`SELECT friend_status FROM friends 
-				WHERE (friend_id = $1 AND friend_userid = $2)
-					OR (friend_id = $2 AND friend_userid = $1)`,
-				[userId, targetId]
-			);
+			// check if friendship exists (either direction)
+			const existingFriend = await prisma.friend.findFirst({
+				where: {
+					OR: [
+						{ initiatorId: userId, receiverId: targetIdBigInt },
+						{ initiatorId: targetIdBigInt, receiverId: userId },
+					],
+				},
+			});
 
-			if (existingResult.rows.length > 0) {
-				const status = existingResult.rows[0].friend_status;
+			if (existingFriend) {
+				const status = existingFriend.status;
 				if (status === 'ACCEPTED') {
 					return reply.status(400).send({
 						statusCode: 400,
@@ -172,11 +204,13 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			}
 
 			// create friend request
-			await query(
-				`INSERT INTO friends (friend_id, friend_userid, friend_status)
-				 VALUES ($1, $2, 'PENDING')`,
-				[userId, targetId]
-			);
+			await prisma.friend.create({
+				data: {
+					initiatorId: userId,
+					receiverId: targetIdBigInt,
+					status: 'PENDING',
+				},
+			});
 
 			// TODO: send notification via websocket
 
@@ -196,8 +230,8 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		Params: { id: string };
 		Body: { action: 'accept' | 'reject' };
 	}>('/:id', async (request, reply) => {
-		const userId = request.user!.userId;
-		const { id: requesterId } = request.params;
+		const userId = BigInt(request.user!.userId);
+		const requesterId = BigInt(request.params.id);
 		const { action } = request.body;
 
 		if (!['accept', 'reject'].includes(action)) {
@@ -209,14 +243,16 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			// check if request exists
-			const requestResult = await query(
-				`SELECT * FROM friends 
-				 WHERE friend_id = $1 AND friend_userid = $2 AND friend_status = 'PENDING'`,
-				[requesterId, userId]
-			);
+			// check if request exists (requester initiated, current user is receiver)
+			const friendRequest = await prisma.friend.findFirst({
+				where: {
+					initiatorId: requesterId,
+					receiverId: userId,
+					status: 'PENDING',
+				},
+			});
 
-			if (requestResult.rows.length === 0) {
+			if (!friendRequest) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -225,18 +261,25 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			}
 
 			if (action === 'accept') {
-				await query(
-					`UPDATE friends SET friend_status = 'ACCEPTED' 
-					WHERE friend_id = $1 AND friend_userid = $2`,
-					[requesterId, userId]
-				);
+				await prisma.friend.update({
+					where: {
+						initiatorId_receiverId: {
+							initiatorId: requesterId,
+							receiverId: userId,
+						},
+					},
+					data: { status: 'ACCEPTED' },
+				});
 				return { success: true, status: 'ACCEPTED' };
 			} else {
-				await query(
-					`DELETE FROM friends 
-					WHERE friend_id = $1 AND friend_userid = $2`,
-					[requesterId, userId]
-				);
+				await prisma.friend.delete({
+					where: {
+						initiatorId_receiverId: {
+							initiatorId: requesterId,
+							receiverId: userId,
+						},
+					},
+				});
 				return { success: true, status: 'REJECTED' };
 			}
 		} catch (error) {
@@ -251,19 +294,21 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 	// remove/cancel friend
 	fastify.delete<{ Params: { id: string } }>('/:id', async (request, reply) => {
-		const userId = request.user!.userId;
-		const { id: friendId } = request.params;
+		const userId = BigInt(request.user!.userId);
+		const friendId = BigInt(request.params.id);
 
 		try {
-			const result = await query(
-				`DELETE FROM friends 
-				WHERE (friend_id = $1 AND friend_userid = $2)
-					OR (friend_id = $2 AND friend_userid = $1)
-				RETURNING *`,
-				[userId, friendId]
-			);
+			// try to delete where user is initiator
+			const deleted = await prisma.friend.deleteMany({
+				where: {
+					OR: [
+						{ initiatorId: userId, receiverId: friendId },
+						{ initiatorId: friendId, receiverId: userId },
+					],
+				},
+			});
 
-			if (result.rows.length === 0) {
+			if (deleted.count === 0) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -284,23 +329,28 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 	// blocking a user
 	fastify.post<{ Params: { id: string } }>('/:id/block', async (request, reply) => {
-		const userId = request.user!.userId;
-		const { id: targetId } = request.params;
+		const userId = BigInt(request.user!.userId);
+		const targetId = BigInt(request.params.id);
 
 		try {
-			// remove existing friendship and set to blocked
-			await query(
-				`DELETE FROM friends
-				WHERE (friend_id = $1 AND friend_userid = $2)
-				OR (friend_id = $2 AND friend_userid = $1)`,
-				[userId, targetId]
-			);
+			// remove existing friendship
+			await prisma.friend.deleteMany({
+				where: {
+					OR: [
+						{ initiatorId: userId, receiverId: targetId },
+						{ initiatorId: targetId, receiverId: userId },
+					],
+				},
+			});
 
-			await query(
-				`INSERT INTO friends (friend_id, friend_userid, friend_status)
-				VALUES ($1, $2, 'BLOCKED')`,
-				[userId, targetId]
-			);
+			// create blocked entry
+			await prisma.friend.create({
+				data: {
+					initiatorId: userId,
+					receiverId: targetId,
+					status: 'BLOCKED',
+				},
+			});
 
 			return { success: true, message: 'User blocked' };
 		} catch (error) {

@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config';
 import { NarrativeEngine, createEngineFromScenario } from '../engine/narrative-engine';
-import { query } from '../db';
+import { prisma } from '../db';
 import type { IInvestigationState } from '@speak-up/shared';
 import { EventType, type GameEvent, type IStateUpdateEvent } from '@speak-up/shared';
 
@@ -89,31 +89,28 @@ export class WebSocketManager {
 		if (!session) {
 			// load session from db
 			try {
-				const result = await query(
-					`SELECT s.*, sc.scenario_logic_tree 
-					FROM sessions s 
-					JOIN scenarios sc ON s.scenario_id = sc.scenario_id
-					WHERE s.id = $1`,
-					[sessionId]
-				);
+				const dbSession = await prisma.session.findUnique({
+					where: { id: sessionId },
+					include: {
+						scenario: true,
+					},
+				});
 
-				if (result.rows.length === 0) {
+				if (!dbSession) {
 					this.closeWithError(socket, 'Session not found');
 					return;
 				}
-
-				const dbSession = result.rows[0];
 				
 				// create engine
 				const engine = createEngineFromScenario(
 					sessionId,
 					{
-						id: dbSession.scenario_id,
+						id: dbSession.scenarioId?.toString() || '',
 						title: 'Loaded Scenario',
-						logicTree: dbSession.scenario_logic_tree,
+						logicTree: dbSession.scenario?.logicTree as any,
 					},
-					dbSession.patient_id,
-					dbSession.doctor_id
+					dbSession.patientId?.toString() || '',
+					dbSession.doctorId?.toString() || null
 				);
 
 				session = {
@@ -413,24 +410,46 @@ export class WebSocketManager {
 		const state = session.engine.getState();
 		const events = session.engine.getEventLog();
 
-		try {
-			await query(
-				`UPDATE sessions SET 
-					status = $1,
-					ended_at = NOW(),
-					final_metrics = $2
-				WHERE id = $3`,
-				[state.status, JSON.stringify(state.metrics), sessionId]
-			);
+		// Map game state status to Prisma enum
+		const statusMap: Record<string, 'WAITING' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'TERMINATED'> = {
+			'WAITING': 'WAITING',
+			'IN_PROGRESS': 'ACTIVE',
+			'ACTIVE': 'ACTIVE',
+			'PAUSED': 'PAUSED',
+			'COMPLETED': 'COMPLETED',
+			'ABANDONED': 'TERMINATED',
+			'TERMINATED': 'TERMINATED',
+		};
 
-			// log event
-			for (const event of events) {
-				await query(
-					`INSERT INTO event_logs (session_id, sequence_id, event_type, emitter_id, payload)
-					VALUES ($1, $2, $3, $4, $5)
-					ON CONFLICT (session_id, sequence_id) DO NOTHING`,
-					[sessionId, events.indexOf(event), event.type, event.emitterId, JSON.stringify(event)]
-				);
+		try {
+			await prisma.session.update({
+				where: { id: sessionId },
+				data: {
+					status: statusMap[state.status] || 'TERMINATED',
+					endedAt: new Date(),
+					finalMetrics: state.metrics as object,
+				},
+			});
+
+			// log events
+			for (let i = 0; i < events.length; i++) {
+				const event = events[i];
+				await prisma.eventLog.upsert({
+					where: {
+						sessionId_sequenceId: {
+							sessionId: sessionId,
+							sequenceId: i,
+						},
+					},
+					update: {},
+					create: {
+						sessionId: sessionId,
+						sequenceId: i,
+						eventType: event.type,
+						emitterId: BigInt(event.emitterId || '0'),
+						payload: JSON.parse(JSON.stringify(event)) as object,
+					},
+				});
 			}
 		} catch (error) {
 			console.error('Failed to save session:', error);
@@ -458,34 +477,34 @@ export class WebSocketManager {
 		doctorId: string | null
 	): Promise<string> {
 		// load scenario from database
-		const scenarioResult = await query(
-			`SELECT * FROM scenarios WHERE scenario_id = $1`,
-			[scenarioId]
-		);
+		const scenario = await prisma.scenario.findUnique({
+			where: { id: BigInt(scenarioId) },
+		});
 
-		if (scenarioResult.rows.length === 0) {
+		if (!scenario) {
 			throw new Error('Scenario not found');
 		}
 
-		const scenario = scenarioResult.rows[0];
-
 		// create session in db
-		const sessionResult = await query(
-			`INSERT INTO sessions (patient_id, doctor_id, scenario_id, mode, status)
-			VALUES ($1, $2, $3, $4, 'WAITING')
-			RETURNING id`,
-			[patientId, doctorId, scenarioId, doctorId ? 'P2P' : 'AI']
-		);
+		const newSession = await prisma.session.create({
+			data: {
+				patientId: BigInt(patientId),
+				doctorId: doctorId ? BigInt(doctorId) : null,
+				scenarioId: BigInt(scenarioId),
+				mode: doctorId ? 'P2P' : 'AI',
+				status: 'WAITING',
+			},
+		});
 
-		const sessionId = sessionResult.rows[0].id;
+		const sessionId = newSession.id.toString();
 
 		// create game engine
 		const engine = createEngineFromScenario(
 			sessionId,
 			{
-				id: scenario.scenario_id,
-				title: scenario.scenario_title,
-				logicTree: scenario.scenario_logic_tree,
+				id: scenario.id.toString(),
+				title: scenario.title,
+				logicTree: scenario.logicTree as any,
 			},
 			patientId,
 			doctorId

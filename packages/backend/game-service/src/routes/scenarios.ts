@@ -1,34 +1,24 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { IScenario, IScenarioListResponse, IScenarioStatsResponse, IScenarioLeaderboardResponse, IScenarioLeaderboardEntry } from '@speak-up/shared';
 
 // list all scenarios
 async function listScenarios(request: FastifyRequest, reply: FastifyReply) {
-	const result = await query<{
-		id: string;
-		title: string;
-		description: string;
-		difficulty: string;
-		estimated_duration: number;
-		created_at: Date;
-		updated_at: Date;
-	}>(`
-		SELECT id, title, description, difficulty, estimated_duration, created_at, updated_at
-		FROM scenarios
-		ORDER BY created_at DESC
-	`);
+	const scenarios = await prisma.scenario.findMany({
+		orderBy: { createdAt: 'desc' },
+	});
 
-	const scenarios = result.rows.map(row => ({
-		id: row.id,
-		title: row.title,
-		description: row.description,
-		difficulty: row.difficulty as IScenario['difficulty'],
-		estimatedDuration: row.estimated_duration,
-		createdAt: row.created_at,
-		updatedAt: row.updated_at,
-	}));
-
-	const response: IScenarioListResponse = { scenarios };
+	const response: IScenarioListResponse = {
+		scenarios: scenarios.map((row) => ({
+			id: row.id.toString(),
+			title: row.title,
+			description: row.description ?? '',
+			difficulty: row.difficulty as IScenario['difficulty'],
+			estimatedDuration: row.estimatedDuration,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+		})),
+	};
 	return reply.send(response);
 }
 
@@ -39,37 +29,23 @@ async function getScenario(
 ) {
 	const { id } = request.params;
 
-	const result = await query<{
-		id: string;
-		title: string;
-		description: string;
-		difficulty: string;
-		estimated_duration: number;
-		scenario_logic_tree: unknown;
-		scenario_version: number;
-		created_at: Date;
-		updated_at: Date;
-	}>(`
-		SELECT id, title, description, difficulty, estimated_duration, 
-		       scenario_logic_tree, scenario_version, created_at, updated_at
-		FROM scenarios
-		WHERE id = $1
-	`, [id]);
+	const row = await prisma.scenario.findUnique({
+		where: { id: BigInt(id) },
+	});
 
-	if (result.rows.length === 0) {
+	if (!row) {
 		return reply.status(404).send({ error: 'Scenario not found' });
 	}
 
-	const row = result.rows[0];
 	const scenario: IScenario = {
-		id: row.id,
+		id: row.id.toString(),
 		title: row.title,
-		description: row.description,
+		description: row.description ?? '',
 		difficulty: row.difficulty as IScenario['difficulty'],
-		estimatedDuration: row.estimated_duration,
-		graphData: row.scenario_logic_tree as IScenario['graphData'],
-		createdAt: row.created_at,
-		updatedAt: row.updated_at,
+		estimatedDuration: row.estimatedDuration,
+		graphData: row.logicTree as unknown as IScenario['graphData'],
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
 	};
 
 	return reply.send(scenario);
@@ -81,37 +57,58 @@ async function getScenarioStats(
 	reply: FastifyReply
 ) {
 	const { id } = request.params;
+	const scenarioId = BigInt(id);
 
-	const result = await query<{
-		total_sessions: string;
-		completed_sessions: string;
-		avg_duration: string | null;
-		avg_trust: string | null;
-		avg_compliance: string | null;
-	}>(`
-		SELECT 
-			COUNT(*) as total_sessions,
-			COUNT(*) FILTER (WHERE status = 'COMPLETED') as completed_sessions,
-			AVG(EXTRACT(EPOCH FROM (ended_at - created_at))) FILTER (WHERE status = 'COMPLETED') as avg_duration,
-			AVG((final_metrics->>'trust')::numeric) FILTER (WHERE status = 'COMPLETED') as avg_trust,
-			AVG((final_metrics->>'compliance')::numeric) FILTER (WHERE status = 'COMPLETED') as avg_compliance
-		FROM sessions
-		WHERE scenario_id = $1
-	`, [id]);
+	// Get sessions for this scenario
+	const sessions = await prisma.session.findMany({
+		where: { scenarioId },
+	});
 
-	const row = result.rows[0];
-	const totalSessions = parseInt(row.total_sessions, 10);
-	const completedSessions = parseInt(row.completed_sessions, 10);
+	const totalSessions = sessions.length;
+	const completedSessions = sessions.filter((s) => s.status === 'COMPLETED');
+	const completedCount = completedSessions.length;
+
+	// Calculate averages from completed sessions
+	let avgDuration: number | null = null;
+	let avgTrust: number | null = null;
+	let avgCompliance: number | null = null;
+
+	if (completedCount > 0) {
+		let totalDuration = 0;
+		let totalTrust = 0;
+		let totalCompliance = 0;
+		let trustCount = 0;
+		let complianceCount = 0;
+
+		for (const s of completedSessions) {
+			if (s.endedAt && s.createdAt) {
+				totalDuration += (s.endedAt.getTime() - s.createdAt.getTime()) / 1000;
+			}
+			const metrics = s.finalMetrics as Record<string, number> | null;
+			if (metrics?.trust !== undefined) {
+				totalTrust += metrics.trust;
+				trustCount++;
+			}
+			if (metrics?.compliance !== undefined) {
+				totalCompliance += metrics.compliance;
+				complianceCount++;
+			}
+		}
+
+		avgDuration = totalDuration / completedCount;
+		avgTrust = trustCount > 0 ? totalTrust / trustCount : null;
+		avgCompliance = complianceCount > 0 ? totalCompliance / complianceCount : null;
+	}
 
 	const response: IScenarioStatsResponse = {
 		scenarioId: id,
 		totalSessions,
-		completedSessions,
-		completionRate: totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0,
-		averageDuration: row.avg_duration ? parseFloat(row.avg_duration) : null,
+		completedSessions: completedCount,
+		completionRate: totalSessions > 0 ? (completedCount / totalSessions) * 100 : 0,
+		averageDuration: avgDuration,
 		averageMetrics: {
-			trust: row.avg_trust,
-			compliance: row.avg_compliance,
+			trust: avgTrust?.toString() || null,
+			compliance: avgCompliance?.toString() || null,
 		},
 	};
 
@@ -125,47 +122,60 @@ async function getScenarioLeaderboard(
 ) {
 	const { id } = request.params;
 	const limit = Math.min(parseInt(request.query.limit || '10', 10), 100);
+	const scenarioId = BigInt(id);
 
-	const result = await query<{
-		user_id: string;
-		display_name: string;
-		avatar_url: string | null;
-		trust: number;
-		stress: number;
-		compliance: number;
-		duration: number;
-		completed_at: Date;
-	}>(`
-		SELECT 
-			s.patient_id as user_id,
-			COALESCE(u.display_name, u.user_username) as display_name,
-			u.avatar_url,
-			(s.final_metrics->>'trust')::int as trust,
-			(s.final_metrics->>'stress')::int as stress,
-			(s.final_metrics->>'compliance')::int as compliance,
-			EXTRACT(EPOCH FROM (s.ended_at - s.created_at))::int as duration,
-			s.ended_at as completed_at
-		FROM sessions s
-		JOIN users u ON s.patient_id = u.user_id
-		WHERE s.scenario_id = $1 AND s.status = 'COMPLETED'
-		ORDER BY (s.final_metrics->>'trust')::int DESC, 
-		         (s.final_metrics->>'stress')::int ASC,
-		         EXTRACT(EPOCH FROM (s.ended_at - s.created_at)) ASC
-		LIMIT $2
-	`, [id, limit]);
-
-	const leaderboard: IScenarioLeaderboardEntry[] = result.rows.map((row, index) => ({
-		rank: index + 1,
-		userId: row.user_id.toString(),
-		displayName: row.display_name,
-		avatarUrl: row.avatar_url || undefined,
-		metrics: {
-			trust: row.trust,
-			stress: row.stress,
-			compliance: row.compliance,
+	// get completed sessions with user data
+	const sessions = await prisma.session.findMany({
+		where: {
+			scenarioId,
+			status: 'COMPLETED',
 		},
-		duration: row.duration,
-		completedAt: row.completed_at,
+		include: {
+			patient: {
+				include: {
+					settings: { select: { avatar: true } },
+				},
+			},
+		},
+		take: limit * 2, // get more than needed to sort properly
+	});
+
+	// sort and build leaderboard
+	const sorted = sessions
+		.filter((s) => s.patient)
+		.map((s) => {
+			const metrics = s.finalMetrics as Record<string, number> | null;
+			const duration = s.endedAt && s.createdAt 
+				? Math.floor((s.endedAt.getTime() - s.createdAt.getTime()) / 1000)
+				: 0;
+			return {
+				session: s,
+				trust: metrics?.trust || 0,
+				stress: metrics?.stress || 0,
+				compliance: metrics?.compliance || 0,
+				duration,
+			};
+		})
+		.sort((a, b) => {
+			// sort by trust DESC, stress ASC, duration ASC
+			if (b.trust !== a.trust) return b.trust - a.trust;
+			if (a.stress !== b.stress) return a.stress - b.stress;
+			return a.duration - b.duration;
+		})
+		.slice(0, limit);
+
+	const leaderboard: IScenarioLeaderboardEntry[] = sorted.map((entry, index) => ({
+		rank: index + 1,
+		userId: entry.session.patientId!.toString(),
+		displayName: entry.session.patient!.username,
+		avatarUrl: entry.session.patient!.settings?.avatar || undefined,
+		metrics: {
+			trust: entry.trust,
+			stress: entry.stress,
+			compliance: entry.compliance,
+		},
+		duration: entry.duration,
+		completedAt: entry.session.endedAt!,
 	}));
 
 	const response: IScenarioLeaderboardResponse = {

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { config } from '../config';
-import { query } from '../db';
+import { prisma } from '../db';
 import { generateTokens, verifyRefreshToken, blacklistToken } from '../services/jwt';
 import { fetchOAuthToken, fetch42UserInfo } from '../services/oauth';
 import type { IAuthResponse, ILoginRequest, IRefreshTokenRequest } from '@speak-up/shared';
@@ -13,7 +13,7 @@ interface OAuth42CallbackQuery {
 
 export async function authRoutes(fastify: FastifyInstance) {
 
-	// get routes for 42api
+	// GET /login/42 - Redirect to 42 OAuth
 	fastify.get('/login/42', async (request: FastifyRequest, reply: FastifyReply) => {
 		const authUrl = new URL(config.oauth.authorizationUrl);
 		authUrl.searchParams.set('client_id', config.oauth.clientId);
@@ -21,16 +21,15 @@ export async function authRoutes(fastify: FastifyInstance) {
 		authUrl.searchParams.set('response_type', 'code');
 		authUrl.searchParams.set('scope', 'public');
 
-		// generate csrf token
+		// Generate CSRF token
 		const state = crypto.randomUUID();
 		authUrl.searchParams.set('state', state);
-		// store token in session
 		reply.header('Set-Cookie', `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/`);
 		
 		return reply.redirect(authUrl.toString());
 	});
 
-	// exchange oauth token
+	// GET /callback/42 - OAuth callback handler
 	fastify.get<{ Querystring: OAuth42CallbackQuery }>(
 		'/callback/42',
 		async (request, reply) => {
@@ -41,101 +40,101 @@ export async function authRoutes(fastify: FastifyInstance) {
 					statusCode: 400,
 					error: 'Bad Request',
 					message: 'Authorization code is required',
-				});
+					});
 			}
 
 			try {
+				// Exchange code for tokens
 				const oauthTokens = await fetchOAuthToken(code);
-				// fetch user info from tokenb
 				const userInfo = await fetch42UserInfo(oauthTokens.access_token);
 
-				// find or create in dbA
-				let userResult = await query(
-					`SELECT u.*, o.oauth_provider_userid 
-					FROM users u 
-					JOIN oauth o ON u.user_id = o.oauth_userid 
-					WHERE o.oauth_provider = '42' AND o.oauth_provider_userid = $1`,
-					[userInfo.id.toString()]
-				);
+				// Find existing user by OAuth provider
+				let user = await prisma.user.findFirst({
+					where: {
+					oauth: {
+					provider: '42',
+					providerUserId: userInfo.id.toString(),
+						},
+					},
+					include: {
+						oauth: true,
+						settings: true,
+					},
+				});
 
-				let userId: string;
 				let isNewUser = false;
 
-				if (userResult.rows.length === 0) {
-					// if no user found, create new user
-					const insertUserResult = await query(
-						`INSERT INTO users (user_username, user_email, user_dob, user_role)
-						VALUES ($1, $2, $3, $4)
-						RETURNING user_id`,
-						[userInfo.login, userInfo.email, new Date('2000-01-01'), 'PATIENT']
-					);
-					userId = insertUserResult.rows[0].user_id;
+				if (!user) {
+					// Create new user with OAuth and settings in a transaction
+					user = await prisma.user.create({
+						data: {
+						username: userInfo.login,
+						email: userInfo.email,
+						dob: new Date('2000-01-01'),
+						role: 'PATIENT',
+						oauth: {
+						create: {
+						provider: '42',
+						providerUserId: userInfo.id.toString(),
+								},
+							},
+							settings: {
+								create: {
+									avatar: userInfo.image?.link || null,
+									locale: 'en',
+								},
+							},
+						},
+						include: {
+							oauth: true,
+							settings: true,
+						},
+					});
 					isNewUser = true;
-
-					// link to OAuth provider
-					await query(
-						`INSERT INTO oauth (oauth_userid, oauth_provider, oauth_provider_userid)
-						VALUES ($1, $2, $3)`,
-						[userId, '42', userInfo.id.toString()]
-					);
-
-					// default settings
-					await query(
-						`INSERT INTO settings (settings_userid, settings_avatar, settings_locale)
-						VALUES ($1, $2, $3)`,
-						[userId, userInfo.image?.link || null, 'en']
-					);
-
-					request.log.info({ userId, login: userInfo.login }, 'New user created via 42 OAuth');
+					request.log.info({ userId: user.id, login: userInfo.login }, 'New user created via 42 OAuth');
 				} else {
-					userId = userResult.rows[0].user_id;
-					request.log.info({ userId }, 'Existing user logged in via 42 OAuth');
+					request.log.info({ userId: user.id }, 'Existing user logged in via 42 OAuth');
 				}
 
-				// check 2fa
-				const twoFAResult = await query(
-					`SELECT user_twofa_enabled FROM users WHERE user_id = $1`,
-					[userId]
-				);
-				const requires2FA = twoFAResult.rows[0]?.user_twofa_enabled || false;
+				const requires2FA = user.twofaEnabled;
 
-				const profileResult = await query(
-					`SELECT u.user_id, u.user_username, u.user_email, u.user_role, u.user_twofa_enabled,
-							s.settings_avatar, s.settings_locale
-					FROM users u
-					LEFT JOIN settings s ON u.user_id = s.settings_userid
-					WHERE u.user_id = $1`,
-					[userId]
-				);
-				const profile = profileResult.rows[0];
-
-				// gen JWT tokens
+				// Generate JWT tokens
 				const tokens = await generateTokens({
-					userId: userId.toString(),
-					role: profile.user_role,
+					userId: user.id.toString(),
+					role: user.role,
 					requires2FA,
 				});
 
-				// store token in database
-				await query(
-					`INSERT INTO user_keys (key_userid, key_token, key_type, key_status, key_expiry_date)
-					VALUES ($1, $2, 'REFRESH', 'ACTIVE', NOW() + INTERVAL '7 days')`,
-					[userId, tokens.refreshToken]
-				);
+				// Store refresh token - delete old one first if exists
+				await prisma.userKey.upsert({
+					where: { userId: user.id },
+					create: {
+					userId: user.id,
+					token: tokens.refreshToken,
+					type: 'REFRESH',
+					status: 'ACTIVE',
+					expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+					},
+					update: {
+						token: tokens.refreshToken,
+						status: 'ACTIVE',
+						expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					},
+				});
 
 				const response: IAuthResponse = {
 					accessToken: tokens.accessToken,
 					refreshToken: tokens.refreshToken,
 					require2FA: requires2FA,
 					user: {
-						id: userId.toString(),
-						alias: profile.user_username,
-						username: profile.user_username,
-						email: profile.user_email,
-						avatarUrl: profile.settings_avatar || `https://cdn.intra.42.fr/users/${profile.user_username}.jpg`,
-						role: profile.user_role as UserRole,
+						id: user.id.toString(),
+						alias: user.username,
+						username: user.username,
+						email: user.email,
+						avatarUrl: user.settings?.avatar || `https://cdn.intra.42.fr/users/${user.username}.jpg`,
+						role: user.role as UserRole,
 						preferences: {
-							language: (profile.settings_locale || 'en') as 'en' | 'fr',
+							language: (user.settings?.locale || 'en') as 'en' | 'fr',
 							theme: 'light',
 							accessibility: {
 								highContrast: false,
@@ -150,28 +149,26 @@ export async function authRoutes(fastify: FastifyInstance) {
 					},
 				};
 
-				// redirect to frontend with tokens (or JSON for API calls)
+				// Return JSON or redirect based on Accept header
 				if (request.headers.accept?.includes('application/json')) {
 					return response;
 				}
 				
-				// redirect with token in url
 				const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
 				return reply.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
 
 			} catch (error) {
 				request.log.error({ error }, 'OAuth callback failed');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to complete OAuth flow',
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to complete OAuth flow',
 				});
 			}
 		}
 	);
 
-
-	// use token for post
+	// POST /login/42 - Alternative login endpoint
 	fastify.post<{ Body: ILoginRequest }>(
 		'/login/42',
 		async (request, reply) => {
@@ -179,13 +176,13 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 			if (!code) {
 				return reply.status(400).send({
-					statusCode: 400,
-					error: 'Bad Request',
-					message: 'Authorization code is required',
+				statusCode: 400,
+				error: 'Bad Request',
+				message: 'Authorization code is required',
 				});
 			}
 
-			// reuse callback
+			// Reuse callback logic
 			request.query = { code } as any;
 			return (fastify as any).inject({
 				method: 'GET',
@@ -195,8 +192,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	);
 
-
-	// refresh access token
+	// POST /refresh - Refresh access token
 	fastify.post<{ Body: IRefreshTokenRequest }>(
 		'/refresh',
 		async (request, reply) => {
@@ -211,15 +207,19 @@ export async function authRoutes(fastify: FastifyInstance) {
 			}
 
 			try {
-				// verify tok
+				// Verify the refresh token
 				const payload = await verifyRefreshToken(refreshToken);
-				const tokenResult = await query(
-					`SELECT * FROM user_keys 
-					WHERE key_token = $1 AND key_status = 'ACTIVE' AND key_expiry_date > NOW()`,
-					[refreshToken]
-				);
+				
+				// Check if token is valid in database
+				const tokenRecord = await prisma.userKey.findFirst({
+					where: {
+					token: refreshToken,
+					status: 'ACTIVE',
+					expiresAt: { gt: new Date() },
+					},
+				});
 
-				if (tokenResult.rows.length === 0) {
+				if (!tokenRecord) {
 					return reply.status(401).send({
 						statusCode: 401,
 						error: 'Unauthorized',
@@ -227,26 +227,30 @@ export async function authRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				// generate new tokens
+				// Generate new tokens
 				const newTokens = await generateTokens({
 					userId: payload.userId,
 					role: payload.role,
 					requires2FA: false,
 				});
 
-				// refresh token
-				await query(
-					`UPDATE user_keys SET key_status = 'REVOKED' WHERE key_token = $1`,
-					[refreshToken]
-				);
+				// Revoke old token and create new one
+				await prisma.userKey.update({
+					where: { id: tokenRecord.id },
+					data: { status: 'REVOKED' },
+				});
 
-				await query(
-					`INSERT INTO user_keys (key_userid, key_token, key_type, key_status, key_expiry_date)
-					VALUES ($1, $2, 'REFRESH', 'ACTIVE', NOW() + INTERVAL '7 days')`,
-					[payload.userId, newTokens.refreshToken]
-				);
+				await prisma.userKey.create({
+					data: {
+						userId: BigInt(payload.userId),
+						token: newTokens.refreshToken,
+						type: 'REFRESH',
+						status: 'ACTIVE',
+						expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					},
+				});
 
-				return { accessToken: newTokens.accessToken };
+				return { accessToken: newTokens.accessToken, refreshToken: newTokens.refreshToken };
 
 			} catch (error) {
 				request.log.error({ error }, 'Token refresh failed');
@@ -259,19 +263,20 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	);
 
-	// invalidate refresh token
+	// POST /logout - Invalidate refresh token
 	fastify.post<{ Body: { refreshToken?: string } }>(
 		'/logout',
 		async (request, reply) => {
 			const { refreshToken } = request.body;
 
 			if (refreshToken) {
-				// blacklist the token
 				await blacklistToken(refreshToken);
-				await query(
-					`UPDATE user_keys SET key_status = 'REVOKED' WHERE key_token = $1`,
-					[refreshToken]
-				);
+				
+				// Mark token as revoked in database
+				await prisma.userKey.updateMany({
+					where: { token: refreshToken },
+					data: { status: 'REVOKED' },
+				});
 			}
 
 			return { success: true, message: 'Logged out successfully' };

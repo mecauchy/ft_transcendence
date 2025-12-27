@@ -31,8 +31,7 @@ CREATE TABLE oauth (
 	oauth_userid			BIGINT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
 	oauth_provider			TEXT NOT NULL,
 	oauth_provider_userid	TEXT NOT NULL,
-	oauth_creation_date		TIMESTAMPTZ DEFAULT NOW() NOT NULL
-
+	oauth_creation_date		TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 	UNIQUE (oauth_provider, oauth_provider_userid)
 );
 
@@ -86,7 +85,7 @@ CREATE TABLE sessions (
 	id				UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 	patient_id		BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
 	doctor_id		BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
-	scenario_id		BIGINT REFERENCES scenarios(id) ON DELETE RESTRICT,
+	scenario_id		BIGINT REFERENCES scenarios(scenario_id) ON DELETE RESTRICT,
 	mode			session_mode NOT NULL,
 	status			session_status NOT NULL DEFAULT 'WAITING',
 	created_at		TIMESTAMPTZ NOT NULL DEFAULT NOW(),

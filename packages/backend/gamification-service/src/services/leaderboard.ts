@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { prisma } from '../db';
 import Redis from 'ioredis';
 import { config } from '../config';
 
@@ -32,109 +32,94 @@ export async function getGlobalLeaderboard(
 		return JSON.parse(cached);
 	}
 	
-	let query_sql: string;
+	let users;
 	
 	switch (type) {
 		case 'XP':
-			query_sql = `
-				SELECT 
-					u.user_id,
-					u.display_name,
-					u.avatar_url,
-					u.current_level as level,
-					COALESCE(u.total_xp, 0) as total_xp,
-					COALESCE(u.total_xp, 0) as score,
-					ROW_NUMBER() OVER (ORDER BY COALESCE(u.total_xp, 0) DESC) as rank
-				FROM users u
-				WHERE u.is_active = true
-				ORDER BY score DESC
-				LIMIT $1 OFFSET $2
-			`;
+			users = await prisma.user.findMany({
+				where: { isActive: true },
+				orderBy: { totalXp: 'desc' },
+				take: limit,
+				skip: offset,
+				include: {
+					settings: { select: { avatar: true } },
+				},
+			});
 			break;
 			
 		case 'LEVEL':
-			query_sql = `
-				SELECT 
-					u.user_id,
-					u.display_name,
-					u.avatar_url,
-					u.current_level as level,
-					COALESCE(u.total_xp, 0) as total_xp,
-					u.current_level as score,
-					ROW_NUMBER() OVER (ORDER BY u.current_level DESC, COALESCE(u.total_xp, 0) DESC) as rank
-				FROM users u
-				WHERE u.is_active = true
-				ORDER BY score DESC, total_xp DESC
-				LIMIT $1 OFFSET $2
-			`;
+			users = await prisma.user.findMany({
+				where: { isActive: true },
+				orderBy: [{ currentLevel: 'desc' }, { totalXp: 'desc' }],
+				take: limit,
+				skip: offset,
+				include: {
+					settings: { select: { avatar: true } },
+				},
+			});
 			break;
 			
 		case 'SESSIONS':
-			query_sql = `
-				SELECT 
-					u.user_id,
-					u.display_name,
-					u.avatar_url,
-					u.current_level as level,
-					COALESCE(u.total_xp, 0) as total_xp,
-					COUNT(s.id) as score,
-					ROW_NUMBER() OVER (ORDER BY COUNT(s.id) DESC) as rank
-				FROM users u
-				LEFT JOIN sessions s ON u.user_id = s.patient_id AND s.status = 'COMPLETED'
-				WHERE u.is_active = true
-				GROUP BY u.user_id
-				ORDER BY score DESC
-				LIMIT $1 OFFSET $2
-			`;
+			users = await prisma.user.findMany({
+				where: { isActive: true },
+				include: {
+					settings: { select: { avatar: true } },
+					patientSessions: {
+						where: { status: 'COMPLETED' },
+						select: { id: true },
+					},
+				},
+			});
+			// sort by session count
+			users.sort((a, b) => 
+				(b.patientSessions?.length || 0) - (a.patientSessions?.length || 0)
+			);
+			users = users.slice(offset, offset + limit);
 			break;
 			
 		case 'ACHIEVEMENTS':
-			query_sql = `
-				SELECT 
-					u.user_id,
-					u.display_name,
-					u.avatar_url,
-					u.current_level as level,
-					COALESCE(u.total_xp, 0) as total_xp,
-					COUNT(ua.id) as score,
-					ROW_NUMBER() OVER (ORDER BY COUNT(ua.id) DESC) as rank
-				FROM users u
-				LEFT JOIN user_achievements ua ON u.user_id = ua.user_id
-				WHERE u.is_active = true
-				GROUP BY u.user_id
-				ORDER BY score DESC
-				LIMIT $1 OFFSET $2
-			`;
+			users = await prisma.user.findMany({
+				where: { isActive: true },
+				include: {
+					settings: { select: { avatar: true } },
+					achievements: { select: { id: true } },
+				},
+			});
+			// sort by achievement count
+			users.sort((a, b) => 
+				(b.achievements?.length || 0) - (a.achievements?.length || 0)
+			);
+			users = users.slice(offset, offset + limit);
 			break;
 			
 		default:
-			query_sql = `
-				SELECT 
-					u.user_id,
-					u.display_name,
-					u.avatar_url,
-					u.current_level as level,
-					COALESCE(u.total_xp, 0) as total_xp,
-					COALESCE(u.total_xp, 0) as score,
-					ROW_NUMBER() OVER (ORDER BY COALESCE(u.total_xp, 0) DESC) as rank
-				FROM users u
-				WHERE u.is_active = true
-				ORDER BY score DESC
-				LIMIT $1 OFFSET $2
-			`;
+			users = await prisma.user.findMany({
+				where: { isActive: true },
+				orderBy: { totalXp: 'desc' },
+				take: limit,
+				skip: offset,
+				include: {
+					settings: { select: { avatar: true } },
+				},
+			});
 	}
 	
-	const result = await query(query_sql, [limit, offset]);
-	
-	const entries: LeaderboardEntry[] = result.rows.map((row) => ({
-		rank: parseInt(row.rank) + offset,
-		userId: row.user_id,
-		displayName: row.display_name,
-		avatarUrl: row.avatar_url,
-		level: row.level || 1,
-		totalXP: parseInt(row.total_xp) || 0,
-		score: parseInt(row.score) || 0,
-	}));
+	const entries: LeaderboardEntry[] = users.map((user, index) => {
+		let score = user.totalXp || 0;
+		if (type === 'LEVEL') score = user.currentLevel || 1;
+		if (type === 'SESSIONS') score = (user as { patientSessions?: unknown[] }).patientSessions?.length || 0;
+		if (type === 'ACHIEVEMENTS') score = (user as { achievements?: unknown[] }).achievements?.length || 0;
+		
+		return {
+			rank: offset + index + 1,
+			userId: user.id.toString(),
+			displayName: user.username,
+			avatarUrl: (user as { settings?: { avatar?: string | null } }).settings?.avatar || null,
+			level: user.currentLevel || 1,
+			totalXP: user.totalXp || 0,
+			score,
+		};
+	});
 	
 	// cache configured TTL
 	await redis.setex(cacheKey, config.gamification.leaderboardCacheTTL, JSON.stringify(entries));
@@ -155,32 +140,50 @@ export async function getScenarioLeaderboard(
 		return JSON.parse(cached);
 	}
 	
-	const result = await query(
-		`SELECT 
-			u.user_id,
-			u.display_name,
-			u.avatar_url,
-			u.current_level as level,
-			COALESCE(u.total_xp, 0) as total_xp,
-			MAX((s.final_metrics->>'trust')::float * 100) as score,
-			ROW_NUMBER() OVER (ORDER BY MAX((s.final_metrics->>'trust')::float) DESC) as rank
-		FROM users u
-		JOIN sessions s ON u.user_id = s.patient_id
-		WHERE s.scenario_id = $1 AND s.status = 'COMPLETED'
-		GROUP BY u.user_id
-		ORDER BY score DESC
-		LIMIT $2 OFFSET $3`,
-		[scenarioId, limit, offset]
-	);
+	// get completed sessions for scenario with user data
+	const sessions = await prisma.session.findMany({
+		where: {
+			scenarioId: BigInt(scenarioId),
+			status: 'COMPLETED',
+			patientId: { not: null },
+		},
+		include: {
+			patient: {
+				include: {
+					settings: { select: { avatar: true } },
+				},
+			},
+		},
+	});
 	
-	const entries: LeaderboardEntry[] = result.rows.map((row) => ({
-		rank: parseInt(row.rank) + offset,
-		userId: row.user_id,
-		displayName: row.display_name,
-		avatarUrl: row.avatar_url,
-		level: row.level || 1,
-		totalXP: parseInt(row.total_xp) || 0,
-		score: Math.round(parseFloat(row.score) || 0),
+	// group by user, get best score
+	const userScores = new Map<string, { user: typeof sessions[0]['patient']; bestScore: number }>();
+	
+	for (const session of sessions) {
+		if (!session.patient) continue;
+		const userId = session.patientId!.toString();
+		const metrics = session.finalMetrics as Record<string, number> | null;
+		const trust = (metrics?.trust || 0) * 100;
+		
+		const existing = userScores.get(userId);
+		if (!existing || trust > existing.bestScore) {
+			userScores.set(userId, { user: session.patient, bestScore: trust });
+		}
+	}
+	
+	// sort and paginate
+	const sorted = Array.from(userScores.entries())
+		.sort((a, b) => b[1].bestScore - a[1].bestScore)
+		.slice(offset, offset + limit);
+	
+	const entries: LeaderboardEntry[] = sorted.map(([userId, data], index) => ({
+		rank: offset + index + 1,
+		userId,
+		displayName: data.user!.username,
+		avatarUrl: data.user!.settings?.avatar || null,
+		level: data.user!.currentLevel || 1,
+		totalXP: data.user!.totalXp || 0,
+		score: Math.round(data.bestScore),
 	}));
 	
 	await redis.setex(cacheKey, config.gamification.leaderboardCacheTTL, JSON.stringify(entries));
@@ -197,28 +200,39 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 		return parseInt(cached);
 	}
 	
-	let subquery: string;
+	const user = await prisma.user.findUnique({
+		where: { id: BigInt(userId) },
+	});
+	
+	if (!user) return 0;
+	
+	let rank: number;
 	
 	switch (type) {
 		case 'XP':
-			subquery = `COALESCE(total_xp, 0)`;
+			rank = await prisma.user.count({
+				where: {
+					isActive: true,
+					totalXp: { gt: user.totalXp || 0 },
+				},
+			}) + 1;
 			break;
 		case 'LEVEL':
-			subquery = `current_level`;
+			rank = await prisma.user.count({
+				where: {
+					isActive: true,
+					currentLevel: { gt: user.currentLevel || 0 },
+				},
+			}) + 1;
 			break;
 		default:
-			subquery = `COALESCE(total_xp, 0)`;
+			rank = await prisma.user.count({
+				where: {
+					isActive: true,
+					totalXp: { gt: user.totalXp || 0 },
+				},
+			}) + 1;
 	}
-	
-	const result = await query(
-		`SELECT COUNT(*) + 1 as rank
-		FROM users
-		WHERE is_active = true 
-			AND ${subquery} > (SELECT ${subquery} FROM users WHERE user_id = $1)`,
-		[userId]
-	);
-
-	const rank = parseInt(result.rows[0].rank);
 
 	await redis.setex(cacheKey, 60, rank.toString()); // 1m cache
 
@@ -226,46 +240,51 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 }
 
 // get friends leaderboard
-
 export async function getFriendsLeaderboard(
 	userId: string,
 	limit: number = 50
 ): Promise<LeaderboardEntry[]> {
-	const result = await query(
-		`WITH friend_ids AS (
-			SELECT CASE 
-				WHEN user1_id = $1 THEN user2_id 
-				ELSE user1_id 
-			END as friend_id
-			FROM friends
-			WHERE (user1_id = $1 OR user2_id = $1) AND status = 'ACCEPTED'
-			UNION
-			SELECT $1 as friend_id -- Include self
-		)
-		SELECT 
-			u.user_id,
-			u.display_name,
-			u.avatar_url,
-			u.current_level as level,
-			COALESCE(u.total_xp, 0) as total_xp,
-			COALESCE(u.total_xp, 0) as score,
-			ROW_NUMBER() OVER (ORDER BY COALESCE(u.total_xp, 0) DESC) as rank
-		FROM users u
-		JOIN friend_ids f ON u.user_id = f.friend_id
-		WHERE u.is_active = true
-		ORDER BY score DESC
-		LIMIT $2`,
-		[userId, limit]
+	const userIdBigInt = BigInt(userId);
+	
+	// get friend IDs
+	const friendships = await prisma.friend.findMany({
+		where: {
+			OR: [
+				{ initiatorId: userIdBigInt },
+				{ receiverId: userIdBigInt },
+			],
+			status: 'ACCEPTED',
+		},
+	});
+	
+	const friendIds = friendships.map((f) => 
+		f.initiatorId === userIdBigInt ? f.receiverId : f.initiatorId
 	);
 	
-	return result.rows.map((row) => ({
-		rank: parseInt(row.rank),
-		userId: row.user_id,
-		displayName: row.display_name,
-		avatarUrl: row.avatar_url,
-		level: row.level || 1,
-		totalXP: parseInt(row.total_xp) || 0,
-		score: parseInt(row.score) || 0,
+	// add self to list
+	friendIds.push(userIdBigInt);
+	
+	// get users
+	const users = await prisma.user.findMany({
+		where: {
+			id: { in: friendIds },
+			isActive: true,
+		},
+		orderBy: { totalXp: 'desc' },
+		take: limit,
+		include: {
+			settings: { select: { avatar: true } },
+		},
+	});
+	
+	return users.map((user, index) => ({
+		rank: index + 1,
+		userId: user.id.toString(),
+		displayName: user.username,
+		avatarUrl: user.settings?.avatar || null,
+		level: user.currentLevel || 1,
+		totalXP: user.totalXp || 0,
+		score: user.totalXp || 0,
 	}));
 }
 

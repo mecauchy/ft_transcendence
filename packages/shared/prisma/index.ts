@@ -1,0 +1,26 @@
+// prisma client singleon
+import { PrismaClient } from './generated/prisma';
+
+// multi-instance security
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' 
+      ? ['query', 'error', 'warn'] 
+      : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+// re-export custom types
+export * from './generated/prisma';
+export { Prisma } from './generated/prisma';
+
+// export instance as default
+export default prisma;

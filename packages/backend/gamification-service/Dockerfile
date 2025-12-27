@@ -7,12 +7,19 @@ WORKDIR /app
 COPY packages/backend/gamification-service/package.json ./
 COPY packages/backend/gamification-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
+COPY packages/shared/prisma ./prisma
 
 RUN pnpm install
+
+# Generate Prisma client
+RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
 
 COPY packages/backend/gamification-service/src ./src
 
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
+
+# Prune devDependencies, keep generated Prisma client
+RUN pnpm prune --prod
 
 FROM node:22-alpine AS production
 
@@ -23,12 +30,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-COPY packages/backend/gamification-service/package.json ./
-COPY packages/shared/types ../shared/types
-
-RUN pnpm install --prod
-
+# Copy pruned node_modules with generated Prisma client
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY packages/backend/gamification-service/package.json ./
 
 RUN chown -R nodejs:nodejs /app
 

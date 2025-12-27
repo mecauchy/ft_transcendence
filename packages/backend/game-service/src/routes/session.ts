@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { query } from '../db';
+import { prisma } from '../db';
 import { authMiddleware } from '../middleware/auth';
 import { WebSocketManager } from '../websocket/manager';
-import type { ISessionStartRequest, ISessionStartResponse, ISessionHistoryResponse } from '@speak-up/shared';
+import type { ISessionStartRequest, ISessionStartResponse, ISessionHistoryResponse, GameEvent } from '@speak-up/shared';
 
 // shared websocket
 let wsManager: WebSocketManager;
@@ -31,11 +31,11 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 		try {
 			// default scenario (or specific one if provided)
-			const scenarioResult = await query(
-				`SELECT scenario_id FROM scenarios ORDER BY scenario_id LIMIT 1`
-			);
+			const scenario = await prisma.scenario.findFirst({
+				orderBy: { id: 'asc' },
+			});
 
-			if (scenarioResult.rows.length === 0) {
+			if (!scenario) {
 				return reply.status(400).send({
 					statusCode: 400,
 					error: 'Bad Request',
@@ -43,7 +43,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const scenarioId = scenarioResult.rows[0].scenario_id;
+			const scenarioId = scenario.id.toString();
 			const doctorId = mode === 'AI' ? null : await findAvailableDoctor();
 
 			// Create session
@@ -97,12 +97,11 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 			}
 
 			// Load from database if not in memory
-			const result = await query(
-				`SELECT * FROM sessions WHERE id = $1`,
-				[sessionId]
-			);
+			const dbSession = await prisma.session.findUnique({
+				where: { id: sessionId },
+			});
 
-			if (result.rows.length === 0) {
+			if (!dbSession) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -110,12 +109,10 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const dbSession = result.rows[0];
-
 			// Verify access
 			if (
-				dbSession.patient_id?.toString() !== userId &&
-				dbSession.doctor_id?.toString() !== userId &&
+				dbSession.patientId?.toString() !== userId &&
+				dbSession.doctorId?.toString() !== userId &&
 				request.user!.role !== 'ADMIN'
 			) {
 				return reply.status(403).send({
@@ -126,12 +123,12 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 			}
 
 			return {
-				sessionId: dbSession.id,
+				sessionId: dbSession.id.toString(),
 				status: dbSession.status,
 				mode: dbSession.mode,
-				createdAt: dbSession.created_at,
-				endedAt: dbSession.ended_at,
-				finalMetrics: dbSession.final_metrics,
+				createdAt: dbSession.createdAt,
+				endedAt: dbSession.endedAt,
+				finalMetrics: dbSession.finalMetrics,
 			};
 		} catch (error) {
 			request.log.error({ error }, 'Failed to get session');
@@ -153,12 +150,11 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 		try {
 			// Verify session access
-			const sessionResult = await query(
-				`SELECT * FROM sessions WHERE id = $1`,
-				[sessionId]
-			);
+			const session = await prisma.session.findUnique({
+				where: { id: sessionId },
+			});
 
-			if (sessionResult.rows.length === 0) {
+			if (!session) {
 				return reply.status(404).send({
 					statusCode: 404,
 					error: 'Not Found',
@@ -166,11 +162,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			const session = sessionResult.rows[0];
-
 			if (
-				session.patient_id?.toString() !== userId &&
-				session.doctor_id?.toString() !== userId &&
+				session.patientId?.toString() !== userId &&
+				session.doctorId?.toString() !== userId &&
 				request.user!.role !== 'ADMIN'
 			) {
 				return reply.status(403).send({
@@ -181,22 +175,20 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 			}
 
 			// Get event log
-			const eventsResult = await query(
-				`SELECT * FROM event_logs 
-				 WHERE session_id = $1 
-				 ORDER BY sequence_id ASC`,
-				[sessionId]
-			);
+			const events = await prisma.eventLog.findMany({
+				where: { sessionId: sessionId },
+				orderBy: { sequenceId: 'asc' },
+			});
 
 			const response: ISessionHistoryResponse = {
 				sessionId,
-				events: eventsResult.rows.map((e) => e.payload),
+				events: events.map((e) => e.payload as unknown as GameEvent),
 				finalState: {
 					sessionId,
-					sequenceId: eventsResult.rows.length,
-					lastUpdateTimestamp: session.ended_at || session.updated_at,
+					sequenceId: events.length,
+					lastUpdateTimestamp: (session.endedAt || session.updatedAt).getTime(),
 					status: session.status,
-					metrics: session.final_metrics || {
+					metrics: (session.finalMetrics as { trust: number; stress: number; compliance: number; mood: 'CALM' | 'ANXIOUS' | 'DEFENSIVE' | 'BREAKTHROUGH' }) || {
 						trust: 0,
 						stress: 0,
 						compliance: 0,
@@ -207,13 +199,13 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 					inventory: [],
 					participants: {
 						patient: {
-							userId: session.patient_id?.toString() || '',
+							userId: session.patientId?.toString() || '',
 							connectionStatus: 'OFFLINE',
 							lastAckSequenceId: 0,
 							currentActivity: 'IDLE',
 						},
 						doctor: {
-							userId: session.doctor_id?.toString() || 'AI_DOCTOR',
+							userId: session.doctorId?.toString() || 'AI_DOCTOR',
 							connectionStatus: 'OFFLINE',
 							lastAckSequenceId: 0,
 							currentActivity: 'IDLE',
@@ -286,24 +278,26 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 	 * List user's active sessions
 	 */
 	fastify.get('/active', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = request.user!.userId;
+		const userId = BigInt(request.user!.userId);
 
 		try {
-			const result = await query(
-				`SELECT id, mode, status, created_at 
-				 FROM sessions 
-				 WHERE (patient_id = $1 OR doctor_id = $1)
-				   AND status IN ('WAITING', 'ACTIVE', 'PAUSED')
-				 ORDER BY created_at DESC`,
-				[userId]
-			);
+			const sessions = await prisma.session.findMany({
+				where: {
+					OR: [
+						{ patientId: userId },
+						{ doctorId: userId },
+					],
+					status: { in: ['WAITING', 'ACTIVE', 'PAUSED'] },
+				},
+				orderBy: { createdAt: 'desc' },
+			});
 
 			return {
-				sessions: result.rows.map((s) => ({
-					sessionId: s.id,
+				sessions: sessions.map((s) => ({
+					sessionId: s.id.toString(),
 					mode: s.mode,
 					status: s.status,
-					createdAt: s.created_at,
+					createdAt: s.createdAt,
 				})),
 			};
 		} catch (error) {
@@ -323,17 +317,18 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 async function findAvailableDoctor(): Promise<string | null> {
 	// Simple implementation: find online user with DOCTOR role
 	// In production, this would use a matchmaking queue
-	const result = await query(
-		`SELECT u.user_id 
-		 FROM users u
-		 WHERE u.user_role = 'DOCTOR'
-		   AND NOT EXISTS (
-			 SELECT 1 FROM sessions s 
-			 WHERE s.doctor_id = u.user_id 
-			   AND s.status IN ('WAITING', 'ACTIVE', 'PAUSED')
-		   )
-		 LIMIT 1`
-	);
+	const doctor = await prisma.user.findFirst({
+		where: {
+			role: 'DOCTOR',
+			NOT: {
+				doctorSessions: {
+					some: {
+						status: { in: ['WAITING', 'ACTIVE'] },
+					},
+				},
+			},
+		},
+	});
 
-	return result.rows[0]?.user_id?.toString() || null;
+	return doctor?.id.toString() || null;
 }

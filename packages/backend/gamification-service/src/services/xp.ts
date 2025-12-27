@@ -1,4 +1,4 @@
-import { query, getClient } from '../db';
+import { prisma } from '../db';
 import { config } from '../config';
 import Redis from 'ioredis';
 
@@ -56,14 +56,12 @@ export async function getUserXP(userId: string): Promise<UserXP> {
 		return JSON.parse(cached);
 	}
 	
-	const result = await query(
-		`SELECT COALESCE(SUM(amount), 0) as total_xp 
-		FROM xp_logs 
-		WHERE user_id = $1`,
-		[userId]
-	);
+	const result = await prisma.xpLog.aggregate({
+		where: { userId: BigInt(userId) },
+		_sum: { amount: true },
+	});
 	
-	const totalXP = parseInt(result.rows[0].total_xp) || 0;
+	const totalXP = result._sum.amount || 0;
 	const level = calculateLevel(totalXP);
 	const xpForCurrentLevel = xpForLevel(level);
 	const xpForNextLevel = xpForLevel(level + 1);
@@ -91,55 +89,55 @@ export async function awardXP(
 	reason: string,
 	sessionId?: string
 ): Promise<{ xpLog: XPLog; levelUp: boolean; newLevel: number }> {
-	const client = await getClient();
+	// get curr xp for level check
+	const beforeXP = await getUserXP(userId);
+	const userIdBigInt = BigInt(userId);
 	
-	try {
-		await client.query('BEGIN');
-		
-		// get curr xp for level check
-		const beforeXP = await getUserXP(userId);
-		
-		// xp log
-		const result = await client.query(
-			`INSERT INTO xp_logs (user_id, amount, reason, session_id)
-			VALUES ($1, $2, $3, $4)
-			RETURNING *`,
-			[userId, amount, reason, sessionId]
-		);
-		
-		const xpLog: XPLog = {
-			id: result.rows[0].id,
-			userId: result.rows[0].user_id,
-			amount: result.rows[0].amount,
-			reason: result.rows[0].reason,
-			sessionId: result.rows[0].session_id,
-			createdAt: result.rows[0].created_at,
-		};
+	// use transaction
+	const xpLogRecord = await prisma.$transaction(async (tx) => {
+		// create xp log
+		const log = await tx.xpLog.create({
+			data: {
+				userId: userIdBigInt,
+				amount,
+				reason,
+				sessionId: sessionId ?? null,
+			},
+		});
 		
 		// update user level
 		const newTotalXP = beforeXP.totalXP + amount;
 		const newLevel = calculateLevel(newTotalXP);
 		
-		await client.query(
-			`UPDATE users SET current_level = $1, total_xp = $2, updated_at = NOW()
-			WHERE user_id = $3`,
-			[newLevel, newTotalXP, userId]
-		);
+		await tx.user.update({
+			where: { id: userIdBigInt },
+			data: {
+				currentLevel: newLevel,
+				totalXp: newTotalXP,
+				updatedAt: new Date(),
+			},
+		});
 		
-		await client.query('COMMIT');
-		
-		// delete redis cache
-		await redis.del(`user:${userId}:xp`);
-		
-		const levelUp = newLevel > beforeXP.level;
-		
-		return { xpLog, levelUp, newLevel };
-	} catch (error) {
-		await client.query('ROLLBACK');
-		throw error;
-	} finally {
-		client.release();
-	}
+		return log;
+	});
+	
+	const xpLog: XPLog = {
+		id: xpLogRecord.id.toString(),
+		userId: xpLogRecord.userId.toString(),
+		amount: xpLogRecord.amount,
+		reason: xpLogRecord.reason,
+		sessionId: xpLogRecord.sessionId?.toString(),
+		createdAt: xpLogRecord.createdAt,
+	};
+	
+	// delete redis cache
+	await redis.del(`user:${userId}:xp`);
+	
+	const newTotalXP = beforeXP.totalXP + amount;
+	const newLevel = calculateLevel(newTotalXP);
+	const levelUp = newLevel > beforeXP.level;
+	
+	return { xpLog, levelUp, newLevel };
 }
 
 // get xp history for a user
@@ -148,37 +146,44 @@ export async function getXPHistory(
 	limit: number = 50,
 	offset: number = 0
 ): Promise<XPLog[]> {
-	const result = await query(
-		`SELECT * FROM xp_logs 
-		WHERE user_id = $1 
-		ORDER BY created_at DESC 
-		LIMIT $2 OFFSET $3`,
-		[userId, limit, offset]
-	);
+	const logs = await prisma.xpLog.findMany({
+		where: { userId: BigInt(userId) },
+		orderBy: { createdAt: 'desc' },
+		take: limit,
+		skip: offset,
+	});
 	
-	return result.rows.map((row) => ({
-		id: row.id,
-		userId: row.user_id,
+	return logs.map((row) => ({
+		id: row.id.toString(),
+		userId: row.userId.toString(),
 		amount: row.amount,
 		reason: row.reason,
-		sessionId: row.session_id,
-		createdAt: row.created_at,
+		sessionId: row.sessionId?.toString(),
+		createdAt: row.createdAt,
 	}));
 }
 
 // get daily xp summary
 export async function getDailyXP(userId: string, days: number = 30): Promise<{ date: string; amount: number }[]> {
-	const result = await query(
-		`SELECT DATE(created_at) as date, SUM(amount) as amount
-		FROM xp_logs
-		WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '${days} days'
-		GROUP BY DATE(created_at)
-		ORDER BY date DESC`,
-		[userId]
-	);
+	const startDate = new Date();
+	startDate.setDate(startDate.getDate() - days);
 	
-	return result.rows.map((row) => ({
-		date: row.date.toISOString().split('T')[0],
-		amount: parseInt(row.amount),
-	}));
+	const logs = await prisma.xpLog.findMany({
+		where: {
+			userId: BigInt(userId),
+			createdAt: { gte: startDate },
+		},
+		orderBy: { createdAt: 'desc' },
+	});
+	
+	// group by date
+	const dailyMap = new Map<string, number>();
+	for (const log of logs) {
+		const dateKey = log.createdAt.toISOString().split('T')[0];
+		dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + log.amount);
+	}
+	
+	return Array.from(dailyMap.entries())
+		.map(([date, amount]) => ({ date, amount }))
+		.sort((a, b) => b.date.localeCompare(a.date));
 }

@@ -7,13 +7,19 @@ WORKDIR /app
 COPY packages/backend/auth-service/package.json ./
 COPY packages/backend/auth-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
+COPY packages/shared/prisma ./prisma
 
 RUN pnpm install
+
+# Generate Prisma client
+RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
 
 COPY packages/backend/auth-service/src ./src
 
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
 
+# prune deps
+RUN pnpm prune --prod
 
 
 FROM node:18-alpine
@@ -24,12 +30,10 @@ WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-COPY packages/backend/auth-service/package.json ./
-COPY packages/shared/types ../shared/types
-
-RUN pnpm install --prod
-
+# copy from modules the generated prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY packages/backend/auth-service/package.json ./
 
 RUN chown -R nodejs:nodejs /app
 
