@@ -1,5 +1,5 @@
-// packages/shared/types/auth.d.ts
-import { IUserProfile } from "./user";
+// packages/shared/types/auth.ts
+import type { IUserProfile } from "./user";
 
 export interface IAuthResponse {
 	accessToken: string;

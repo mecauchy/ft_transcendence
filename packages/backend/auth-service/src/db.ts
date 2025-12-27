@@ -1,4 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { readFileSync, existsSync } from 'fs';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -8,12 +9,23 @@ const getDatabaseUrl = (): string => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
   }
+  
   const user = process.env.DB_USER || 'root_admin';
-  const password = process.env.DB_PASSWORD || '';
   const host = process.env.DB_HOST || 'postgres';
   const port = process.env.DB_PORT || '5432';
   const database = process.env.DB_NAME || 'game_db';
-  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
+  
+  // Read password from file if DB_PASSWORD_FILE is set
+  let password = process.env.DB_PASSWORD || '';
+  const passwordFile = process.env.DB_PASSWORD_FILE;
+  if (passwordFile && existsSync(passwordFile)) {
+    password = readFileSync(passwordFile, 'utf-8').trim();
+  }
+  
+  // URL-encode the password to handle special characters
+  const encodedPassword = encodeURIComponent(password);
+  
+  return `postgresql://${user}:${encodedPassword}@${host}:${port}/${database}`;
 };
 
 export const prisma =
@@ -34,15 +46,3 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export default prisma;
-
-// re export custom types
-export { Prisma };
-export type { 
-  User, 
-  OAuth, 
-  UserKey, 
-  Settings,
-  UserRole,
-  TokenType,
-  TokenStatus,
-} from '@prisma/client';

@@ -53,8 +53,8 @@ async function start() {
 		}));
 
 		// REST routes
-		await fastify.register(sessionRoutes, { prefix: '/api/session' });
-		await fastify.register(scenarioRoutes, { prefix: '/api/scenarios' });
+		await fastify.register(sessionRoutes, { prefix: '/api/game/session' });
+		await fastify.register(scenarioRoutes, { prefix: '/api/game/scenarios' });
 
 		// webscoket route for game connections
 		fastify.get('/ws/game', { websocket: true }, (socket, request) => {

@@ -1,23 +1,36 @@
-import { useState } from 'react'
 import Login from './login.tsx'
 import Home from './home.tsx'
 import './styles/index.css'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 
+function AppContent() {
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
 
-function App() {
-  const [isLogged, setIsLogged] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>("");
-
-  const handleLogin = (user: string) => {
-    setIsLogged(true);
-    setUsername(user);
+  if (isLoading) {
+    return <div className="loading">Chargement...</div>;
   }
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <>
-      {!isLogged ? <Login onLogin={handleLogin} /> : <Home username={username} onLogout={() => setIsLogged(false)} />}
+      {!isAuthenticated ? (
+        <Login onLogin={() => {/* auth context handles this */}} />
+      ) : (
+        <Home username={user?.username || ''} onLogout={handleLogout} />
+      )}
     </>
-    )
-  }
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
 
 export default App

@@ -1,4 +1,4 @@
-FROM node:22-alpine AS builder
+FROM node:18-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -6,13 +6,15 @@ WORKDIR /app
 
 COPY packages/backend/game-service/package.json ./
 COPY packages/backend/game-service/tsconfig.json ./
+
+# Copy pre-built shared types (with dist folder)
 COPY packages/shared/types ../shared/types
-COPY packages/shared/prisma ./prisma
 
 RUN pnpm install
 
-# Generate Prisma client
-RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
+# Copy prisma schema and generate client AFTER pnpm install so it generates into the correct node_modules
+COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/game-service/src ./src
 
@@ -21,12 +23,12 @@ RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.j
 # Prune devDependencies, keep generated Prisma client
 RUN pnpm prune --prod
 
-FROM node:22-alpine AS production
+FROM node:18-alpine AS production
 
 RUN addgroup -g 1001 -S nodejs && \
 	adduser -S nodejs -u 1001
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 WORKDIR /app
 

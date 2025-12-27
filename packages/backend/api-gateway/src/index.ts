@@ -34,9 +34,24 @@ const fastify = Fastify({
 			},
 		},
 	},
-	trustProxy: true,
+	trustProxy: false, // Disabled temporarily to avoid null socket crash in proxy responses
 	requestIdHeader: 'x-request-id',
 	requestIdLogLabel: 'reqId',
+});
+
+// Custom error handler to prevent crashes when socket is null during proxy responses
+fastify.setErrorHandler((error: Error & { statusCode?: number }, request: FastifyRequest, reply: FastifyReply) => {
+	// Safely log the error without accessing potentially null socket properties
+	fastify.log.error({ err: error, url: request.url, method: request.method }, 'Request error');
+	
+	// Send error response if not already sent
+	if (!reply.sent) {
+		reply.status(error.statusCode || 500).send({
+			statusCode: error.statusCode || 500,
+			error: error.name || 'Internal Server Error',
+			message: error.message || 'An unexpected error occurred',
+		});
+	}
 });
 
 // =====================================================
@@ -49,7 +64,7 @@ async function start() {
 		const redis = new Redis({
 			host: config.redis.host,
 			port: config.redis.port,
-			retryStrategy: (times) => Math.min(times * 50, 2000), // Exponential backoff for retries
+			retryStrategy: (times: number) => Math.min(times * 50, 2000), // Exponential backoff for retries
 		});
 
 		redis.on('connect', () => {
@@ -64,10 +79,7 @@ async function start() {
 		// Vault client for secret management
 		const vaultConfig = {
 			...config.vault,
-			token:
-				typeof config.vault.token === 'function'
-					? config.vault.token()
-					: config.vault.token,
+			token: config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
 		await vault.authenticate();
@@ -76,7 +88,7 @@ async function start() {
 		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json
 		await fastify.register(fastifyCookie);
 		await fastify.register(session, {
-			secret: process.env.SESSION_SECRET || 'dev-session-secret',
+			secret: process.env.SESSION_SECRET || 'dev-session-secret-must-be-32-chars-long',
 			cookie: {
 				secure: process.env.NODE_ENV === 'production',
 				httpOnly: true,
@@ -179,13 +191,6 @@ async function start() {
 					'Proxying request to Auth Service'
 				);
 			},
-			replyOptions: {
-				rewriteHeaders: (originalReq: any, headers: any) => ({
-					...headers,
-					'x-forwarded-for': originalReq.ip,
-					'x-request-id': originalReq.id,
-				}),
-			},
 		});
 
 		// =====================================================
@@ -245,7 +250,7 @@ async function start() {
 		// =====================================================
 		// ROUTE: WEBSOCKET - INVESTIGATION (PROTECTED)
 		// =====================================================
-		await fastify.register(async (fastify) => {
+		await fastify.register(async (fastify: { get: (arg0: string, arg1: { websocket: any; }, arg2: (connection: any, request: FastifyRequest) => Promise<void>) => void; }) => {
 			fastify.get('/investigation', { websocket: true as any }, async (connection: any, request: FastifyRequest) => {
 				const token = (request.query as any).token as string;
 
@@ -407,7 +412,8 @@ async function start() {
 
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
-		fastify.log.error({ error }, 'Error starting server');
+		fastify.log.error({ error: { message: error.message, stack: error.stack, name: error.name } }, 'Error starting server');
+		console.error('Full error:', err);
 		process.exit(1);
 	}
 }

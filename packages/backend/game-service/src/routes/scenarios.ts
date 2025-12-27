@@ -188,8 +188,8 @@ async function getScenarioLeaderboard(
 
 // register routes
 export async function scenarioRoutes(fastify: FastifyInstance) {
-	fastify.get('/scenarios', listScenarios);
-	fastify.get('/scenarios/:id', getScenario);
-	fastify.get('/scenarios/:id/stats', getScenarioStats);
-	fastify.get('/scenarios/:id/leaderboard', getScenarioLeaderboard);
+	fastify.get('/', listScenarios);
+	fastify.get('/:id', getScenario);
+	fastify.get('/:id/stats', getScenarioStats);
+	fastify.get('/:id/leaderboard', getScenarioLeaderboard);
 }

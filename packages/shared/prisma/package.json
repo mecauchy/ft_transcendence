@@ -1,5 +1,4 @@
 {
-	firstVarToS
   "name": "@speak-up/prisma",
   "version": "1.0.0",
   "description": "Shared Prisma client for Speak-Up platform",

@@ -75,7 +75,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 				const userAchievements = await getUserAchievements(userId);
 				const isUnlocked = userAchievements.some((ua) => ua.achievementId === id);
 
-				let progress = null;
+				let progress: { progress: number; total: number; percentage: number } | null = null;
 				if (!isUnlocked) {
 					try {
 						progress = await getAchievementProgress(userId, id);

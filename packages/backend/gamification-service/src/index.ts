@@ -38,9 +38,9 @@ async function start() {
 		}));
 
 		// REST Routes
-		await fastify.register(xpRoutes, { prefix: '/api/xp' });
-		await fastify.register(achievementRoutes, { prefix: '/api/achievements' });
-		await fastify.register(leaderboardRoutes, { prefix: '/api/leaderboard' });
+		await fastify.register(xpRoutes, { prefix: '/api/gamification/xp' });
+		await fastify.register(achievementRoutes, { prefix: '/api/gamification/achievements' });
+		await fastify.register(leaderboardRoutes, { prefix: '/api/gamification/leaderboard' });
 
 		// handle errors
 		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {

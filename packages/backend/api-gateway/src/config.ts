@@ -1,4 +1,27 @@
 // packages/backend/api-gateway/src/config.ts
+import { readFileSync, existsSync } from 'fs';
+
+// Helper to read vault token from file or environment
+function getVaultToken(): string {
+  // First check direct environment variable
+  if (process.env.VAULT_TOKEN) {
+    return process.env.VAULT_TOKEN;
+  }
+  
+  // Then try to read from file
+  const tokenFile = process.env.VAULT_TOKEN_FILE || '/tmp/vault_token';
+  if (existsSync(tokenFile)) {
+    return readFileSync(tokenFile, 'utf-8').trim();
+  }
+  
+  // In development, use a default; in production, fail
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('VAULT_TOKEN or VAULT_TOKEN_FILE must be set in production');
+  }
+  
+  return 'root_token_dev_only';
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   host: process.env.HOST || '0.0.0.0',
@@ -13,7 +36,7 @@ export const config = {
     address:
       process.env.VAULT_ADDRESS ??
       (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
-      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
+    token: getVaultToken(),
   },
 
   services: {
@@ -56,14 +79,14 @@ export const config = {
   },
 
   security: {
-    jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+    jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production',
   },
 };
 
 // Fail fast if using the default JWT secret in production
 if (
   process.env.NODE_ENV === 'production' &&
-  config.security.jwtSecret === 'dev-secret-change-in-production'
+  config.security.jwtSecret === 'dev-jwt-secret-change-in-production'
 ) {
   throw new Error(
     "FATAL: JWT_SECRET is not set in production. Refusing to start with default secret."

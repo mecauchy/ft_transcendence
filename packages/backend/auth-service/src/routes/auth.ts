@@ -5,15 +5,214 @@ import { generateTokens, verifyRefreshToken, blacklistToken } from '../services/
 import { fetchOAuthToken, fetch42UserInfo } from '../services/oauth';
 import type { IAuthResponse, ILoginRequest, IRefreshTokenRequest } from '@speak-up/shared';
 import { UserRole } from '@speak-up/shared';
+import * as bcrypt from 'bcryptjs';
 
 interface OAuth42CallbackQuery {
 	code: string;
 	state?: string;
 }
 
+interface RegisterRequest {
+	username: string;
+	email: string;
+	password: string;
+	dob: string;
+}
+
+interface LoginRequest {
+	email: string;
+	password: string;
+}
+
 export async function authRoutes(fastify: FastifyInstance) {
 
-	// GET /login/42 - Redirect to 42 OAuth
+	// username and pw registration
+	// POST /register
+	fastify.post<{ Body: RegisterRequest }>(
+		'/register',
+		async (request, reply) => {
+			const { username, email, password, dob } = request.body;
+
+			// validate input
+			if (!username || !email || !password || !dob) {
+				return reply.status(400).send({
+					statusCode: 400,
+					error: 'Bad Request',
+					message: 'Username, email, password, and date of birth are required',
+				});
+			}
+
+			// validate email format
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(email)) {
+				return reply.status(400).send({
+					statusCode: 400,
+					error: 'Bad Request',
+					message: 'Invalid email format',
+				});
+			}
+
+			// validate password norm
+			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+			if (!passwordRegex.test(password)) {
+				return reply.status(400).send({
+					statusCode: 400,
+					error: 'Bad Request',
+					message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character',
+				});
+			}
+
+			try {
+				// check if user exists
+				const existingUser = await prisma.user.findFirst({
+					where: {
+						OR: [{ email }, { username }],
+					},
+				});
+
+				if (existingUser) {
+					const field = existingUser.email === email ? 'email' : 'username';
+					return reply.status(409).send({
+						statusCode: 409,
+						error: 'Conflict',
+						message: `User with this ${field} already exists`,
+					});
+				}
+
+				// hash password
+				const hashedPassword = await bcrypt.hash(password, 12);
+
+				// create user
+				const user = await prisma.user.create({
+					data: {
+						username,
+						email,
+						password: hashedPassword,
+						dob: new Date(dob),
+						role: 'PATIENT',
+						settings: {
+							create: {
+								locale: 'fr',
+							},
+						},
+					},
+				});
+
+				request.log.info({ userId: user.id, email }, 'New user registered');
+
+				return reply.status(201).send({
+					userId: user.id.toString(),
+					message: 'User registered successfully',
+				});
+			} catch (error) {
+				request.log.error({ error }, 'Registration failed');
+				return reply.status(500).send({
+					statusCode: 500,
+					error: 'Internal Server Error',
+					message: 'Registration failed',
+				});
+			}
+		}
+	);
+
+	// POST /login
+	fastify.post<{ Body: LoginRequest }>(
+		'/login',
+		async (request, reply) => {
+			const { email, password } = request.body;
+
+			if (!email || !password) {
+				return reply.status(400).send({
+					statusCode: 400,
+					error: 'Bad Request',
+					message: 'Email and password are required',
+				});
+			}
+
+			try {
+				// find user by email
+				const user = await prisma.user.findUnique({
+					where: { email },
+				});
+
+				if (!user || !user.password) {
+					return reply.status(401).send({
+						statusCode: 401,
+						error: 'Unauthorized',
+						message: 'Invalid email or password',
+					});
+				}
+
+				// verify hashedpassword
+				const isValidPassword = await bcrypt.compare(password, user.password);
+
+				if (!isValidPassword) {
+					return reply.status(401).send({
+						statusCode: 401,
+						error: 'Unauthorized',
+						message: 'Invalid email or password',
+					});
+				}
+
+				// check if 2FA is enabled
+				if (user.twofaEnabled) {
+					// return partial to frontend -> prompts for 2FA code
+					return reply.send({
+						requires2FA: true,
+						userId: user.id.toString(),
+						message: '2FA verification required',
+					});
+				}
+
+				// token generation
+				const tokens = await generateTokens({
+					userId: user.id.toString(),
+					role: user.role,
+				});
+
+				// save refresh token
+				await prisma.userKey.upsert({
+					where: { userId: user.id },
+					update: {
+						token: tokens.refreshToken,
+						status: 'ACTIVE',
+						expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+					},
+					create: {
+						userId: user.id,
+						token: tokens.refreshToken,
+						type: 'REFRESH',
+						status: 'ACTIVE',
+						expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					},
+				});
+
+				request.log.info({ userId: user.id }, 'User logged in');
+
+				return reply.send({
+					accessToken: tokens.accessToken,
+					refreshToken: tokens.refreshToken,
+					user: {
+						userId: user.id.toString(),
+						username: user.username,
+						email: user.email,
+						role: user.role,
+					},
+				});
+			} catch (error) {
+				request.log.error({ error }, 'Login failed');
+				return reply.status(500).send({
+					statusCode: 500,
+					error: 'Internal Server Error',
+					message: 'Login failed',
+				});
+			}
+		}
+	);
+
+	// OAUTH auth (42api)
+
+	// GET /login/42
 	fastify.get('/login/42', async (request: FastifyRequest, reply: FastifyReply) => {
 		const authUrl = new URL(config.oauth.authorizationUrl);
 		authUrl.searchParams.set('client_id', config.oauth.clientId);
@@ -21,7 +220,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		authUrl.searchParams.set('response_type', 'code');
 		authUrl.searchParams.set('scope', 'public');
 
-		// Generate CSRF token
+		// generate CSRF token
 		const state = crypto.randomUUID();
 		authUrl.searchParams.set('state', state);
 		reply.header('Set-Cookie', `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/`);
@@ -29,7 +228,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		return reply.redirect(authUrl.toString());
 	});
 
-	// GET /callback/42 - OAuth callback handler
+	// GET /callback/42
 	fastify.get<{ Querystring: OAuth42CallbackQuery }>(
 		'/callback/42',
 		async (request, reply) => {
@@ -44,11 +243,11 @@ export async function authRoutes(fastify: FastifyInstance) {
 			}
 
 			try {
-				// Exchange code for tokens
+				// exchange code for tokens
 				const oauthTokens = await fetchOAuthToken(code);
 				const userInfo = await fetch42UserInfo(oauthTokens.access_token);
 
-				// Find existing user by OAuth provider
+				// find existing user by OAuth provider
 				let user = await prisma.user.findFirst({
 					where: {
 					oauth: {
@@ -65,7 +264,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				let isNewUser = false;
 
 				if (!user) {
-					// Create new user with OAuth and settings in a transaction
+					// create new user with OAuth and settings in a transaction
 					user = await prisma.user.create({
 						data: {
 						username: userInfo.login,
@@ -98,14 +297,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 				const requires2FA = user.twofaEnabled;
 
-				// Generate JWT tokens
+				// generate JWT tokens
 				const tokens = await generateTokens({
 					userId: user.id.toString(),
 					role: user.role,
 					requires2FA,
 				});
 
-				// Store refresh token - delete old one first if exists
+				// store refresh token
 				await prisma.userKey.upsert({
 					where: { userId: user.id },
 					create: {
@@ -149,7 +348,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 					},
 				};
 
-				// Return JSON or redirect based on Accept header
+				// return json or redirect
 				if (request.headers.accept?.includes('application/json')) {
 					return response;
 				}
@@ -168,7 +367,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	);
 
-	// POST /login/42 - Alternative login endpoint
+	// POST /login/42
 	fastify.post<{ Body: ILoginRequest }>(
 		'/login/42',
 		async (request, reply) => {
@@ -182,7 +381,6 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			// Reuse callback logic
 			request.query = { code } as any;
 			return (fastify as any).inject({
 				method: 'GET',
@@ -192,7 +390,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	);
 
-	// POST /refresh - Refresh access token
+	// POST /refresh
 	fastify.post<{ Body: IRefreshTokenRequest }>(
 		'/refresh',
 		async (request, reply) => {
@@ -207,10 +405,10 @@ export async function authRoutes(fastify: FastifyInstance) {
 			}
 
 			try {
-				// Verify the refresh token
+				// verify the refresh token
 				const payload = await verifyRefreshToken(refreshToken);
 				
-				// Check if token is valid in database
+				// check if token is valid in database
 				const tokenRecord = await prisma.userKey.findFirst({
 					where: {
 					token: refreshToken,
@@ -227,14 +425,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				// Generate new tokens
+				// generate new tokens
 				const newTokens = await generateTokens({
 					userId: payload.userId,
 					role: payload.role,
 					requires2FA: false,
 				});
 
-				// Revoke old token and create new one
+				// revoke old token and create new one
 				await prisma.userKey.update({
 					where: { id: tokenRecord.id },
 					data: { status: 'REVOKED' },
@@ -263,7 +461,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	);
 
-	// POST /logout - Invalidate refresh token
+	// POST /logout
 	fastify.post<{ Body: { refreshToken?: string } }>(
 		'/logout',
 		async (request, reply) => {
@@ -272,7 +470,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			if (refreshToken) {
 				await blacklistToken(refreshToken);
 				
-				// Mark token as revoked in database
+				// mark token as revoked
 				await prisma.userKey.updateMany({
 					where: { token: refreshToken },
 					data: { status: 'REVOKED' },

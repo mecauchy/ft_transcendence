@@ -57,6 +57,13 @@ services:
       - USER_SERVICE_URL=http://user-service:3002
       - GAME_SERVICE_URL=http://game-service:3003
       - GAMIFICATION_SERVICE_URL=http://gamification-service:3004
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
     ports:
       - "3000:3000"
     networks:
@@ -64,12 +71,16 @@ services:
       - service_mesh
       - logging_net
     depends_on:
-      - vault
-      - redis
-      - auth-service
-      - user-service
-      - game-service
-      - gamification-service
+      vault:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      gamification-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
@@ -91,6 +102,7 @@ services:
       - DB_PORT=5432
       - DB_USER=root_admin
       - DB_NAME=game_db
+      - DB_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
@@ -98,6 +110,8 @@ services:
     secrets:
       - source: vault_token
         target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
     networks:
       - service_mesh
       - logging_net
@@ -129,6 +143,7 @@ services:
       - DB_PORT=5432
       - DB_USER=root_admin
       - DB_NAME=game_db
+      - DB_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
@@ -136,6 +151,8 @@ services:
     secrets:
       - source: vault_token
         target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
     networks:
       - service_mesh
       - logging_net
@@ -167,6 +184,7 @@ services:
       - DB_PORT=5432
       - DB_USER=root_admin
       - DB_NAME=game_db
+      - DB_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
@@ -177,6 +195,8 @@ services:
     secrets:
       - source: vault_token
         target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
     networks:
       - service_mesh
       - logging_net
@@ -208,6 +228,7 @@ services:
       - DB_PORT=5432
       - DB_USER=root_admin
       - DB_NAME=game_db
+      - DB_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
@@ -215,6 +236,8 @@ services:
     secrets:
       - source: vault_token
         target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
     networks:
       - service_mesh
       - logging_net
@@ -453,3 +476,5 @@ services:
 secrets:
   vault_token:
     file: ./infra/secret/vault_token.txt
+  postgres_db_pass:
+    file: ./infra/secret/postgres_db_pass.txt

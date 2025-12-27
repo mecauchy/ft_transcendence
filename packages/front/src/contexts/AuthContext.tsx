@@ -1,0 +1,120 @@
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { api } from '../api/client';
+import type { ApiError } from '../api/client';
+
+interface User {
+	userId: string;
+	username: string;
+	email: string;
+	role: string;
+	displayName?: string;
+	avatarUrl?: string;
+	level?: number;
+	totalXp?: number;
+}
+
+interface AuthContextType {
+	user: User | null;
+	isLoading: boolean;
+	isAuthenticated: boolean;
+	login: (email: string, password: string) => Promise<void>;
+	register: (username: string, email: string, password: string, dob: string) => Promise<void>;
+	logout: () => Promise<void>;
+	loginWithOAuth: (provider: '42' | 'github') => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+	const [user, setUser] = useState<User | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+
+	// check if session exists
+	useEffect(() => {
+		const checkAuth = async () => {
+			try {
+				// try get current profile
+				const profile = await api.getProfile();
+				setUser({
+					userId: profile.userId,
+					username: profile.username,
+					email: profile.email,
+					role: 'PATIENT', // set by default, could be fetched
+					displayName: profile.displayName,
+					avatarUrl: profile.avatarUrl,
+					level: profile.level,
+					totalXp: profile.totalXp,
+				});
+			} catch {
+				// no auth
+				setUser(null);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		checkAuth();
+	}, []);
+
+	const login = async (email: string, password: string) => {
+		try {
+			const response = await api.login({ email, password });
+			setUser({
+				...response.user,
+				displayName: response.user.username,
+			});
+		} catch (error) {
+			const apiError = error as ApiError;
+			throw new Error(apiError.message || 'Login failed');
+		}
+	};
+
+	const register = async (username: string, email: string, password: string, dob: string) => {
+		try {
+			await api.register({ username, email, password, dob });
+			// after signup, auto log in
+			await login(email, password);
+		} catch (error) {
+			const apiError = error as ApiError;
+			throw new Error(apiError.message || 'Registration failed');
+		}
+	};
+
+	const logout = async () => {
+		try {
+			await api.logout();
+		} catch {
+			// clear local state
+		}
+		setUser(null);
+	};
+
+	const loginWithOAuth = (provider: '42' | 'github') => {
+		// if get oauth, redirect to provider
+		window.location.href = api.getOAuthUrl(provider);
+	};
+
+	return (
+		<AuthContext.Provider
+			value={{
+				user,
+				isLoading,
+				isAuthenticated: !!user,
+				login,
+				register,
+				logout,
+				loginWithOAuth,
+			}}
+		>
+			{children}
+		</AuthContext.Provider>
+	);
+}
+
+export function useAuth() {
+	const context = useContext(AuthContext);
+	if (context === undefined) {
+		throw new Error('useAuth must be used within an AuthProvider');
+	}
+	return context;
+}

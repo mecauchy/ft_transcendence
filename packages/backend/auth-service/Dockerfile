@@ -1,18 +1,18 @@
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
 COPY packages/backend/auth-service/package.json ./
 COPY packages/backend/auth-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
-COPY packages/shared/prisma ./prisma
 
 RUN pnpm install
 
-# Generate Prisma client
-RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
+# Copy prisma schema and generate client AFTER pnpm install so it generates into the correct node_modules
+COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/auth-service/src ./src
 
