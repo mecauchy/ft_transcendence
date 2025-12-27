@@ -12,7 +12,7 @@ interface AuthenticatedRequest extends FastifyRequest {
 }
 
 export async function twoFactorRoutes(fastify: FastifyInstance) {
-	
+
 	// auth middleware
 	fastify.addHook('preHandler', async (request: AuthenticatedRequest, reply: FastifyReply) => {
 		const authHeader = request.headers.authorization;

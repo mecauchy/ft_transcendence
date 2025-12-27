@@ -20,7 +20,7 @@ interface GeneratedTokens {
 	refreshToken: string;
 }
 
-// generate tokens (access + refresh)
+// generate access + refresh tokens
 export async function generateTokens(payload: TokenPayload): Promise<GeneratedTokens> {
 	const accessTokenOptions: SignOptions = {
 		expiresIn: config.jwt.accessTokenExpiry,
@@ -103,7 +103,7 @@ export async function blacklistToken(token: string): Promise<void> {
 	try {
 		// decode
 		const decoded = jwt.decode(token) as JwtPayload;
-		
+
 		if (decoded?.exp) {
 			// set blacklist entry with TTL matching token expiry
 			const ttl = decoded.exp - Math.floor(Date.now() / 1000);

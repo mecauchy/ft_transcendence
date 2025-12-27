@@ -21,7 +21,7 @@ const fastify = Fastify({
 
 async function start() {
 	try {
-		// Security middleware
+		// cors security middleware
 		await fastify.register(helmet);
 		await fastify.register(cors, {
 			origin: config.cors.origin,
@@ -59,19 +59,19 @@ async function start() {
 		});
 
 		fastify.log.info(`
-|Auth Service - Speak Up Platform|
-Server:	${address}
+			|Auth Service - Speak Up Platform|
+			Server:	${address}
 
-Endpoints:
-POST /api/auth/login/42		- OAuth login with 42 API
-POST /api/auth/refresh		- Refresh access token
-POST /api/auth/logout		- Invalidate session
-POST /api/auth/2fa/setup	- Enable 2FA
-POST /api/auth/2fa/verify	- Verify 2FA code
-POST /api/auth/2fa/disable	- Disable 2FA
+			Endpoints:
+			POST /api/auth/login/42		- OAuth login with 42 API
+			POST /api/auth/refresh		- Refresh access token
+			POST /api/auth/logout		- Invalidate session
+			POST /api/auth/2fa/setup	- Enable 2FA
+			POST /api/auth/2fa/verify	- Verify 2FA code
+			POST /api/auth/2fa/disable	- Disable 2FA
 
-Database:	${config.database.host}:${config.database.port}
-Vault:		${config.vault.address}
+			Database:	${config.database.host}:${config.database.port}
+			Vault:		${config.vault.address}
 		`);
 
 	} catch (err) {
