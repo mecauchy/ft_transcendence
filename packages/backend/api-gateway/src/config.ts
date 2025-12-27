@@ -13,7 +13,14 @@ export const config = {
     address:
       process.env.VAULT_ADDRESS ??
       (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
-      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
+      // In development return a sane default token; in production make it explicit (function throws)
+      token:
+        process.env.VAULT_TOKEN ||
+        (process.env.NODE_ENV === 'production'
+          ? (() => {
+              throw new Error('VAULT_TOKEN must be set in production');
+            })
+          : (() => 'root_token_dev_only')),
   },
 
   services: {

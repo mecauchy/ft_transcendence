@@ -2,38 +2,58 @@ import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import { IAuthResponse } from '../../../shared/types/auth'; // importing the contract
 import { UserRole } from '../../../shared/types/user'; // importing enum for user roles
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({ logger: false });
+
+console.log('Auth service starting...');
 
 // example route adhering to the contract
+import JwtService from './jwt.service';
+
 fastify.post<{ Reply: IAuthResponse }>('/auth/token', async (request: FastifyRequest, reply: FastifyReply) => {
-	// TODO: implement 42 API token gen
+	// NOTE: This route is a simplified example. Replace the authentication
+	// checks below with your actual credential validation (passwords, 42 OAuth, etc.).
+
+	// Accept username/userId from body for demo; default to a test user.
+	const body = (request.body as any) || {};
+	const userId = body.userId || '1';
+	const username = body.username || 'dev_user';
+
+	// Sign an access token (15m expiry)
+	const accessToken = JwtService.signToken(userId, username);
+
 	const response: IAuthResponse = {
-		accessToken: "placeHolder",
-		refreshToken: "refreshTokenPlaceholder", // Added refreshToken
+		accessToken,
+		refreshToken: 'refreshTokenPlaceholder', // implement refresh token flow separately
 		require2FA: false,
-		user: { 
-			id: "1", 
-			alias: "maxime", 
-			username: "maxime", 
-			email: "maxime@example.com", 
-			avatarUrl: "https://example.com/avatar.jpg", 
-			role: UserRole.ADMIN, // Add a valid role
+		user: {
+			id: userId,
+			alias: username,
+			username,
+			email: `${username}@example.com`,
+			avatarUrl: 'https://example.com/avatar.jpg',
+			role: UserRole.ADMIN,
 			preferences: {
-				language: "en", // or "fr"
-				theme: "light", // or "dark"
+				language: 'en',
+				theme: 'light',
 				accessibility: {
 					highContrast: false,
 					textToSpeech: false,
-					fontSize: "medium" // or "small" or "large"
-				}
-			}, // Add valid preferences
+					fontSize: 'medium',
+				},
+			},
 			stats: {
 				sessionsCompleted: 0,
-				averageTrustScore: 0
-			} // Add valid stats
-		} 
+				averageTrustScore: 0,
+			},
+		},
 	};
+
 	return response;
+});
+
+// Health check endpoint
+fastify.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+	return { status: 'ok' };
 });
 
 const start = async () => {

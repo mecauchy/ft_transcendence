@@ -21,21 +21,10 @@ import type {
 } from '@speak-up/shared';
 
 const fastify = Fastify({
-	logger: {
-		level: config.logLevel,
-		transport: {
-			target: 'pino-pretty',
-			options: {
-				colorize: true,
-				translateTime: 'HH:MM:ss Z',
-				ignore: 'pid,hostname',
-			},
-		},
-	},
-	trustProxy: true,
-	requestIdHeader: 'x-request-id',
-	requestIdLogLabel: 'reqId',
+  logger: true,
+//   disableRequestLogging: false,
 });
+
 
 // =====================================================
 // INFRASTRUCTURE SETUP
@@ -169,33 +158,45 @@ async function start() {
 		await fastify.register( proxy, {
 			upstream: config.services.authService,
 			prefix: '/api/auth',
-			rewritePrefix: '/api/auth',
+			rewritePrefix: '/auth',
 			http2: false,
+			// Disable internal logging for this specific proxy route to avoid circular crashes
+			disableRequestLogging: true, 
+			
+			replyOptions: {
+				// Correct signature and type safety
+				rewriteHeaders: (headers, req) => {
+					return {
+						...headers,
+						// Safely access the ID (req might be raw Node request)
+						'x-request-id': (req as any)?.id || 'unknown',
+					};
+				},
+				// REMOVED: upstreamTimeout (invalid property)
+			},
 			preHandler: async (request: FastifyRequest) => {
 				request.log.info(
 					{ path: request.url, method: request.method },
 					'Proxying request to Auth Service'
 				);
 			},
-			replyOptions: {
-				rewriteHeaders: (originalReq: any, headers: any) => ({
-					...headers,
-					'x-forwarded-for': originalReq.ip,
-					'x-request-id': originalReq.id,
-				}),
-			},
 		});
 
 		// =====================================================
 		// ROUTE: USER SERVICE (/api/users/*)
 		// =====================================================
+		// Protect user routes with authGuard
+		const { authGuard } = await import('./auth.middleware');
 		await fastify.register( proxy, {
 			upstream: config.services.userService,
 			prefix: '/api/users',
 			rewritePrefix: '/api/users',
 			http2: false,
-			preHandler: async (request: FastifyRequest) => {
-				// TODO: validate JWT token before proxying from Authorization header
+			preHandler: async (request: FastifyRequest, reply) => {
+				// First validate JWT token
+				await authGuard(request, reply as any);
+				if ((reply as any).sent) return; // authGuard already sent a response
+
 				request.log.info(
 					{ path: request.url, method: request.method },
 					'Proxying request to User Service'
@@ -324,6 +325,12 @@ async function start() {
 
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
+		// Print full stack to stderr for easier debugging inside containers
+		if (error instanceof Error && error.stack) {
+			console.error(error.stack);
+		} else {
+			console.error(error);
+		}
 		fastify.log.error({ error }, 'Error starting server');
 		process.exit(1);
 	}

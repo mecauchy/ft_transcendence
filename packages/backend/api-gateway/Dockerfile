@@ -30,6 +30,12 @@ RUN corepack enable
 
 WORKDIR /app
 
+# Install small runtime tools used by healthchecks
+RUN apk add --no-cache wget
+
+# Ensure PATH is set for non-interactive shells
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 # Create a non-root user for rootless execution
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
