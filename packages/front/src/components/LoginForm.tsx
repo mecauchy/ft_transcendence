@@ -10,7 +10,7 @@ interface LoginProps {
 function Login({onLogin}: LoginProps) {
 
 	// default state
-	const [email, setEmail] = useState('');
+	const [ulogin, setLogin] = useState('');
 	const [password, setPassword] = useState('');
 	const [registerMode, setRegisterMode] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,7 @@ function Login({onLogin}: LoginProps) {
 		setIsLoading(true);
 
 		try {
-			const response = await api.login({email, password});
+			const response = await api.login({login: ulogin, password});
 			console.log('Login successful:', response.user);
 			onLogin(response.user.username);
 		} catch (err) {
@@ -79,7 +79,7 @@ function Login({onLogin}: LoginProps) {
 
 			// auto login after registration
 			const loginResponse = await api.login({
-				email: createEmail,
+				login: createEmail,
 				password: createPassword,
 			});
 			onLogin(loginResponse.user.username);
@@ -134,13 +134,13 @@ function Login({onLogin}: LoginProps) {
 			{!registerMode && (
 				<div className="login_button_container">
 					<form onSubmit={handleSubmit} className="login_form">
-						<p className="username">Adresse email</p>
+						<p className="username">Login</p>
 						<input
-							type="email"
+							type="string"
 							className="username_input"
-							placeholder="Entrez votre adresse email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
+							placeholder="Entrez votre nom d'utilisateur ou votre adresse email"
+							value={ulogin}
+							onChange={(e) => setLogin(e.target.value)}
 							disabled={isLoading}
 							required
 						/>

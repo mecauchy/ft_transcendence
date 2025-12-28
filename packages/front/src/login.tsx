@@ -1,15 +1,17 @@
 import {useState} from 'react'
 import './styles/login.css'
+import {useAuth} from './contexts/AuthContext'
 
 function Login({onLogin}: {onLogin: (username: string) => void}) {
+	const {login, register, loginWithOAuth} = useAuth();
 
 	//state
-	const [username, setUsername] = useState<string>('');
+	const [ulogin, setLogin] = useState<string>('');
 	const [password, setPassword] = useState<string>('');
 	const [registerMode, setRegisterMode] = useState<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [errorMessage, setErrorMessage] = useState<string>('');
 
-	const[user, setUser] = useState<{username: string, password: string} | null>(null);
-	const[newUser, setNewUser] = useState<{username: string, password: string, email: string, birthdate: string} | null>(null);
 	const [createUsername, setCreateUsername] = useState<string>('');
 	const [createPassword, setCreatePassword] = useState<string>('');
 	const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -21,21 +23,29 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const [numberPresent, setNumberPresent] = useState<boolean>(false);
 	const [specialCharPresent, setSpecialCharPresent] = useState<boolean>(false);
 	const [birthdate, setBirthdate] = useState<string>('');
-
-	void user;
-	void newUser;
 	//handlers for registration
-	const handleRegister = (event: React.FormEvent) => {
+	const handleRegister = async (event: React.FormEvent) => {
 		event.preventDefault();
-		console.log('Registration form submitted');
-		if (createUsername && createPassword && createPassword === confirmPassword && passwordFormat) {
-			setNewUser({username: createUsername, password: createPassword, email: createEmail, birthdate: birthdate});
-			console.log('User registered:', {createUsername, createPassword, createEmail, birthdate});
-			onLogin(createUsername);
-		}
-		else if (createPassword !== confirmPassword) {
+		setErrorMessage('');
+		
+		if (createPassword !== confirmPassword) {
 			setBadConfirmation(true);
-			console.log('Password confirmation does not match');
+			return;
+		}
+		
+		if (!passwordFormat) {
+			setErrorMessage('Le mot de passe ne respecte pas les exigences');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await register(createUsername, createEmail, createPassword, birthdate);
+			onLogin(createUsername);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Échec de l\'inscription');
+		} finally {
+			setIsLoading(false);
 		}
 	}
 	
@@ -74,32 +84,42 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	}
 
 	//handlers
-	const handleSubmit = (event: React.FormEvent) => {
+	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
-		console.log('Form submitted');
-		if (username && password) {
-			setUser({username, password});
-			console.log('User logged in:', {username, password});
-			onLogin(username);
+		setErrorMessage('');
+		
+		if (!ulogin || !password) {
+			setErrorMessage('Veuillez remplir tous les champs');
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await login(ulogin, password);
+			// onLogin is handled by AuthContext - the user state change will trigger re-render
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : 'Échec de la connexion');
+		} finally {
+			setIsLoading(false);
 		}
 	}
 
-	const handleChangeUsername = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setUsername(event.target.value);
+	const handleChangeLogin = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setLogin(event.target.value);
+		setErrorMessage('');
 	}
 
 	const handleChangePassword = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setPassword(event.target.value);
+		setErrorMessage('');
 	}
 
 	const handleGithubLogin = () => {
-		console.log('GitHub login clicked');
-		// Implement GitHub OAuth flow here
+		loginWithOAuth('github');
 	}
 
 	const handle42Login = () => {
-		console.log('42 login clicked');
-		// Implement 42 OAuth flow here
+		loginWithOAuth('42');
 	}
 
   return (
@@ -107,15 +127,24 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 		<img src='/controler.png' alt='Logo' className='login_logo_image' />
 	  <p className='login_title'>ft_transcendance</p>
 	  <p className='login_subtitle'>Quand parler devient une mécanique de jeu.</p>
+	  
+	  {errorMessage && (
+		<div className='login_error_message'>
+			{errorMessage}
+		</div>
+	  )}
+	  
 	  {!registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleSubmit} className='login_form'>
-			<p className='username'>Nom d'utilisateur</p>
+			<p className='username'>Login</p>
 			<input
-			  type="text"
+			  type="string"
 			  className='username_input'
-			  placeholder="Entrez votre nom d'utilisateur"
-			  onChange={handleChangeUsername}
+			  placeholder="Entrez votre nom d'utilisateur ou votre adresse email"
+			  value={ulogin}
+			  onChange={handleChangeLogin}
+			  disabled={isLoading}
 			  required
 			/>
 			<p className='password'>Mot de passe</p>
@@ -123,14 +152,17 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  type="password"
 			  className='password_input'
 			  placeholder="Entrez votre mot de passe"
+			  value={password}
 			  onChange={handleChangePassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<br />
 			<button 
 			className='login_button'
-			type="submit">
-				Se connecter
+			type="submit"
+			disabled={isLoading}>
+				{isLoading ? 'Connexion...' : 'Se connecter'}
 			</button>
 		</form>
 	  </div>
@@ -143,7 +175,9 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  type="email"
 			  className='username_input'
 			  placeholder="Entrez votre adresse email"
+			  value={createEmail}
 			  onChange={handleCreateEmail}
+			  disabled={isLoading}
 			  required
 			/>
 			<p className='username'>Choisissez un nom d'utilisateur</p>
@@ -151,7 +185,9 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  type="text"
 			  className='username_input'
 			  placeholder="Entrez votre nom d'utilisateur"
+			  value={createUsername}
 			  onChange={handleCreateUsername}
+			  disabled={isLoading}
 			  required
 			/>
 			<p className='birthdate'>Date de naissance</p>
@@ -161,6 +197,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  className='birthdate_input'
 			  value={birthdate}
 			  onChange={handleBirthdateChange}
+			  disabled={isLoading}
 			  required
 			/>
 			<p className='password'>Choisissez un mot de passe</p>
@@ -168,7 +205,9 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  type="password"
 			  className='password_input'
 			  placeholder="Entrez votre mot de passe"
+			  value={createPassword}
 			  onChange={handleCreatePassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<div className={`password_requirements_wrapper ${
@@ -201,14 +240,17 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  readOnly={passwordFormat ? false : true}
 			  className={badConfirmation ? 'password_input_error' : 'password_input'}
 			  placeholder="Confirmez votre mot de passe"
+			  value={confirmPassword}
 			  onChange={handleConfirmPassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<br />
 			<button 
 			className='login_button'
-			type="submit">
-				S'inscrire
+			type="submit"
+			disabled={isLoading}>
+				{isLoading ? 'Inscription...' : 'S\'inscrire'}
 			</button>
 		</form>
 	  </div>
@@ -217,11 +259,15 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 		<p>Se connecter avec :</p>
 		<div className='login_api_buttons'>
 			<button className='login_api_button_github'
-			onClick={handleGithubLogin}>
+			onClick={handleGithubLogin}
+			disabled={isLoading}
+			type="button">
 				<img src='/github_logo.png' alt='GitHub Logo' className='login_api_button_github_logo' />
 			</button>
 			<button className='login_api_button_42'
-			onClick={handle42Login}>
+			onClick={handle42Login}
+			disabled={isLoading}
+			type="button">
 				<img src='/42_logo.png' alt='42 Logo' className='login_api_button_42_logo' />
 			</button>
 		</div>
@@ -229,12 +275,16 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	  <div className='login_divider'>
 			{!registerMode &&
 			<button className='login_register_button'
-			onClick={() => setRegisterMode(true)}>
+			onClick={() => setRegisterMode(true)}
+			disabled={isLoading}
+			type="button">
 				Pas encore de compte ? Créez-en un ici
 			</button>}
 			{registerMode &&
 			<button className='login_register_button'
-			onClick={() => setRegisterMode(false)}>
+			onClick={() => setRegisterMode(false)}
+			disabled={isLoading}
+			type="button">
 				Déjà un compte ? Connectez-vous ici
 			</button>}
 			<p>Lancez une session et faites vos premiers choix.</p>

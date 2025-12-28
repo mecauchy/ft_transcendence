@@ -10,16 +10,14 @@ COPY packages/shared/types ../shared/types
 
 RUN pnpm install
 
-# Copy prisma schema and generate client AFTER pnpm install so it generates into the correct node_modules
 COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
 RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/user-service/src ./src
 
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
-
-# Prune devDependencies, keep generated Prisma client
 RUN pnpm prune --prod
+
 
 FROM node:18-alpine
 
@@ -30,7 +28,6 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 RUN mkdir -p /app/uploads/avatars && chown -R nodejs:nodejs /app/uploads
 
-# Copy pruned node_modules with generated Prisma client
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY packages/backend/user-service/package.json ./

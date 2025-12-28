@@ -10,15 +10,12 @@ COPY packages/shared/types ../shared/types
 
 RUN pnpm install
 
-# Copy prisma schema and generate client AFTER pnpm install so it generates into the correct node_modules
 COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
 RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/gamification-service/src ./src
 
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
-
-# Prune devDependencies, keep generated Prisma client
 RUN pnpm prune --prod
 
 FROM node:18-alpine AS production
@@ -30,7 +27,6 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy pruned node_modules with generated Prisma client
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY packages/backend/gamification-service/package.json ./
@@ -42,6 +38,6 @@ USER nodejs
 EXPOSE 3004
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3004/health || exit 1
+	CMD wget --no-verbose --tries=1 --spider http://localhost:3004/health || exit 1
 
 CMD ["node", "dist/index.js"]

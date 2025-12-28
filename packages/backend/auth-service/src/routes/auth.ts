@@ -20,7 +20,7 @@ interface RegisterRequest {
 }
 
 interface LoginRequest {
-	email:		string;
+	login:		string;
 	password:	string;
 }
 
@@ -118,27 +118,28 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post<{Body: LoginRequest}>(
 		'/login',
 		async (request, reply) => {
-			const {email, password} = request.body;
+			const {login, password} = request.body;
 
-			if (!email || !password) {
+			if (!login || !password) {
 				return reply.status(400).send({
 					statusCode:	400,
 					error:		'Bad Request',
-					message:	'Email and password are required',
+					message:	'login and password are required',
 				});
 			}
 
 			try {
-				// find user by email
+				// find user by email or username
+				const isEmail = login.includes('@');
 				const user = await prisma.user.findUnique({
-					where: {email},
+					where: isEmail ? {email: login} : {username: login},
 				});
 
 				if (!user || !user.password) {
 					return reply.status(401).send({
 						statusCode:	401,
 						error:		'Unauthorized',
-						message:	'Invalid email or password',
+						message:	'Invalid login or password',
 					});
 				}
 
@@ -149,7 +150,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 					return reply.status(401).send({
 						statusCode:	401,
 						error:		'Unauthorized',
-						message:	'Invalid email or password',
+						message:	'Invalid login or password',
 					});
 				}
 

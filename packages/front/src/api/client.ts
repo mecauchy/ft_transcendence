@@ -69,7 +69,7 @@ class ApiClient {
 		});
 	}
 
-	async login(credentials: {email: string; password: string}) {
+	async login(credentials: {login: string; password: string}) {
 		const response = await this.request<{
 			accessToken: string;
 			refreshToken: string;

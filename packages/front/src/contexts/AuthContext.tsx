@@ -17,7 +17,7 @@ interface AuthContextType {
 	user: User | null;
 	isLoading: boolean;
 	isAuthenticated: boolean;
-	login: (email: string, password: string) => Promise<void>;
+	login: (login: string, password: string) => Promise<void>;
 	register: (username: string, email: string, password: string, dob: string) => Promise<void>;
 	logout: () => Promise<void>;
 	loginWithOAuth: (provider: '42' | 'github') => void;
@@ -56,9 +56,9 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		checkAuth();
 	}, []);
 
-	const login = async (email: string, password: string) => {
+	const login = async (login: string, password: string) => {
 		try {
-			const response = await api.login({email, password});
+			const response = await api.login({login, password});
 			setUser({
 				...response.user,
 				displayName: response.user.username,
