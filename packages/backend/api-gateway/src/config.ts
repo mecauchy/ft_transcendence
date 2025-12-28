@@ -11,12 +11,12 @@ function	getVaultToken(): string {
 	if (existsSync(tokenFile)) {
 		return (readFileSync(tokenFile, 'utf-8').trim());
 	}
-	
+
 	// if in dev, you can ignore and use the devtoken
 	// in production, require token
 	if (process.env.NODE_ENV === 'production')
 		throw new Error('VAULT_TOKEN or VAULT_TOKEN_FILE must be set in production');
-	
+
 	return ('root_token_dev_only');
 }
 

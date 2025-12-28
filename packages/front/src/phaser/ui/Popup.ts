@@ -51,7 +51,7 @@ export default class Popup {
 
 	/* ---------- PUBLIC API ---------- */
 
-	show(message: string, buttons: PopupButton[] = []) {
+	show(message:	string, buttons: PopupButton[] = []) {
 		this.currentMessage = message;
 		this.currentButtons = buttons;
 
@@ -84,7 +84,7 @@ export default class Popup {
 
 	/* ---------- LAYOUT ---------- */
 
-	private layoutForContent(message: string, buttons: PopupButton[]) {
+	private layoutForContent(message:	string, buttons: PopupButton[]) {
 		const padding = 30;
 		const buttonGap = buttons.length ? 30 : 0;
 		const buttonsHeight = buttons.length ? 30 : 0;

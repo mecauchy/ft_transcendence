@@ -20,7 +20,7 @@ elif [ -n "${VAULT_DEV_ROOT_TOKEN_ID:-}" ]; then
   DEV_ROOT_TOKEN="$VAULT_DEV_ROOT_TOKEN_ID"
   echo "Using Vault dev root token from VAULT_DEV_ROOT_TOKEN_ID environment variable" 2>&1
 else
-  echo "ERROR: No Vault dev root token provided. Set VAULT_TOKEN_FILE, mount /run/secrets/vault_token, or set VAULT_DEV_ROOT_TOKEN_ID." 2>&1
+  echo "error:		No Vault dev root token provided. Set VAULT_TOKEN_FILE, mount /run/secrets/vault_token, or set VAULT_DEV_ROOT_TOKEN_ID." 2>&1
   exit 1
 fi
 

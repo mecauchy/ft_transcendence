@@ -11,7 +11,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 	// auth middleware
 	fastify.addHook('preHandler', authMiddleware);
 
-	// GET all available achievements
+	// get all available achievements
 	fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
 		try {
 			const achievements = await getAllAchievements();
@@ -19,14 +19,14 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get achievements');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get achievements',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get achievements',
 			});
 		}
 	});
 
-	// get current user's achievements
+	// get current user achievements
 	fastify.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = request.user!.userId;
 
@@ -45,9 +45,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get user achievements');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get achievements',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get achievements',
 			});
 		}
 	});
@@ -65,9 +65,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 
 				if (!achievement) {
 					return reply.status(404).send({
-						statusCode: 404,
-						error: 'Not Found',
-						message: 'Achievement not found',
+						statusCode:	404,
+						error:		'Not Found',
+						message:	'Achievement not found',
 					});
 				}
 
@@ -96,9 +96,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 			} catch (error) {
 				request.log.error({error}, 'Failed to get achievement');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get achievement',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get achievement',
 				});
 			}
 		}
@@ -147,9 +147,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get achievement progress');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get achievement progress',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get achievement progress',
 			});
 		}
 	});
@@ -161,9 +161,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		// only admins can trigger this
 		if (request.user!.role !== 'ADMIN') {
 			return reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: 'Not authorized to check achievements',
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'Not authorized to check achievements',
 			});
 		}
 
@@ -171,9 +171,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 
 		if (!userId || !eventType) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: 'userId and eventType are required',
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'userId and eventType are required',
 			});
 		}
 
@@ -193,9 +193,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to check achievements');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to check achievements',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to check achievements',
 			});
 		}
 	});
@@ -209,15 +209,15 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 			try {
 				// TODO : db query for this get
 				return {
-					message: 'Not implemented yet - would show recent global unlocks',
+					message:	'Not implemented yet - would show recent global unlocks',
 					limit,
 				};
 			} catch (error) {
 				request.log.error({error}, 'Failed to get recent achievements');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get recent achievements',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get recent achievements',
 				});
 			}
 		}

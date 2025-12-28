@@ -62,14 +62,14 @@ async function start() {
 		});
 
 		// handle errors
-		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+		fastify.setErrorHandler((error:		Error & {statusCode?: number}, request, reply) => {
 			request.log.error({error}, 'Unhandled error');
-			
+
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({
 				statusCode,
-				error: error.name || 'Internal Server Error',
-				message: error.message || 'An unexpected error occurred',
+				error:		error.name || 'Internal Server Error',
+				message:	error.message || 'An unexpected error occurred',
 			});
 		});
 
@@ -81,18 +81,18 @@ async function start() {
 
 		fastify.log.info(`
 |Game Service - Speak Up Platform|
-Server:	${address}
+	Server:	${address}
 
-REST Endpoints:
-POST	/api/session/start			- Start new session
-GET		/api/session/:id			- Get session state
-GET		/api/session/:id/history	- Get session event history
-POST	/api/session/:id/surrender	- End session
-GET		/api/scenarios				- List available scenarios
-GET		/api/scenarios/:id			- Get scenario details
+	REST Endpoints:
+		POST	/api/session/start			- Start new session
+		GET		/api/session/:id			- Get session state
+		GET		/api/session/:id/history	- Get session event history
+		POST	/api/session/:id/surrender	- End session
+		GET		/api/scenarios				- List available scenarios
+		GET		/api/scenarios/:id			- Get scenario details
 
-WebSocket:
-	/ws/game?token=<jwt>&sessionId=<id>
+	WebSocket:
+		/ws/game?token=<jwt>&sessionId=<id>
 
 	Database: ${config.database.host}:${config.database.port}
 	Active Sessions: ${wsManager.getActiveSessionCount()}

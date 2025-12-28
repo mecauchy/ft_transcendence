@@ -5,53 +5,53 @@ import type {
 	IParticipantState,
 } from '@speak-up/shared';
 import {
-	EventType,
-	type IBaseEvent,
-	type IItemInteractionEvent,
-	type IInterventionTriggeredEvent,
-	type IStateUpdateEvent,
-	type IDialogueChoiceEvent,
-	type GameEvent,
+			EventType,
+	type	IBaseEvent,
+	type	IItemInteractionEvent,
+	type	IInterventionTriggeredEvent,
+	type	IStateUpdateEvent,
+	type	IDialogueChoiceEvent,
+	type	GameEvent,
 } from '@speak-up/shared';
 
 // generic scenrio node interface
 interface IScenarioNode {
-	id: string;
-	type: 'dialogue' | 'choice' | 'event' | 'ending';
-	content?: string;
-	choices?: {id: string; text: string; nextNodeId: string; effects?: MetricEffects}[];
-	nextNodeId?: string;
-	effects?: MetricEffects;
-	requirements?: Record<string, boolean>; // required scenario narrative flags
-	unlocks?: string[]; // unlocks item or other
+	id:				string;
+	type:			'dialogue' | 'choice' | 'event' | 'ending';
+	content?:		string;
+	choices?:		{id: string; text: string; nextNodeId: string; effects?: MetricEffects}[];
+	nextNodeId?:	string;
+	effects?:		MetricEffects;
+	requirements?:	Record<string, boolean>;
+	unlocks?:		string[];
 }
 
 interface MetricEffects {
-	trust?: number;
-	stress?: number;
-	compliance?: number;
-	mood?: IInvestigationState['metrics']['mood'];
+	trust?:			number;
+	stress?:		number;
+	compliance?:	number;
+	mood?:			IInvestigationState['metrics']['mood'];
 }
 
 interface IScenario {
-	id: string;
-	title: string;
-	startNodeId: string;
-	nodes: Map<string, IScenarioNode>;
-	items: IInventoryItem[];
+	id:				string;
+	title:			string;
+	startNodeId:	string;
+	nodes:			Map<string, IScenarioNode>;
+	items:			IInventoryItem[];
 }
 
 export class NarrativeEngine {
-	private state: IInvestigationState;
-	private scenario: IScenario;
-	private eventLog: GameEvent[] = [];
-	private onStateChange?: (state: IInvestigationState, event: IStateUpdateEvent) => void;
+	private state:			IInvestigationState;
+	private scenario:		IScenario;
+	private eventLog:		GameEvent[] = [];
+	private onStateChange?:	(state: IInvestigationState, event: IStateUpdateEvent) => void;
 
 	constructor(
-		sessionId: string,
-		scenario: IScenario,
-		patientId: string,
-		doctorId: string | null
+		sessionId:	string,
+		scenario:	IScenario,
+		patientId:	string,
+		doctorId:	string | null
 	) {
 		this.scenario = scenario;
 		this.state = this.initializeState(sessionId, patientId, doctorId);
@@ -59,9 +59,9 @@ export class NarrativeEngine {
 
 	// initialize gamestate
 	private initializeState(
-		sessionId: string,
-		patientId: string,
-		doctorId: string | null
+		sessionId:	string,
+		patientId:	string,
+		doctorId:	string | null
 	): IInvestigationState {
 		return {
 			sessionId,
@@ -70,28 +70,28 @@ export class NarrativeEngine {
 			status: 'WAITING',
 
 			metrics: {
-				trust: 0.5,
-				stress: 0.3,
-				compliance: 0.5,
-				mood: 'CALM',
+				trust:		0.5,
+				stress:		0.3,
+				compliance:	0.5,
+				mood:		'CALM',
 			},
 
-			actionNodeId: this.scenario.startNodeId,
-			narrativeFlags: {},
-			inventory: this.scenario.items.filter(i => i.status === 'VISIBLE'),
+			actionNodeId:	this.scenario.startNodeId,
+			narrativeFlags:	{},
+			inventory:		this.scenario.items.filter(i => i.status === 'VISIBLE'),
 
 			participants: {
 				patient: {
-					userId: patientId,
-					connectionStatus: 'ONLINE',
-					lastAckSequenceId: 0,
-					currentActivity: 'IDLE',
+					userId:				patientId,
+					connectionStatus:	'ONLINE',
+					lastAckSequenceId:	0,
+					currentActivity:	'IDLE',
 				},
 				doctor: {
-					userId: doctorId || 'AI_DOCTOR',
-					connectionStatus: doctorId ? 'OFFLINE' : 'ONLINE', // AI always online
-					lastAckSequenceId: 0,
-					currentActivity: 'IDLE',
+					userId:				doctorId || 'AI_DOCTOR',
+					connectionStatus:	doctorId ? 'OFFLINE' : 'ONLINE',
+					lastAckSequenceId:	0,
+					currentActivity:	'IDLE',
 				},
 			},
 		};
@@ -205,7 +205,7 @@ export class NarrativeEngine {
 
 		// find item index
 		const itemIndex = this.state.inventory.findIndex(i => i.id === itemId);
-		
+
 		if (itemIndex === -1) {
 			// if unfound, check scenario items
 			const scenarioItem = this.scenario.items.find(i => i.id === itemId);
@@ -220,7 +220,7 @@ export class NarrativeEngine {
 			case 'INSPECT':
 				// inspecting increases stress
 				this.applyMetricChange({stress: 0.05});
-				
+
 				// check if item unlocks something
 				if (item.type === 'DOCUMENT' || item.type === 'CONCEPTUAL') {
 					this.state.narrativeFlags[`INSPECTED_${itemId.toUpperCase()}`] = true;

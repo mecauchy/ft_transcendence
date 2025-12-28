@@ -41,14 +41,14 @@ const fastify = Fastify({
 // custom err handler to avoid null socket proxy response
 fastify.setErrorHandler(
 	(
-		error: Error &
+		error:		Error &
 		{statusCode?: number},
 		request: FastifyRequest,
 		reply: FastifyReply
 	) => {
 		// log error safely
 		fastify.log.error({err: error, url: request.url, method: request.method}, 'Request error');
-		
+
 		// send error response
 		if (!reply.sent) {
 			reply.status(error.statusCode || 500).send({
@@ -75,7 +75,7 @@ async function	start() {
 		});
 
 		redis.on('error', (err: Error) => {
-			fastify.log.error({error: err}, 'Redis error occurred');
+			fastify.log.error({error:		err}, 'Redis error occurred');
 		});
 
 
@@ -97,7 +97,7 @@ async function	start() {
 				sameSite: 'lax',
 			},
 		});
-		
+
 		// middleware init security headers
 		await fastify.register(helmet, {
 			contentSecurityPolicy: {
@@ -301,7 +301,7 @@ async function	start() {
 
 				} catch (err) {
 					// on token verify err, log to console
-					request.log.warn({ip: request.ip, error: (err as Error).message}, 'WebSocket auth failed');
+					request.log.warn({ip: request.ip, error:		(err as Error).message}, 'WebSocket auth failed');
 					connection.socket.send(JSON.stringify({
 						type:		'ERROR',
 						code:		'AUTH_FAILED',
@@ -311,7 +311,7 @@ async function	start() {
 					return;
 				}
 
-				connection.socket.on('message', async (message: any) => {
+				connection.socket.on('message', async (message:	any) => {
 					try {
 						const data = JSON.parse(message.toString());
 						request.log.info({type: data.type}, 'Received WebSocket message');
@@ -325,7 +325,7 @@ async function	start() {
 							})
 						);
 					} catch (err: any) {
-						request.log.error({error: err}, 'Failed to parse WebSocket message');
+						request.log.error({error:		err}, 'Failed to parse WebSocket message');
 						connection.socket.send(
 							JSON.stringify({
 								type:		'ERROR',
@@ -341,7 +341,7 @@ async function	start() {
 				});
 
 				connection.socket.on('error', (err: any) => {
-					request.log.error({error: err}, 'WebSocket error occurred');
+					request.log.error({error:		err}, 'WebSocket error occurred');
 				});
 
 				// send ack
@@ -356,7 +356,7 @@ async function	start() {
 		});
 
 		// error handler
-		fastify.setErrorHandler((error: any, request: FastifyRequest) => {
+		fastify.setErrorHandler((error:		any, request: FastifyRequest) => {
 			request.log.error({error}, 'Unhandled error occurred');
 
 			if (error?.statusCode === 429) {
@@ -410,7 +410,7 @@ async function	start() {
 
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
-		fastify.log.error({error: {message: error.message, stack: error.stack, name: error.name}}, 'Error starting server');
+		fastify.log.error({error:		{message:	error.message, stack: error.stack, name: error.name}}, 'Error starting server');
 		console.error('Full error:', err);
 		process.exit(1);
 	}

@@ -20,7 +20,7 @@ interface JWTPayload {
 	timeExp: number;
 }
 
-// JWT middleware for auth
+// jwt middleware for auth
 export async function authMiddleware(
 	request: FastifyRequest,
 	reply: FastifyReply
@@ -29,12 +29,13 @@ export async function authMiddleware(
 
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Missing or invalid authorization header',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Missing or invalid authorization header',
 		});
 	}
 
+	// strip prefix
 	const token = authHeader.substring(7);
 
 	try {
@@ -46,27 +47,30 @@ export async function authMiddleware(
 			role: payload.role,
 		};
 	} catch (error) {
+		// token expired
 		if (error instanceof jwt.TokenExpiredError) {
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Token has expired',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Token has expired',
 			});
 		}
 
+		// token invalid
 		if (error instanceof jwt.JsonWebTokenError) {
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Invalid token',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Invalid token',
 			});
 		}
 
+		// serverside failure
 		request.log.error({error}, 'Token verification failed');
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Token verification failed',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Token verification failed',
 		});
 	}
 }

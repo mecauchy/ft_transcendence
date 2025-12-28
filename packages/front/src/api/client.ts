@@ -4,9 +4,9 @@
 const API_BASE = '/api';
 
 interface ApiError {
-	statusCode: number;
-	error: string;
-	message: string;
+	statusCode:	number;
+	error:		string;
+	message:	string;
 }
 
 class ApiClient {
@@ -40,10 +40,10 @@ class ApiClient {
 		});
 
 		if (!response.ok) {
-			const error: ApiError = await response.json().catch(() => ({
-				statusCode: response.status,
-				error: response.statusText,
-				message: 'An error occurred',
+			const error:		ApiError = await response.json().catch(() => ({
+				statusCode:	response.status,
+				error:		response.statusText,
+				message:	'An error occurred',
 			}));
 			throw error;
 		}
@@ -63,7 +63,7 @@ class ApiClient {
 		password: string;
 		dob: string;
 	}) {
-		return this.request<{userId: string; message: string}>('/auth/register', {
+		return this.request<{userId: string; message:	string}>('/auth/register', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -83,7 +83,7 @@ class ApiClient {
 	}
 
 	async logout() {
-		const result = await this.request<{message: string}>('/auth/logout', {
+		const result = await this.request<{message:	string}>('/auth/logout', {
 			method: 'POST',
 		});
 		this.setToken(null);
@@ -133,7 +133,7 @@ class ApiClient {
 	}
 
 	async updateProfile(data: {displayName?: string; avatarUrl?: string}) {
-		return this.request<{message: string}>('/users/me', {
+		return this.request<{message:	string}>('/users/me', {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
@@ -146,7 +146,7 @@ class ApiClient {
 	}
 
 	async updateSettings(settings: {avatar?: string; colour?: string; locale?: string}) {
-		return this.request<{message: string}>('/users/me/settings', {
+		return this.request<{message:	string}>('/users/me/settings', {
 			method: 'PATCH',
 			body: JSON.stringify(settings),
 		});
@@ -164,13 +164,13 @@ class ApiClient {
 	}
 
 	async sendFriendRequest(userId: string) {
-		return this.request<{message: string}>(`/users/me/friends/${userId}`, {
+		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
 			method: 'POST',
 		});
 	}
 
 	async respondToFriendRequest(userId: string, accept: boolean) {
-		return this.request<{message: string}>(`/users/me/friends/${userId}`, {
+		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
 			method: 'PATCH',
 			body: JSON.stringify({accept}),
 		});

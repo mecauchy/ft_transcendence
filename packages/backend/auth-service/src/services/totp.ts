@@ -38,7 +38,7 @@ export function verifyTOTP(secret: string, code: string): boolean {
 
 		// validate while allowing for clock drift
 		const delta = totp.validate({token: code, window: 1});
-		
+
 		// if delta is null -> invalid
 		return delta !== null;
 	} catch (error) {
@@ -61,7 +61,7 @@ export async function generateQRCode(otpauthUrl: string): Promise<string> {
 				light: '#ffffff',
 			},
 		});
-		
+
 		return qrCodeDataUrl;
 	} catch (error) {
 		console.error('QR code generation error:', error);
@@ -72,7 +72,7 @@ export async function generateQRCode(otpauthUrl: string): Promise<string> {
 // generate backup codes
 export function generateBackupCodes(count: number = 10): string[] {
 	const codes: string[] = [];
-	
+
 	for (let i = 0; i < count; i++) {
 		// gen alphanum codes
 		const code = Array.from(crypto.getRandomValues(new Uint8Array(4)))
@@ -81,6 +81,6 @@ export function generateBackupCodes(count: number = 10): string[] {
 			.toUpperCase();
 		codes.push(code);
 	}
-	
+
 	return codes;
 }

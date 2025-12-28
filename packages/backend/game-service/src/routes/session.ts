@@ -23,9 +23,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		// validate request
 		if (patientId !== userId) {
 			return reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: 'Can only start sessions for yourself',
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'Can only start sessions for yourself',
 			});
 		}
 
@@ -37,9 +37,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 			if (!scenario) {
 				return reply.status(400).send({
-					statusCode: 400,
-					error: 'Bad Request',
-					message: 'No scenarios available',
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'No scenarios available',
 				});
 			}
 
@@ -58,67 +58,64 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to start session');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to start session',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to start session',
 			});
 		}
 	});
 
-	/**
-	 * GET /api/session/:id
-	 * Get current session state
-	 */
+	// get curr session state
 	fastify.get<{Params: {id: string}}>('/:id', async (request, reply) => {
 		const {id: sessionId} = request.params;
 		const userId = request.user!.userId;
 
 		try {
-			// Check if session exists in memory
+			// check if session exists
 			const session = wsManager.getSession(sessionId);
-			
+
 			if (session) {
 				const state = session.engine.getState();
-				
-				// Verify user is participant or admin
+
+				// verify if user participant of session or admin
 				if (
 					state.participants.patient.userId !== userId &&
 					state.participants.doctor.userId !== userId &&
 					request.user!.role !== 'ADMIN'
 				) {
 					return reply.status(403).send({
-						statusCode: 403,
-						error: 'Forbidden',
-						message: 'Not authorized to view this session',
+						statusCode:	403,
+						error:		'Forbidden',
+						message:	'Not authorized to view this session',
 					});
 				}
 
 				return {state};
 			}
 
-			// Load from database if not in memory
+			// load from db if not in memory
 			const dbSession = await prisma.session.findUnique({
 				where: {id: sessionId},
 			});
 
 			if (!dbSession) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'Session not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'Session not found',
 				});
 			}
 
-			// Verify access
+			// verify access
 			if (
 				dbSession.patientId?.toString() !== userId &&
 				dbSession.doctorId?.toString() !== userId &&
 				request.user!.role !== 'ADMIN'
 			) {
 				return reply.status(403).send({
-					statusCode: 403,
-					error: 'Forbidden',
-					message: 'Not authorized to view this session',
+					statusCode:	403,
+					error:		'Forbidden',
+					message:	'Not authorized to view this session',
 				});
 			}
 
@@ -133,32 +130,29 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get session');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get session',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get session',
 			});
 		}
 	});
 
-	/**
-	 * GET /api/session/:id/history
-	 * Get session event history (for replay/analysis)
-	 */
+	// get history
 	fastify.get<{Params: {id: string}}>('/:id/history', async (request, reply) => {
 		const {id: sessionId} = request.params;
 		const userId = request.user!.userId;
 
 		try {
-			// Verify session access
+			// check session access
 			const session = await prisma.session.findUnique({
 				where: {id: sessionId},
 			});
 
 			if (!session) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'Session not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'Session not found',
 				});
 			}
 
@@ -168,13 +162,13 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				request.user!.role !== 'ADMIN'
 			) {
 				return reply.status(403).send({
-					statusCode: 403,
-					error: 'Forbidden',
-					message: 'Not authorized to view this session history',
+					statusCode:	403,
+					error:		'Forbidden',
+					message:	'Not authorized to view this session history',
 				});
 			}
 
-			// Get event log
+			// get event log
 			const events = await prisma.eventLog.findMany({
 				where: {sessionId: sessionId},
 				orderBy: {sequenceId: 'asc'},
@@ -218,17 +212,14 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get session history');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get session history',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get session history',
 			});
 		}
 	});
 
-	/**
-	 * POST /api/session/:id/surrender
-	 * End session early (patient gives up)
-	 */
+	// surrender
 	fastify.post<{Params: {id: string}; Body: {reason?: string}}>(
 		'/:id/surrender',
 		async (request, reply) => {
@@ -241,42 +232,39 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 				if (!session) {
 					return reply.status(404).send({
-						statusCode: 404,
-						error: 'Not Found',
-						message: 'Active session not found',
+						statusCode:	404,
+						error:		'Not Found',
+						message:	'Active session not found',
 					});
 				}
 
 				const state = session.engine.getState();
 
-				// Only patient can surrender
+				// only patient can surrender
 				if (state.participants.patient.userId !== userId) {
 					return reply.status(403).send({
-						statusCode: 403,
-						error: 'Forbidden',
-						message: 'Only the patient can surrender',
+						statusCode:	403,
+						error:		'Forbidden',
+						message:	'Only the patient can surrender',
 					});
 				}
 
-				// Terminate session
+				// terminate session
 				session.engine.terminate(reason || 'Player surrendered');
 
-				return {success: true, message: 'Session ended'};
+				return {success: true, message:	'Session ended'};
 			} catch (error) {
 				request.log.error({error}, 'Failed to surrender session');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to end session',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to end session',
 				});
 			}
 		}
 	);
 
-	/**
-	 * GET /api/session/active
-	 * List user's active sessions
-	 */
+	// get list of active sessions for user
 	fastify.get('/active', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
 
@@ -303,20 +291,16 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to list active sessions');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to list sessions',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to list sessions',
 			});
 		}
 	});
 }
 
-/**
- * Find an available doctor for P2P matchmaking
- */
+// find avail doctors for p2p session
 async function findAvailableDoctor(): Promise<string | null> {
-	// Simple implementation: find online user with DOCTOR role
-	// In production, this would use a matchmaking queue
 	const doctor = await prisma.user.findFirst({
 		where: {
 			role: 'DOCTOR',

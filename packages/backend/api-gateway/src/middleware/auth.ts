@@ -26,9 +26,9 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 	if (!authHeader) {
 		request.log.warn({ip: request.ip, url: request.url}, 'Missing Authorization header');
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Authorization header is required. Format: Bearer <token>',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Authorization header is required. Format: Bearer <token>',
 		});
 	}
 
@@ -36,9 +36,9 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 	if (!authHeader.startsWith('Bearer ')) {
 		request.log.warn({ip: request.ip}, 'Invalid Authorization header format');
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Invalid Authorization header format. Expected: Bearer <token>',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Invalid Authorization header format. Expected: Bearer <token>',
 		});
 	}
 
@@ -48,9 +48,9 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 	if (!token || token.trim() === '') {
 		request.log.warn({ip: request.ip}, 'Empty token provided');
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Token is required',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Token is required',
 		});
 	}
 
@@ -63,9 +63,9 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 		if (decoded.requires2FA && !decoded.twoFAVerified) {
 			request.log.warn({userId: decoded.userId}, '2FA required but not verified');
 			return reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: '2FA verification required. Please complete two-factor authentication.',
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'2FA verification required. Please complete two-factor authentication.',
 				require2FA: true,
 			});
 		}
@@ -87,20 +87,20 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 		if (error instanceof jwt.TokenExpiredError) {
 			request.log.warn({ip: request.ip}, 'Token expired');
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Token has expired. Please refresh your token or login again.',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Token has expired. Please refresh your token or login again.',
 				code: 'TOKEN_EXPIRED',
 			});
 		}
 
 		// throw error for invalid jwt token
 		if (error instanceof jwt.JsonWebTokenError) {
-			request.log.warn({ip: request.ip, error: (error as Error).message}, 'Invalid token');
+			request.log.warn({ip: request.ip, error:		(error as Error).message}, 'Invalid token');
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Invalid token. Please login again.',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Invalid token. Please login again.',
 				code: 'TOKEN_INVALID',
 			});
 		}
@@ -108,9 +108,9 @@ export async function authGuard(request: FastifyRequest, reply: FastifyReply) : 
 		// internal server err
 		request.log.error({error}, 'Unexpected error during token verification');
 		return reply.status(500).send({
-			statusCode: 500,
-			error: 'Internal Server Error',
-			message: 'Failed to verify authentication token',
+			statusCode:	500,
+			error:		'Internal Server Error',
+			message:	'Failed to verify authentication token',
 		});
 	}
 }
@@ -146,9 +146,9 @@ export function requireRole(...allowedRoles: string[]) {
 	return async function roleGuard(request: FastifyRequest, reply: FastifyReply) : Promise<void> {
 		if (!request.user) {
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Authentication required',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Authentication required',
 			});
 		}
 
@@ -158,9 +158,9 @@ export function requireRole(...allowedRoles: string[]) {
 							'Access denied: insufficient role');
 			// return debug for roles needed to access
 			return reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: `Access denied. Required role: ${allowedRoles.join(' or ')}`,
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	`Access denied. Required role: ${allowedRoles.join(' or ')}`,
 			});
 		}
 	};

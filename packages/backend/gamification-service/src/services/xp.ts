@@ -28,14 +28,14 @@ export interface UserXP {
 export function calculateLevel(totalXP: number): number {
 	let level = 1;
 	let xpNeeded = 0;
-	
+
 	while (xpNeeded <= totalXP) {
 		xpNeeded += config.gamification.xpPerLevel(level);
 		if (xpNeeded <= totalXP) {
 			level++;
 		}
 	}
-	
+
 	return level;
 }
 
@@ -55,19 +55,19 @@ export async function getUserXP(userId: string): Promise<UserXP> {
 	if (cached) {
 		return JSON.parse(cached);
 	}
-	
+
 	const result = await prisma.xpLog.aggregate({
 		where: {userId: BigInt(userId)},
 		_sum: {amount: true},
 	});
-	
+
 	const totalXP = result._sum.amount || 0;
 	const level = calculateLevel(totalXP);
 	const xpForCurrentLevel = xpForLevel(level);
 	const xpForNextLevel = xpForLevel(level + 1);
 	const xpInCurrentLevel = totalXP - xpForCurrentLevel;
 	const xpNeededForNext = xpForNextLevel - xpForCurrentLevel;
-	
+
 	const userXP: UserXP = {
 		userId,
 		totalXP,
@@ -75,10 +75,10 @@ export async function getUserXP(userId: string): Promise<UserXP> {
 		xpToNextLevel: xpNeededForNext - xpInCurrentLevel,
 		xpProgress: Math.round((xpInCurrentLevel / xpNeededForNext) * 100),
 	};
-	
+
 	// cache for 1m
 	await redis.setex(`user:${userId}:xp`, 60, JSON.stringify(userXP));
-	
+
 	return userXP;
 }
 
@@ -92,7 +92,7 @@ export async function awardXP(
 	// get curr xp for level check
 	const beforeXP = await getUserXP(userId);
 	const userIdBigInt = BigInt(userId);
-	
+
 	// use transaction
 	const xpLogRecord = await prisma.$transaction(async (tx) => {
 		// create xp log
@@ -104,11 +104,11 @@ export async function awardXP(
 				sessionId: sessionId ?? null,
 			},
 		});
-		
+
 		// update user level
 		const newTotalXP = beforeXP.totalXP + amount;
 		const newLevel = calculateLevel(newTotalXP);
-		
+
 		await tx.user.update({
 			where: {id: userIdBigInt},
 			data: {
@@ -117,10 +117,10 @@ export async function awardXP(
 				updatedAt: new Date(),
 			},
 		});
-		
+
 		return log;
 	});
-	
+
 	const xpLog: XPLog = {
 		id: xpLogRecord.id.toString(),
 		userId: xpLogRecord.userId.toString(),
@@ -129,14 +129,14 @@ export async function awardXP(
 		sessionId: xpLogRecord.sessionId?.toString(),
 		createdAt: xpLogRecord.createdAt,
 	};
-	
+
 	// delete redis cache
 	await redis.del(`user:${userId}:xp`);
-	
+
 	const newTotalXP = beforeXP.totalXP + amount;
 	const newLevel = calculateLevel(newTotalXP);
 	const levelUp = newLevel > beforeXP.level;
-	
+
 	return {xpLog, levelUp, newLevel};
 }
 
@@ -152,7 +152,7 @@ export async function getXPHistory(
 		take: limit,
 		skip: offset,
 	});
-	
+
 	return logs.map((row) => ({
 		id: row.id.toString(),
 		userId: row.userId.toString(),
@@ -167,7 +167,7 @@ export async function getXPHistory(
 export async function getDailyXP(userId: string, days: number = 30): Promise<{date: string; amount: number}[]> {
 	const startDate = new Date();
 	startDate.setDate(startDate.getDate() - days);
-	
+
 	const logs = await prisma.xpLog.findMany({
 		where: {
 			userId: BigInt(userId),
@@ -175,14 +175,14 @@ export async function getDailyXP(userId: string, days: number = 30): Promise<{da
 		},
 		orderBy: {createdAt: 'desc'},
 	});
-	
+
 	// group by date
 	const dailyMap = new Map<string, number>();
 	for (const log of logs) {
 		const dateKey = log.createdAt.toISOString().split('T')[0];
 		dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + log.amount);
 	}
-	
+
 	return Array.from(dailyMap.entries())
 		.map(([date, amount]) => ({date, amount}))
 		.sort((a, b) => b.date.localeCompare(a.date));

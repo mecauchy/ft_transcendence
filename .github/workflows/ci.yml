@@ -13,8 +13,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check repository
         run: |
-          if [ -f .env ]; then echo " Error: .env file detected in repo!"; exit 1; fi
-          if [ -d node_modules ]; then echo " Error: node_modules detected in repo!"; exit 1; fi
+          if [ -f .env ]; then echo " error:		.env file detected in repo!"; exit 1; fi
+          if [ -d node_modules ]; then echo " error:		node_modules detected in repo!"; exit 1; fi
           echo " Repository is clean."
 
   build-test:

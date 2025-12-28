@@ -43,14 +43,14 @@ async function start() {
 		await fastify.register(leaderboardRoutes, {prefix: '/api/gamification/leaderboard'});
 
 		// handle errors
-		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+		fastify.setErrorHandler((error:		Error & {statusCode?: number}, request, reply) => {
 			request.log.error({error}, 'Unhandled error');
 
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({
 				statusCode,
-				error: error.name || 'Internal Server Error',
-				message: error.message || 'An unexpected error occurred',
+				error:		error.name || 'Internal Server Error',
+				message:	error.message || 'An unexpected error occurred',
 			});
 		});
 
@@ -63,27 +63,27 @@ async function start() {
 		fastify.log.info(`
 |Gamification Service - Speak Up Platform|
 
-Server:	${address}
+	Server:	${address}
 
-XP Endpoints:
-GET		/api/xp/me		- Get user XP summary
-GET		/api/xp/history	- Get XP history
-GET		/api/xp/daily	- Get daily XP breakdown
-POST	/api/xp/award	- Award XP (admin)
+	XP Endpoints:
+		GET		/api/xp/me		- Get user XP summary
+		GET		/api/xp/history	- Get XP history
+		GET		/api/xp/daily	- Get daily XP breakdown
+		POST	/api/xp/award	- Award XP (admin)
 
-Achievement Endpoints:
-GET	/api/achievements			- List all achievements
-GET	/api/achievements/me		- Get user's achievements
-GET	/api/achievements/:id		- Get achievement details
-GET	/api/achievements/progress	- Get progress
+	Achievement Endpoints:
+		GET	/api/achievements			- List all achievements
+		GET	/api/achievements/me		- Get user's achievements
+		GET	/api/achievements/:id		- Get achievement details
+		GET	/api/achievements/progress	- Get progress
 
-Leaderboard Endpoints:
-GET	/api/leaderboard				- Global leaderboard
-GET	/api/leaderboard/friends		- Friends leaderboard
-GET	/api/leaderboard/scenario/:id	- Scenario leaderboard
-GET	/api/leaderboard/me				- User rank
+	Leaderboard Endpoints:
+		GET	/api/leaderboard				- Global leaderboard
+		GET	/api/leaderboard/friends		- Friends leaderboard
+		GET	/api/leaderboard/scenario/:id	- Scenario leaderboard
+		GET	/api/leaderboard/me				- User rank
 
-  Database: ${config.database.host}:${config.database.port}
+	Database: ${config.database.host}:${config.database.port}
 		`);
 	} catch (err) {
 		fastify.log.error(err, 'Failed to start gamification service');

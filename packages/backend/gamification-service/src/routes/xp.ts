@@ -18,9 +18,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get user XP');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get XP summary',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get XP summary',
 			});
 		}
 	});
@@ -39,9 +39,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 			} catch (error) {
 				request.log.error({error}, 'Failed to get XP history');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get XP history',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get XP history',
 				});
 			}
 		}
@@ -60,9 +60,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 			} catch (error) {
 				request.log.error({error}, 'Failed to get daily XP');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get daily XP',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get daily XP',
 				});
 			}
 		}
@@ -75,9 +75,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 		// Check if user is admin or internal service
 		if (request.user!.role !== 'ADMIN') {
 			return reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: 'Only admins can award XP directly',
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'Only admins can award XP directly',
 			});
 		}
 
@@ -85,9 +85,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 
 		if (!userId || typeof amount !== 'number' || amount <= 0 || !reason) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: 'Invalid request: userId, amount (positive), and reason are required',
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid request: userId, amount (positive), and reason are required',
 			});
 		}
 
@@ -114,9 +114,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to award XP');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to award XP',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to award XP',
 			});
 		}
 	});

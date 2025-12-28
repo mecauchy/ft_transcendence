@@ -16,7 +16,7 @@ export async function	twoFactorRoutes(fastify: FastifyInstance) {
 	// auth middleware
 	fastify.addHook('preHandler', async (request: AuthenticatedRequest, reply: FastifyReply) => {
 		const authHeader = request.headers.authorization;
-		
+
 		if (!authHeader?.startsWith('Bearer ')) {
 			return reply.status(401).send({
 				statusCode:	401,
@@ -84,7 +84,7 @@ export async function	twoFactorRoutes(fastify: FastifyInstance) {
 			return {
 				secret,
 				qrCode,
-				message: 'Scan the QR code with your authenticator app, then verify with a code',
+				message:	'Scan the QR code with your authenticator app, then verify with a code',
 			};
 
 		} catch (error) {

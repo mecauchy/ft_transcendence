@@ -151,7 +151,7 @@ Invalidates current tokens.
 ```typescript
 {
   success: true;
-  message: "Logged out successfully";
+  message:	"Logged out successfully";
 }
 ```
 
@@ -191,7 +191,7 @@ Verify TOTP code and enable 2FA.
 ```typescript
 {
   success: true;
-  message: "2FA enabled successfully";
+  message:	"2FA enabled successfully";
 }
 ```
 
@@ -239,7 +239,7 @@ Disable 2FA for account.
 ```typescript
 {
   success: true;
-  message: "2FA disabled";
+  message:	"2FA disabled";
 }
 ```
 
@@ -361,7 +361,7 @@ Send friend request.
 ```typescript
 {
   success: true;
-  message: "Friend request sent";
+  message:	"Friend request sent";
 }
 ```
 
@@ -387,7 +387,7 @@ Accept pending friend request.
 ```typescript
 {
   success: true;
-  message: "Friend request accepted";
+  message:	"Friend request accepted";
 }
 ```
 
@@ -430,7 +430,7 @@ Block a user.
 ```typescript
 {
   success: true;
-  message: "User blocked";
+  message:	"User blocked";
 }
 ```
 
@@ -521,7 +521,7 @@ Permanently delete account and all data.
 ```typescript
 {
   success: true;
-  message: "Account scheduled for deletion";
+  message:	"Account scheduled for deletion";
 }
 ```
 
@@ -620,7 +620,7 @@ End session early (patient gives up).
 ```typescript
 {
   success: true;
-  message: "Session ended";
+  message:	"Session ended";
 }
 ```
 
@@ -1006,7 +1006,7 @@ ws.onmessage = (event) => {
   type: 'ERROR';
   payload: {
     code: string;
-    message: string;
+    message:	string;
  };
 }
 
@@ -1064,9 +1064,9 @@ All errors follow this format:
 
 ```typescript
 {
-  statusCode: number;
-  error: string;      // Error type
-  message: string;    // Human-readable message
+  statusCode:	number;
+  error:		string;      // Error type
+  message:	string;    // Human-readable message
 }
 ```
 

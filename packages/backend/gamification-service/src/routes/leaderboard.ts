@@ -23,9 +23,9 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 		const validTypes: LeaderboardType[] = ['XP', 'LEVEL', 'SESSIONS', 'ACHIEVEMENTS'];
 		if (!validTypes.includes(type)) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: `Invalid leaderboard type. Valid types: ${validTypes.join(', ')}`,
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	`Invalid leaderboard type. Valid types: ${validTypes.join(', ')}`,
 			});
 		}
 
@@ -42,9 +42,9 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get leaderboard');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get leaderboard',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get leaderboard',
 			});
 		}
 	});
@@ -69,9 +69,9 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to get scenario leaderboard');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to get scenario leaderboard',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to get scenario leaderboard',
 			});
 		}
 	});
@@ -93,9 +93,9 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 			} catch (error) {
 				request.log.error({error}, 'Failed to get friends leaderboard');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get friends leaderboard',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get friends leaderboard',
 				});
 			}
 		}
@@ -123,9 +123,9 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 			} catch (error) {
 				request.log.error({error}, 'Failed to get user rank');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to get user rank',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get user rank',
 				});
 			}
 		}

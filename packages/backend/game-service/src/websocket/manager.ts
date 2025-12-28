@@ -100,7 +100,7 @@ export class WebSocketManager {
 					this.closeWithError(socket, 'Session not found');
 					return;
 				}
-				
+
 				// create engine
 				const engine = createEngineFromScenario(
 					sessionId,
@@ -254,7 +254,7 @@ export class WebSocketManager {
 	private handleMessage(
 		session: GameSession,
 		clientId: string,
-		message: {type: string; payload?: unknown}
+		message:	{type: string; payload?: unknown}
 	): void {
 		const client = session.clients.get(clientId);
 		if (!client) return;
@@ -349,7 +349,7 @@ export class WebSocketManager {
 	}
 
 	// broadcast to session
-	private broadcastToSession(sessionId: string, message: unknown): void {
+	private broadcastToSession(sessionId: string, message:	unknown): void {
 		const session = this.sessions.get(sessionId);
 		if (!session) return;
 
@@ -371,14 +371,14 @@ export class WebSocketManager {
 	}
 
 	// send msg to a specific client
-	private sendToClient(socket: WebSocket, message: unknown): void {
+	private sendToClient(socket: WebSocket, message:	unknown): void {
 		if (socket.readyState === WebSocket.OPEN) {
 			socket.send(JSON.stringify(message));
 		}
 	}
 
 	// socket close with error msg
-	private closeWithError(socket: WebSocket, message: string): void {
+	private closeWithError(socket: WebSocket, message:	string): void {
 		this.sendToClient(socket, {type: 'ERROR', message});
 		socket.close(4000, message);
 	}

@@ -68,7 +68,7 @@ if __name__ == "__main__":
     username = "grafana_admin"
     
     if not vault_token:
-        print("ERROR: No Vault token available. Set VAULT_TOKEN env var or provide vault token file at ./infra/secret/vault_token.txt")
+        print("error:		No Vault token available. Set VAULT_TOKEN env var or provide vault token file at ./infra/secret/vault_token.txt")
         sys.exit(1)
 
     print("Fetching Grafana password from Vault...")

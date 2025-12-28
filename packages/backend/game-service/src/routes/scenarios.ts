@@ -34,7 +34,7 @@ async function getScenario(
 	});
 
 	if (!row) {
-		return reply.status(404).send({error: 'Scenario not found'});
+		return reply.status(404).send({error:		'Scenario not found'});
 	}
 
 	const scenario: IScenario = {
@@ -59,7 +59,7 @@ async function getScenarioStats(
 	const {id} = request.params;
 	const scenarioId = BigInt(id);
 
-	// Get sessions for this scenario
+	// get sessions for this scenario
 	const sessions = await prisma.session.findMany({
 		where: {scenarioId},
 	});
@@ -68,7 +68,7 @@ async function getScenarioStats(
 	const completedSessions = sessions.filter((s) => s.status === 'COMPLETED');
 	const completedCount = completedSessions.length;
 
-	// Calculate averages from completed sessions
+	// calculate avgs
 	let avgDuration: number | null = null;
 	let avgTrust: number | null = null;
 	let avgCompliance: number | null = null;
@@ -104,7 +104,7 @@ async function getScenarioStats(
 		scenarioId: id,
 		totalSessions,
 		completedSessions: completedCount,
-		completionRate: totalSessions > 0 ? (completedCount / totalSessions) * 100 : 0,
+		completionRate: (totalSessions > 0) ? (completedCount / totalSessions) * 100 : 0,
 		averageDuration: avgDuration,
 		averageMetrics: {
 			trust: avgTrust?.toString() || null,

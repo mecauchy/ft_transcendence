@@ -27,13 +27,13 @@ export async function getGlobalLeaderboard(
 ): Promise<LeaderboardEntry[]> {
 	const cacheKey = `leaderboard:global:${type}:${limit}:${offset}`;
 	const cached = await redis.get(cacheKey);
-	
+
 	if (cached) {
 		return JSON.parse(cached);
 	}
-	
+
 	let users;
-	
+
 	switch (type) {
 		case 'XP':
 			users = await prisma.user.findMany({
@@ -46,7 +46,7 @@ export async function getGlobalLeaderboard(
 				},
 			});
 			break;
-			
+
 		case 'LEVEL':
 			users = await prisma.user.findMany({
 				where: {isActive: true},
@@ -58,7 +58,7 @@ export async function getGlobalLeaderboard(
 				},
 			});
 			break;
-			
+
 		case 'SESSIONS':
 			users = await prisma.user.findMany({
 				where: {isActive: true},
@@ -76,7 +76,7 @@ export async function getGlobalLeaderboard(
 			);
 			users = users.slice(offset, offset + limit);
 			break;
-			
+
 		case 'ACHIEVEMENTS':
 			users = await prisma.user.findMany({
 				where: {isActive: true},
@@ -91,7 +91,7 @@ export async function getGlobalLeaderboard(
 			);
 			users = users.slice(offset, offset + limit);
 			break;
-			
+
 		default:
 			users = await prisma.user.findMany({
 				where: {isActive: true},
@@ -103,13 +103,13 @@ export async function getGlobalLeaderboard(
 				},
 			});
 	}
-	
+
 	const entries: LeaderboardEntry[] = users.map((user, index) => {
 		let score = user.totalXp || 0;
 		if (type === 'LEVEL') score = user.currentLevel || 1;
 		if (type === 'SESSIONS') score = (user as {patientSessions?: unknown[]}).patientSessions?.length || 0;
 		if (type === 'ACHIEVEMENTS') score = (user as {achievements?: unknown[]}).achievements?.length || 0;
-		
+
 		return {
 			rank: offset + index + 1,
 			userId: user.id.toString(),
@@ -120,10 +120,10 @@ export async function getGlobalLeaderboard(
 			score,
 		};
 	});
-	
+
 	// cache configured TTL
 	await redis.setex(cacheKey, config.gamification.leaderboardCacheTTL, JSON.stringify(entries));
-	
+
 	return entries;
 }
 
@@ -135,11 +135,11 @@ export async function getScenarioLeaderboard(
 ): Promise<LeaderboardEntry[]> {
 	const cacheKey = `leaderboard:scenario:${scenarioId}:${limit}:${offset}`;
 	const cached = await redis.get(cacheKey);
-	
+
 	if (cached) {
 		return JSON.parse(cached);
 	}
-	
+
 	// get completed sessions for scenario with user data
 	const sessions = await prisma.session.findMany({
 		where: {
@@ -155,27 +155,27 @@ export async function getScenarioLeaderboard(
 			},
 		},
 	});
-	
+
 	// group by user, get best score
 	const userScores = new Map<string, {user: typeof sessions[0]['patient']; bestScore: number}>();
-	
+
 	for (const session of sessions) {
 		if (!session.patient) continue;
 		const userId = session.patientId!.toString();
 		const metrics = session.finalMetrics as Record<string, number> | null;
 		const trust = (metrics?.trust || 0) * 100;
-		
+
 		const existing = userScores.get(userId);
 		if (!existing || trust > existing.bestScore) {
 			userScores.set(userId, {user: session.patient, bestScore: trust});
 		}
 	}
-	
+
 	// sort and paginate
 	const sorted = Array.from(userScores.entries())
 		.sort((a, b) => b[1].bestScore - a[1].bestScore)
 		.slice(offset, offset + limit);
-	
+
 	const entries: LeaderboardEntry[] = sorted.map(([userId, data], index) => ({
 		rank: offset + index + 1,
 		userId,
@@ -185,9 +185,9 @@ export async function getScenarioLeaderboard(
 		totalXP: data.user!.totalXp || 0,
 		score: Math.round(data.bestScore),
 	}));
-	
+
 	await redis.setex(cacheKey, config.gamification.leaderboardCacheTTL, JSON.stringify(entries));
-	
+
 	return entries;
 }
 
@@ -195,19 +195,19 @@ export async function getScenarioLeaderboard(
 export async function getUserRank(userId: string, type: LeaderboardType = 'XP'): Promise<number> {
 	const cacheKey = `user:${userId}:rank:${type}`;
 	const cached = await redis.get(cacheKey);
-	
+
 	if (cached) {
 		return parseInt(cached);
 	}
-	
+
 	const user = await prisma.user.findUnique({
 		where: {id: BigInt(userId)},
 	});
-	
+
 	if (!user) return 0;
-	
+
 	let rank: number;
-	
+
 	switch (type) {
 		case 'XP':
 			rank = await prisma.user.count({
@@ -245,7 +245,7 @@ export async function getFriendsLeaderboard(
 	limit: number = 50
 ): Promise<LeaderboardEntry[]> {
 	const userIdBigInt = BigInt(userId);
-	
+
 	// get friend IDs
 	const friendships = await prisma.friend.findMany({
 		where: {
@@ -256,14 +256,14 @@ export async function getFriendsLeaderboard(
 			status: 'ACCEPTED',
 		},
 	});
-	
+
 	const friendIds = friendships.map((f) => 
 		f.initiatorId === userIdBigInt ? f.receiverId : f.initiatorId
 	);
-	
+
 	// add self to list
 	friendIds.push(userIdBigInt);
-	
+
 	// get users
 	const users = await prisma.user.findMany({
 		where: {
@@ -276,7 +276,7 @@ export async function getFriendsLeaderboard(
 			settings: {select: {avatar: true}},
 		},
 	});
-	
+
 	return users.map((user, index) => ({
 		rank: index + 1,
 		userId: user.id.toString(),

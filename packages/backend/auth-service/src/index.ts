@@ -41,9 +41,9 @@ async function start() {
 		await fastify.register(twoFactorRoutes, {prefix: '/api/auth/2fa'});
 
 		// error handler
-		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+		fastify.setErrorHandler((error:		Error & {statusCode?: number}, request, reply) => {
 			request.log.error({error}, 'Unhandled error');
-			
+
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({
 				statusCode,

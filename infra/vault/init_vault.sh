@@ -12,7 +12,7 @@ get_secret_content() {
 	if [ -f "${file_path}" ]; then 
 		cat "${file_path}"
 	else 
-		echo "Error: Secret file not found at ${file_path}." >&2
+		echo "error:		Secret file not found at ${file_path}." >&2
 		exit 1
 	fi
 }

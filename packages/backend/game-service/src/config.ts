@@ -27,10 +27,10 @@ export const config = {
 	},
 
 	game: {
-		tickRate: parseInt(process.env.GAME_TICK_RATE || '20'), // 20 ticks per second
+		tickRate: parseInt(process.env.GAME_TICK_RATE || '20'), // 20 ticks/s
 		maxPlayersPerSession: 2,
 		maxSpectatorsPerSession: 50,
-		sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || '3600000'), // 1 hour
-		reconnectWindow: parseInt(process.env.RECONNECT_WINDOW || '30000'), // 30 seconds
+		sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || '3600000'), // 1h
+		reconnectWindow: parseInt(process.env.RECONNECT_WINDOW || '30000'), // 30s
 	},
 };

@@ -54,9 +54,9 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to fetch settings');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to fetch settings',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch settings',
 			});
 		}
 	});
@@ -96,13 +96,13 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			return {success: true, message: 'Settings updated'};
+			return {success: true, message:	'Settings updated'};
 		} catch (error) {
 			request.log.error({error}, 'Failed to update settings');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to update settings',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to update settings',
 			});
 		}
 	});

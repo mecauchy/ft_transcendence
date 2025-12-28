@@ -1,10 +1,7 @@
-// packages/backend/game-service/src/middleware/auth.ts
-
 import {FastifyRequest, FastifyReply} from 'fastify';
 import jwt from 'jsonwebtoken';
 import {config} from '../config';
 
-// Extend FastifyRequest type
 declare module 'fastify' {
 	interface FastifyRequest {
 		user?: {
@@ -23,9 +20,7 @@ interface JWTPayload {
 	timeExp: number;
 }
 
-/**
- * JWT Authentication middleware
- */
+// jwt auth middleware
 export async function authMiddleware(
 	request: FastifyRequest,
 	reply: FastifyReply
@@ -34,9 +29,9 @@ export async function authMiddleware(
 
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Missing or invalid authorization header',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Missing or invalid authorization header',
 		});
 	}
 
@@ -53,25 +48,25 @@ export async function authMiddleware(
 	} catch (error) {
 		if (error instanceof jwt.TokenExpiredError) {
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Token has expired',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Token has expired',
 			});
 		}
 
 		if (error instanceof jwt.JsonWebTokenError) {
 			return reply.status(401).send({
-				statusCode: 401,
-				error: 'Unauthorized',
-				message: 'Invalid token',
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Invalid token',
 			});
 		}
 
 		request.log.error({error}, 'Token verification failed');
 		return reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Token verification failed',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Token verification failed',
 		});
 	}
 }

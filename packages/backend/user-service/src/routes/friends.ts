@@ -4,6 +4,7 @@ import {authMiddleware} from '../middleware/auth';
 import Redis from 'ioredis';
 import {config} from '../config';
 import type {IFriend} from '@speak-up/shared';
+import {createNotification} from './notifications';
 
 // redis track presence
 const redis = new Redis({
@@ -124,9 +125,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to fetch friends');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to fetch friends',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch friends',
 			});
 		}
 	});
@@ -138,9 +139,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 		if (!targetId) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: 'Target user ID is required',
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Target user ID is required',
 			});
 		}
 
@@ -148,9 +149,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 		if (targetIdBigInt === userId) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: 'Cannot send friend request to yourself',
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Cannot send friend request to yourself',
 			});
 		}
 
@@ -162,9 +163,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 			if (!targetUser) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'Target user not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'Target user not found',
 				});
 			}
 
@@ -182,23 +183,23 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				const status = existingFriend.status;
 				if (status === 'ACCEPTED') {
 					return reply.status(400).send({
-						statusCode: 400,
-						error: 'Bad Request',
-						message: 'Already friends with this user',
+						statusCode:	400,
+						error:		'Bad Request',
+						message:	'Already friends with this user',
 					});
 				}
 				if (status === 'PENDING') {
 					return reply.status(400).send({
-						statusCode: 400,
-						error: 'Bad Request',
-						message: 'Friend request already pending',
+						statusCode:	400,
+						error:		'Bad Request',
+						message:	'Friend request already pending',
 					});
 				}
 				if (status === 'BLOCKED') {
 					return reply.status(403).send({
-						statusCode: 403,
-						error: 'Forbidden',
-						message: 'Cannot send friend request to this user',
+						statusCode:	403,
+						error:		'Forbidden',
+						message:	'Cannot send friend request to this user',
 					});
 				}
 			}
@@ -212,15 +213,28 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			// TODO: send notification via websocket
+			// get current user info for notification
+			const currentUser = await prisma.user.findUnique({
+				where:	{id: userId},
+				select:	{username: true, displayName: true},
+			});
+
+			// send notification to target user
+			await createNotification({
+				userId:		targetIdBigInt,
+				type:		'FRIEND_REQUEST',
+				title:		'New Friend Request',
+				message:	`${currentUser?.displayName || currentUser?.username} sent you a friend request`,
+				data:		{fromUserId: userId.toString()},
+			});
 
 			return {success: true, status: 'PENDING'};
 		} catch (error) {
 			request.log.error({error}, 'Failed to send friend request');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to send friend request',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to send friend request',
 			});
 		}
 	});
@@ -236,9 +250,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 		if (!['accept', 'reject'].includes(action)) {
 			return reply.status(400).send({
-				statusCode: 400,
-				error: 'Bad Request',
-				message: 'Action must be "accept" or "reject"',
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Action must be "accept" or "reject"',
 			});
 		}
 
@@ -254,9 +268,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 			if (!friendRequest) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'Friend request not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'Friend request not found',
 				});
 			}
 
@@ -270,6 +284,22 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					},
 					data: {status: 'ACCEPTED'},
 				});
+
+				// get user info for notification
+				const currentUser = await prisma.user.findUnique({
+					where:	{id: userId},
+					select:	{username: true, displayName: true},
+				});
+
+				// send notif to requester
+				await createNotification({
+					userId:		requesterId,
+					type:		'FRIEND_ACCEPTED',
+					title:		'Friend Request Accepted',
+					message:	`${currentUser?.displayName || currentUser?.username} accepted your friend request`,
+					data:		{userId: userId.toString()},
+				});
+
 				return {success: true, status: 'ACCEPTED'};
 			} else {
 				await prisma.friend.delete({
@@ -285,9 +315,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to process friend request');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to process friend request',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to process friend request',
 			});
 		}
 	});
@@ -310,19 +340,19 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 			if (deleted.count === 0) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'Friendship not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'Friendship not found',
 				});
 			}
 
-			return {success: true, message: 'Friend removed'};
+			return {success: true, message:	'Friend removed'};
 		} catch (error) {
 			request.log.error({error}, 'Failed to remove friend');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to remove friend',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to remove friend',
 			});
 		}
 	});
@@ -352,13 +382,13 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			return {success: true, message: 'User blocked'};
+			return {success: true, message:	'User blocked'};
 		} catch (error) {
 			request.log.error({error}, 'Failed to block user');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to block user',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to block user',
 			});
 		}
 	});

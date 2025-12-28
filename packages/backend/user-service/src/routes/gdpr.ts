@@ -30,9 +30,9 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 			if (!user) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'User not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User not found',
 				});
 			}
 
@@ -94,9 +94,9 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to export user data');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to export user data',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to export user data',
 			});
 		}
 	});
@@ -139,9 +139,9 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to export CSV');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to export data',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to export data',
 			});
 		}
 	});
@@ -207,14 +207,14 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 			return {
 				success: true,
-				message: 'Your account and personal data have been deleted. Some anonymized data may be retained for statistical purposes.',
+				message:	'Your account and personal data have been deleted. Some anonymized data may be retained for statistical purposes.',
 			};
 		} catch (error) {
 			request.log.error({error}, 'Failed to delete account');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to delete account',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to delete account',
 			});
 		}
 	});
@@ -239,15 +239,15 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 				return {
 					success: true,
-					message: `Your ${type} request has been received. You will receive a confirmation email within 30 days as required by GDPR.`,
+					message:	`Your ${type} request has been received. You will receive a confirmation email within 30 days as required by GDPR.`,
 					requestId: `GDPR-${Date.now()}-${userId}`,
 				};
 			} catch (error) {
 				request.log.error({error}, 'Failed to process GDPR request');
 				return reply.status(500).send({
-					statusCode: 500,
-					error: 'Internal Server Error',
-					message: 'Failed to process request',
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to process request',
 				});
 			}
 		}

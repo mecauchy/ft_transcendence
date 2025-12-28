@@ -9,22 +9,22 @@ const getDatabaseUrl = (): string => {
 	if (process.env.DATABASE_URL) {
 		return process.env.DATABASE_URL;
 	}
-	
+
 	const user = process.env.DB_USER || 'root_admin';
 	const host = process.env.DB_HOST || 'postgres';
 	const port = process.env.DB_PORT || '5432';
 	const database = process.env.DB_NAME || 'game_db';
-	
-	// Read password from file if DB_PASSWORD_FILE is set
+
+	// read password from file if DB_PASSWORD_FILE is set
 	let password = process.env.DB_PASSWORD || '';
 	const passwordFile = process.env.DB_PASSWORD_FILE;
 	if (passwordFile && existsSync(passwordFile)) {
 		password = readFileSync(passwordFile, 'utf-8').trim();
 	}
-	
-	// URL-encode the password to handle special characters
+
+	// encode the password to handle special characters
 	const encodedPassword = encodeURIComponent(password);
-	
+
 	return `postgresql://${user}:${encodedPassword}@${host}:${port}/${database}`;
 };
 

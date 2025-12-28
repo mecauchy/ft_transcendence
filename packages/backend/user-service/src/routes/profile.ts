@@ -38,9 +38,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			if (!user) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'User not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User not found',
 				});
 			}
 
@@ -91,14 +91,14 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to fetch user profile');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to fetch profile',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch profile',
 			});
 		}
 	});
 
-	// updaute curr user profile
+	// update curr user profile
 	fastify.put<{
 		Body: {
 			username?: string;
@@ -146,13 +146,13 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			return {success: true, message: 'Profile updated successfully'};
+			return {success: true, message:	'Profile updated successfully'};
 		} catch (error) {
 			request.log.error({error}, 'Failed to update profile');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to update profile',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to update profile',
 			});
 		}
 	});
@@ -166,18 +166,18 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			if (!file) {
 				return reply.status(400).send({
-					statusCode: 400,
-					error: 'Bad Request',
-					message: 'No file uploaded',
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'No file uploaded',
 				});
 			}
 
 			// validate mimetype
 			if (!config.upload.allowedMimeTypes.includes(file.mimetype)) {
 				return reply.status(400).send({
-					statusCode: 400,
-					error: 'Bad Request',
-					message: `Invalid file type. Allowed: ${config.upload.allowedMimeTypes.join(', ')}`,
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	`Invalid file type. Allowed: ${config.upload.allowedMimeTypes.join(', ')}`,
 				});
 			}
 
@@ -220,9 +220,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to upload avatar');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to upload avatar',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to upload avatar',
 			});
 		}
 	});
@@ -248,9 +248,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			if (!user) {
 				return reply.status(404).send({
-					statusCode: 404,
-					error: 'Not Found',
-					message: 'User not found',
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User not found',
 				});
 			}
 
@@ -263,9 +263,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			request.log.error({error}, 'Failed to fetch user profile');
 			return reply.status(500).send({
-				statusCode: 500,
-				error: 'Internal Server Error',
-				message: 'Failed to fetch profile',
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch profile',
 			});
 		}
 	});

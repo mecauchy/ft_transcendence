@@ -222,7 +222,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		const state = crypto.randomUUID();
 		authUrl.searchParams.set('state', state);
 		reply.header('Set-Cookie', `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/`);
-		
+
 		return reply.redirect(authUrl.toString());
 	});
 
@@ -350,7 +350,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				if (request.headers.accept?.includes('application/json')) {
 					return response;
 				}
-				
+
 				const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
 				return reply.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
 
@@ -405,7 +405,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			try {
 				// verify the refresh token
 				const payload = await verifyRefreshToken(refreshToken);
-				
+
 				// check if token is valid in database
 				const tokenRecord = await prisma.userKey.findFirst({
 					where: {
@@ -467,7 +467,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 			if (refreshToken) {
 				await blacklistToken(refreshToken);
-				
+
 				// mark token as revoked
 				await prisma.userKey.updateMany({
 					where:	{token: refreshToken},
@@ -475,7 +475,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			return {success: true, message: 'Logged out successfully'};
+			return {success: true, message:	'Logged out successfully'};
 		}
 	);
 }

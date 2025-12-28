@@ -42,7 +42,7 @@ receivers:
       # Le webhook sera injecté par l'entrypoint depuis Vault
       - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
         title: '🟠 {{.Status | toUpper}} - {{.CommonLabels.alertname}}'
-        message: |
+        message:	|
           {{range .Alerts}}
           **Alerte:** {{.Labels.alertname}}
           **Sévérité:** {{.Labels.severity}}
@@ -60,7 +60,7 @@ receivers:
       # Le webhook sera injecté par l'entrypoint depuis Vault
       - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
         title: '🔴 CRITIQUE - {{.CommonLabels.alertname}}'
-        message: |
+        message:	|
           🚨 **ALERTE CRITIQUE** 🚨
           {{range .Alerts}}
           **Alerte:** {{.Labels.alertname}}

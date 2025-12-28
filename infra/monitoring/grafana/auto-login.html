@@ -106,7 +106,7 @@
                    }
                });
                 
-                if (!response.ok) throw new Error(`Vault error: ${response.status}`);
+                if (!response.ok) throw new Error(`Vault error:		${response.status}`);
                 const data = await response.json();
                 return data.data.data.password;
            } catch (error) {

@@ -51,6 +51,15 @@ enum AchievementRarity {
 	LEGENDARY
 }
 
+enum NotificationType {
+	FRIEND_REQUEST
+	FRIEND_ACCEPTED
+	MESSAGE
+	ACHIEVEMENT
+	SYSTEM
+	GAME_INVITE
+}
+
 // MODELS
 
 model User {
@@ -91,6 +100,18 @@ model User {
 	// achievements
 	achievements	UserAchievement[]
 	xpLogs			XpLog[]
+
+	// chat
+	sentMessages		Message[]		@relation("MessageSender")
+	receivedMessages	Message[]		@relation("MessageReceiver")
+	conversations1		Conversation[]	@relation("ConversationUser1")
+	conversations2		Conversation[]	@relation("ConversationUser2")
+
+	// notifications
+	notifications		Notification[]
+
+	// api keys
+	apiKeys				ApiKey[]
 
 	@@index([email], map: "idx_users_email")
 	@@index([username], map: "idx_users_username")
@@ -276,4 +297,86 @@ model XpLog {
 	@@index([createdAt(sort: Desc)], map: "idx_xp_logs_date")
 	@@index([sessionId], map: "idx_xp_logs_session")
 	@@map("xp_logs")
+}
+
+// CHAT MODELS
+
+model Conversation {
+	id			String		@id @default(uuid())
+	user1Id		BigInt		@map("user1_id")
+	user2Id		BigInt		@map("user2_id")
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+	updatedAt	DateTime	@default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+	// relations
+	user1		User		@relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+	user2		User		@relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+	messages	Message[]
+
+	@@unique([user1Id, user2Id])
+	@@index([user1Id], map: "idx_conversations_user1")
+	@@index([user2Id], map: "idx_conversations_user2")
+	@@map("conversations")
+}
+
+model Message {
+	id				String		@id @default(uuid())
+	conversationId	String		@map("conversation_id")
+	senderId		BigInt		@map("sender_id")
+	receiverId		BigInt		@map("receiver_id")
+	content			String		@db.Text
+	isRead			Boolean		@default(false) @map("is_read")
+	createdAt		DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	conversation	Conversation	@relation(fields: [conversationId], references: [id], onDelete: Cascade)
+	sender			User			@relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+	receiver		User			@relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+	@@index([conversationId], map: "idx_messages_conversation")
+	@@index([senderId], map: "idx_messages_sender")
+	@@index([receiverId], map: "idx_messages_receiver")
+	@@index([createdAt(sort: Desc)], map: "idx_messages_date")
+	@@map("messages")
+}
+
+// NOTIFICATION MODEL
+model Notification {
+	id			String				@id @default(uuid())
+	userId		BigInt				@map("user_id")
+	type		NotificationType
+	title		String				@db.VarChar(128)
+	message		String				@db.Text
+	data		Json?
+	isRead		Boolean				@default(false) @map("is_read")
+	createdAt	DateTime			@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	user		User				@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_notifications_user")
+	@@index([isRead], map: "idx_notifications_read")
+	@@index([createdAt(sort: Desc)], map: "idx_notifications_date")
+	@@map("notifications")
+}
+
+// API KEY MODEL
+model ApiKey {
+	id			String		@id @default(uuid())
+	userId		BigInt		@map("user_id")
+	name		String		@db.VarChar(64)
+	keyHash		String		@unique @map("key_hash")
+	keyPrefix	String		@map("key_prefix") @db.VarChar(8)
+	permissions	String[]	@default([])
+	lastUsedAt	DateTime?	@map("last_used_at") @db.Timestamptz
+	expiresAt	DateTime?	@map("expires_at") @db.Timestamptz
+	isActive	Boolean		@default(true) @map("is_active")
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	user		User		@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_api_keys_user")
+	@@index([isActive], map: "idx_api_keys_active")
+	@@map("api_keys")
 }

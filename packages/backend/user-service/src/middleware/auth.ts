@@ -23,9 +23,9 @@ export async function authMiddleware(
 
 	if (!authHeader?.startsWith('Bearer ')) {
 		reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Missing or invalid authorization header',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Missing or invalid authorization header',
 		});
 		return;
 	}
@@ -39,9 +39,9 @@ export async function authMiddleware(
 		// check if 2FA is required
 		if (decoded.requires2FA) {
 			reply.status(403).send({
-				statusCode: 403,
-				error: 'Forbidden',
-				message: '2FA verification required',
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'2FA verification required',
 			});
 			return;
 		}
@@ -53,9 +53,9 @@ export async function authMiddleware(
 		};
 	} catch (error) {
 		reply.status(401).send({
-			statusCode: 401,
-			error: 'Unauthorized',
-			message: 'Invalid or expired token',
+			statusCode:	401,
+			error:		'Unauthorized',
+			message:	'Invalid or expired token',
 		});
 	}
 }

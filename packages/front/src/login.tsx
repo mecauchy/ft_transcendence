@@ -27,12 +27,12 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const handleRegister = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setErrorMessage('');
-		
+
 		if (createPassword !== confirmPassword) {
 			setBadConfirmation(true);
 			return;
 		}
-		
+
 		if (!passwordFormat) {
 			setErrorMessage('Le mot de passe ne respecte pas les exigences');
 			return;
@@ -48,7 +48,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			setIsLoading(false);
 		}
 	}
-	
+
 	const handleCreateUsername = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setCreateUsername(event.target.value);
 	}
@@ -87,7 +87,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		setErrorMessage('');
-		
+
 		if (!ulogin || !password) {
 			setErrorMessage('Veuillez remplir tous les champs');
 			return;
