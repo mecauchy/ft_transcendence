@@ -16,7 +16,7 @@ export function generateTOTPSecret(userEmail: string): TOTPSecretResult {
 		algorithm: 'SHA1',
 		digits: 6,
 		period: 30,
-		secret: new OTPAuth.Secret({ size: 20 }),
+		secret: new OTPAuth.Secret({size: 20}),
 	});
 
 	return {
@@ -37,7 +37,7 @@ export function verifyTOTP(secret: string, code: string): boolean {
 		});
 
 		// validate while allowing for clock drift
-		const delta = totp.validate({ token: code, window: 1 });
+		const delta = totp.validate({token: code, window: 1});
 		
 		// if delta is null -> invalid
 		return delta !== null;

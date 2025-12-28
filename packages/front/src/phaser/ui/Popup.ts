@@ -33,7 +33,7 @@ export default class Popup {
 				fontSize: "1.25rem",
 				color: "#ffffff",
 				align: "center",
-				wordWrap: { width: 400 }
+				wordWrap: {width: 400}
 			})
 			.setOrigin(0.5, 0);
 

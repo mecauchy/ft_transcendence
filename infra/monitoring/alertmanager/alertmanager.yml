@@ -41,17 +41,17 @@ receivers:
     discord_configs:
       # Le webhook sera injecté par l'entrypoint depuis Vault
       - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
-        title: '🟠 {{ .Status | toUpper }} - {{ .CommonLabels.alertname }}'
+        title: '🟠 {{.Status | toUpper}} - {{.CommonLabels.alertname}}'
         message: |
-          {{ range .Alerts }}
-          **Alerte:** {{ .Labels.alertname }}
-          **Sévérité:** {{ .Labels.severity }}
-          **Instance:** {{ .Labels.instance }}
-          **Description:** {{ .Annotations.description }}
-          **Déclenchée à:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ if .EndsAt }}**Résolue à:** {{ .EndsAt.Format "2006-01-02 15:04:05" }}{{ end }}
+          {{range .Alerts}}
+          **Alerte:** {{.Labels.alertname}}
+          **Sévérité:** {{.Labels.severity}}
+          **Instance:** {{.Labels.instance}}
+          **Description:** {{.Annotations.description}}
+          **Déclenchée à:** {{.StartsAt.Format "2006-01-02 15:04:05"}}
+          {{if .EndsAt}}**Résolue à:** {{.EndsAt.Format "2006-01-02 15:04:05"}}{{end}}
           ---
-          {{ end }}
+          {{end}}
         send_resolved: true
 
   # Receiver pour alertes critiques
@@ -59,21 +59,21 @@ receivers:
     discord_configs:
       # Le webhook sera injecté par l'entrypoint depuis Vault
       - webhook_url: 'VAULT_DISCORD_WEBHOOK_PLACEHOLDER'
-        title: '🔴 CRITIQUE - {{ .CommonLabels.alertname }}'
+        title: '🔴 CRITIQUE - {{.CommonLabels.alertname}}'
         message: |
           🚨 **ALERTE CRITIQUE** 🚨
-          {{ range .Alerts }}
-          **Alerte:** {{ .Labels.alertname }}
-          **Sévérité:** {{ .Labels.severity }}
-          **Service:** {{ .Labels.job }}
-          **Instance:** {{ .Labels.instance }}
+          {{range .Alerts}}
+          **Alerte:** {{.Labels.alertname}}
+          **Sévérité:** {{.Labels.severity}}
+          **Service:** {{.Labels.job}}
+          **Instance:** {{.Labels.instance}}
           
-          📝 **Résumé:** {{ .Annotations.summary }}
-          📋 **Description:** {{ .Annotations.description }}
+          📝 **Résumé:** {{.Annotations.summary}}
+          📋 **Description:** {{.Annotations.description}}
           
-          ⏰ **Déclenchée:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          ⏰ **Déclenchée:** {{.StartsAt.Format "2006-01-02 15:04:05"}}
           ---
-          {{ end }}
+          {{end}}
         send_resolved: true
 
 # Règles d'inhibition (évite les alertes redondantes)

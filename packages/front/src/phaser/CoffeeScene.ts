@@ -30,7 +30,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	private game_started = false;
 
 	constructor() {
-		super({ key: "CoffeeScene" });
+		super({key: "CoffeeScene"});
 	}
 
 	preload() {
@@ -173,7 +173,7 @@ export default class CoffeeScene extends Phaser.Scene {
 			fontSize: `${baseFontSize}px`,
 			color: "#000000",
 			align: "center",
-			wordWrap: { width: bg.width * 0.8 }
+			wordWrap: {width: bg.width * 0.8}
 		}).setOrigin(0.5);
 
 		const container = this.add.container(0, 0, [bg, txt]);
@@ -182,7 +182,7 @@ export default class CoffeeScene extends Phaser.Scene {
 		const nx = Phaser.Math.FloatBetween(0.2, 0.8);
 		const ny = Phaser.Math.FloatBetween(0.2, 0.8);
 
-		const card: CardData = { container, bg, text: txt, nx, ny };
+		const card: CardData = {container, bg, text: txt, nx, ny};
 		this.cards.push(card);
 
 		container.setInteractive(

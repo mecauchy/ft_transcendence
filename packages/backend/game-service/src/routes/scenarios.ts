@@ -1,11 +1,11 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { IScenario, IScenarioListResponse, IScenarioStatsResponse, IScenarioLeaderboardResponse, IScenarioLeaderboardEntry } from '@speak-up/shared';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {IScenario, IScenarioListResponse, IScenarioStatsResponse, IScenarioLeaderboardResponse, IScenarioLeaderboardEntry} from '@speak-up/shared';
 
 // list all scenarios
 async function listScenarios(request: FastifyRequest, reply: FastifyReply) {
 	const scenarios = await prisma.scenario.findMany({
-		orderBy: { createdAt: 'desc' },
+		orderBy: {createdAt: 'desc'},
 	});
 
 	const response: IScenarioListResponse = {
@@ -24,17 +24,17 @@ async function listScenarios(request: FastifyRequest, reply: FastifyReply) {
 
 // get scenario details
 async function getScenario(
-	request: FastifyRequest<{ Params: { id: string } }>,
+	request: FastifyRequest<{Params: {id: string}}>,
 	reply: FastifyReply
 ) {
-	const { id } = request.params;
+	const {id} = request.params;
 
 	const row = await prisma.scenario.findUnique({
-		where: { id: BigInt(id) },
+		where: {id: BigInt(id)},
 	});
 
 	if (!row) {
-		return reply.status(404).send({ error: 'Scenario not found' });
+		return reply.status(404).send({error: 'Scenario not found'});
 	}
 
 	const scenario: IScenario = {
@@ -53,15 +53,15 @@ async function getScenario(
 
 // get scenario statistics
 async function getScenarioStats(
-	request: FastifyRequest<{ Params: { id: string } }>,
+	request: FastifyRequest<{Params: {id: string}}>,
 	reply: FastifyReply
 ) {
-	const { id } = request.params;
+	const {id} = request.params;
 	const scenarioId = BigInt(id);
 
 	// Get sessions for this scenario
 	const sessions = await prisma.session.findMany({
-		where: { scenarioId },
+		where: {scenarioId},
 	});
 
 	const totalSessions = sessions.length;
@@ -117,10 +117,10 @@ async function getScenarioStats(
 
 // get scenario leaderboard
 async function getScenarioLeaderboard(
-	request: FastifyRequest<{ Params: { id: string }; Querystring: { limit?: string } }>,
+	request: FastifyRequest<{Params: {id: string}; Querystring: {limit?: string}}>,
 	reply: FastifyReply
 ) {
-	const { id } = request.params;
+	const {id} = request.params;
 	const limit = Math.min(parseInt(request.query.limit || '10', 10), 100);
 	const scenarioId = BigInt(id);
 
@@ -133,7 +133,7 @@ async function getScenarioLeaderboard(
 		include: {
 			patient: {
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 				},
 			},
 		},

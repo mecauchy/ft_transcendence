@@ -1,5 +1,5 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { authMiddleware } from '../middleware/auth';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {authMiddleware} from '../middleware/auth';
 import {
 	getGlobalLeaderboard,
 	getScenarioLeaderboard,
@@ -14,7 +14,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 
 	// get global LB
 	fastify.get<{
-		Querystring: { type?: string; limit?: string; offset?: string };
+		Querystring: {type?: string; limit?: string; offset?: string};
 	}>('/', async (request, reply) => {
 		const type = (request.query.type || 'XP').toUpperCase() as LeaderboardType;
 		const limit = Math.min(parseInt(request.query.limit || '100'), 500);
@@ -40,7 +40,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 				userRank,
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get leaderboard');
+			request.log.error({error}, 'Failed to get leaderboard');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -51,10 +51,10 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 
 	// get lb for specific scenario
 	fastify.get<{
-		Params: { scenarioId: string };
-		Querystring: { limit?: string; offset?: string };
+		Params: {scenarioId: string};
+		Querystring: {limit?: string; offset?: string};
 	}>('/scenario/:scenarioId', async (request, reply) => {
-		const { scenarioId } = request.params;
+		const {scenarioId} = request.params;
 		const limit = Math.min(parseInt(request.query.limit || '100'), 500);
 		const offset = parseInt(request.query.offset || '0');
 
@@ -67,7 +67,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 				total: entries.length,
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get scenario leaderboard');
+			request.log.error({error}, 'Failed to get scenario leaderboard');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -77,7 +77,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 	});
 
 	// get lb among friends
-	fastify.get<{ Querystring: { limit?: string } }>(
+	fastify.get<{Querystring: {limit?: string}}>(
 		'/friends',
 		async (request, reply) => {
 			const userId = request.user!.userId;
@@ -91,7 +91,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 					total: entries.length,
 				};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get friends leaderboard');
+				request.log.error({error}, 'Failed to get friends leaderboard');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',
@@ -102,7 +102,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 	);
 
 	// current user rank + surrounding rank
-	fastify.get<{ Querystring: { type?: string } }>(
+	fastify.get<{Querystring: {type?: string}}>(
 		'/me',
 		async (request, reply) => {
 			const userId = request.user!.userId;
@@ -121,7 +121,7 @@ export async function leaderboardRoutes(fastify: FastifyInstance) {
 					surroundingPlayers: entries,
 				};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get user rank');
+				request.log.error({error}, 'Failed to get user rank');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',

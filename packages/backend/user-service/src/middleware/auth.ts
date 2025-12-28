@@ -1,6 +1,6 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { config } from '../config';
+import {FastifyRequest, FastifyReply} from 'fastify';
+import jwt, {JwtPayload} from 'jsonwebtoken';
+import {config} from '../config';
 
 export interface AuthenticatedUser {
 	userId: string;

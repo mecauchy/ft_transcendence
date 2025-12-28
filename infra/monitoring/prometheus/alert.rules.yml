@@ -14,8 +14,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Target {{ $labels.job }} est DOWN"
-          description: "La target {{ $labels.instance }} du job {{ $labels.job }} est inaccessible depuis plus d'1 minute."
+          summary: "Target {{$labels.job}} est DOWN"
+          description: "La target {{$labels.instance}} du job {{$labels.job}} est inaccessible depuis plus d'1 minute."
 
       # Prometheus lui-même a des problèmes
       - alert: PrometheusConfigurationReloadFailure
@@ -41,8 +41,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "CPU élevé sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% du CPU depuis 5 minutes."
+          summary: "CPU élevé sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} utilise {{printf \"%.2f\" $value}}% du CPU depuis 5 minutes."
 
       # CPU critique (> 95%)
       - alert: ContainerCriticalCpuUsage
@@ -53,8 +53,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "🔥 CPU CRITIQUE sur {{ $labels.name }}"
-          description: "URGENT: Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% du CPU!"
+          summary: "🔥 CPU CRITIQUE sur {{$labels.name}}"
+          description: "URGENT: Le container {{$labels.name}} utilise {{printf \"%.2f\" $value}}% du CPU!"
 
       # Alternative plus simple si pas de limites CPU définies
       - alert: ContainerHighCpuUsageSimple
@@ -63,8 +63,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "CPU élevé sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} utilise beaucoup de CPU: {{ printf \"%.2f\" $value }} cores."
+          summary: "CPU élevé sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} utilise beaucoup de CPU: {{printf \"%.2f\" $value}} cores."
 
   # ============================================
   # GROUPE 3: Alertes Mémoire Containers
@@ -80,8 +80,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Mémoire élevée sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% de sa limite mémoire."
+          summary: "Mémoire élevée sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} utilise {{printf \"%.2f\" $value}}% de sa limite mémoire."
 
       # Mémoire critique (> 95% de la limite)
       - alert: ContainerCriticalMemoryUsage
@@ -92,8 +92,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "🔥 MÉMOIRE CRITIQUE sur {{ $labels.name }}"
-          description: "URGENT: Le container {{ $labels.name }} utilise {{ printf \"%.2f\" $value }}% de sa mémoire limite!"
+          summary: "🔥 MÉMOIRE CRITIQUE sur {{$labels.name}}"
+          description: "URGENT: Le container {{$labels.name}} utilise {{printf \"%.2f\" $value}}% de sa mémoire limite!"
 
       # Mémoire absolue élevée (> 1GB) - utile si pas de limite définie
       - alert: ContainerHighMemoryAbsolute
@@ -102,8 +102,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Mémoire élevée sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} utilise plus de 1GB de mémoire ({{ $value | humanize1024 }}B)."
+          summary: "Mémoire élevée sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} utilise plus de 1GB de mémoire ({{$value | humanize1024}}B)."
 
   # ============================================
   # GROUPE 4: Alertes Réseau Containers
@@ -119,8 +119,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Trafic réseau élevé sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} génère plus de 100MB/s de trafic réseau ({{ $value | humanize1024 }}B/s)."
+          summary: "Trafic réseau élevé sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} génère plus de 100MB/s de trafic réseau ({{$value | humanize1024}}B/s)."
 
       # Erreurs réseau
       - alert: ContainerNetworkErrors
@@ -131,8 +131,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Erreurs réseau sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} a des erreurs réseau."
+          summary: "Erreurs réseau sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} a des erreurs réseau."
 
   # ============================================
   # GROUPE 5: Alertes État des Containers
@@ -157,8 +157,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Redémarrages fréquents de {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} a redémarré plus de 3 fois dans la dernière heure."
+          summary: "Redémarrages fréquents de {{$labels.name}}"
+          description: "Le container {{$labels.name}} a redémarré plus de 3 fois dans la dernière heure."
 
   # ============================================
   # GROUPE 6: Alertes Disque Containers
@@ -173,8 +173,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Écriture disque élevée sur {{ $labels.name }}"
-          description: "Le container {{ $labels.name }} écrit plus de 50MB/s sur disque ({{ $value | humanize1024 }}B/s)."
+          summary: "Écriture disque élevée sur {{$labels.name}}"
+          description: "Le container {{$labels.name}} écrit plus de 50MB/s sur disque ({{$value | humanize1024}}B/s)."
 
       # Filesystem presque plein
       - alert: ContainerFilesystemFull
@@ -185,5 +185,5 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Filesystem presque plein sur {{ $labels.name }}"
-          description: "Le filesystem du container {{ $labels.name }} est utilisé à {{ printf \"%.2f\" $value }}%."
+          summary: "Filesystem presque plein sur {{$labels.name}}"
+          description: "Le filesystem du container {{$labels.name}} est utilisé à {{printf \"%.2f\" $value}}%."

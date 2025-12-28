@@ -10,15 +10,13 @@ COPY packages/shared/types ../shared/types
 
 RUN pnpm install
 
-# Copy prisma schema and generate client AFTER pnpm install so it generates into the correct node_modules
+# IMPORTANT -> copies prisma schema to normalize across containers and correctly use it for ORM
 COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
 RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/auth-service/src ./src
 
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
-
-# prune deps
 RUN pnpm prune --prod
 
 
@@ -30,7 +28,6 @@ WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# copy from modules the generated prisma
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY packages/backend/auth-service/package.json ./

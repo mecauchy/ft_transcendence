@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { readFileSync, existsSync } from 'fs';
+import {PrismaClient} from '@prisma/client';
+import {readFileSync, existsSync} from 'fs';
 
 const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;
@@ -10,10 +10,10 @@ const getDatabaseUrl = (): string => {
 		return process.env.DATABASE_URL;
 	}
 
-	const user = process.env.DB_USER || 'root_admin';
-	const host = process.env.DB_HOST || 'postgres';
-	const port = process.env.DB_PORT || '5432';
-	const database = process.env.DB_NAME || 'game_db';
+	const user		= process.env.DB_USER	|| 'root_admin';
+	const host		= process.env.DB_HOST	|| 'postgres';
+	const port		= process.env.DB_PORT	|| '5432';
+	const database	= process.env.DB_NAME	|| 'game_db';
 
 	// if var DB_PASSWORD_FILE set then read from file
 	let password = process.env.DB_PASSWORD || '';

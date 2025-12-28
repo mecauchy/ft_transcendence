@@ -1,6 +1,6 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import {FastifyRequest, FastifyReply} from 'fastify';
 import jwt from 'jsonwebtoken';
-import { config } from '../config';
+import {config} from '../config';
 
 declare module 'fastify' {
 	interface FastifyRequest {
@@ -62,7 +62,7 @@ export async function authMiddleware(
 			});
 		}
 
-		request.log.error({ error }, 'Token verification failed');
+		request.log.error({error}, 'Token verification failed');
 		return reply.status(401).send({
 			statusCode: 401,
 			error: 'Unauthorized',

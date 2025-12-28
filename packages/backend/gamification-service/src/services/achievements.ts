@@ -1,7 +1,7 @@
-import { prisma } from '../db';
+import {prisma} from '../db';
 import Redis from 'ioredis';
-import { config } from '../config';
-import { awardXP } from './xp';
+import {config} from '../config';
+import {awardXP} from './xp';
 
 const redis = new Redis({
 	host: config.redis.host,
@@ -36,7 +36,7 @@ export async function getAllAchievements(): Promise<Achievement[]> {
 	}
 	
 	const rows = await prisma.achievement.findMany({
-		orderBy: [{ category: 'asc' }, { rarity: 'asc' }],
+		orderBy: [{category: 'asc'}, {rarity: 'asc'}],
 	});
 	
 	const achievements = rows.map(mapAchievement);
@@ -50,9 +50,9 @@ export async function getAllAchievements(): Promise<Achievement[]> {
 // get user's unlocked achievements
 export async function getUserAchievements(userId: string): Promise<UserAchievement[]> {
 	const rows = await prisma.userAchievement.findMany({
-		where: { userId: BigInt(userId) },
-		include: { achievement: true },
-		orderBy: { unlockedAt: 'desc' },
+		where: {userId: BigInt(userId)},
+		include: {achievement: true},
+		orderBy: {unlockedAt: 'desc'},
 	});
 	
 	return rows.map((row) => ({
@@ -165,9 +165,9 @@ async function evaluateCondition(
 				where: {
 					patientId: userIdBigInt,
 					status: 'COMPLETED',
-					createdAt: { gte: startDate },
+					createdAt: {gte: startDate},
 				},
-				select: { createdAt: true },
+				select: {createdAt: true},
 			});
 			
 			const uniqueDays = new Set(
@@ -179,8 +179,8 @@ async function evaluateCondition(
 		case 'TOTAL_XP': {
 			const requiredXP = condition.xp as number;
 			const result = await prisma.xpLog.aggregate({
-				where: { userId: userIdBigInt },
-				_sum: { amount: true },
+				where: {userId: userIdBigInt},
+				_sum: {amount: true},
 			});
 			return (result._sum.amount || 0) >= requiredXP;
 		}
@@ -188,8 +188,8 @@ async function evaluateCondition(
 		case 'LEVEL_REACHED': {
 			const requiredLevel = condition.level as number;
 			const user = await prisma.user.findUnique({
-				where: { id: userIdBigInt },
-				select: { currentLevel: true },
+				where: {id: userIdBigInt},
+				select: {currentLevel: true},
 			});
 			return (user?.currentLevel || 0) >= requiredLevel;
 		}
@@ -211,8 +211,8 @@ async function evaluateCondition(
 			const count = await prisma.friend.count({
 				where: {
 					OR: [
-						{ initiatorId: userIdBigInt },
-						{ receiverId: userIdBigInt },
+						{initiatorId: userIdBigInt},
+						{receiverId: userIdBigInt},
 					],
 					status: 'ACCEPTED',
 				},
@@ -256,7 +256,7 @@ function mapAchievement(row: {
 export async function getAchievementProgress(
 	userId: string,
 	achievementId: string
-): Promise<{ progress: number; total: number; percentage: number }> {
+): Promise<{progress: number; total: number; percentage: number}> {
 	const allAchievements = await getAllAchievements();
 	const achievement = allAchievements.find((a) => a.id === achievementId);
 	
@@ -287,8 +287,8 @@ export async function getAchievementProgress(
 		case 'TOTAL_XP': {
 			total = condition.xp as number;
 			const result = await prisma.xpLog.aggregate({
-				where: { userId: userIdBigInt },
-				_sum: { amount: true },
+				where: {userId: userIdBigInt},
+				_sum: {amount: true},
 			});
 			progress = Math.min(result._sum.amount || 0, total);
 			break;
@@ -297,8 +297,8 @@ export async function getAchievementProgress(
 		case 'LEVEL_REACHED': {
 			total = condition.level as number;
 			const user = await prisma.user.findUnique({
-				where: { id: userIdBigInt },
-				select: { currentLevel: true },
+				where: {id: userIdBigInt},
+				select: {currentLevel: true},
 			});
 			progress = Math.min(user?.currentLevel || 0, total);
 			break;
@@ -309,8 +309,8 @@ export async function getAchievementProgress(
 			const count = await prisma.friend.count({
 				where: {
 					OR: [
-						{ initiatorId: userIdBigInt },
-						{ receiverId: userIdBigInt },
+						{initiatorId: userIdBigInt},
+						{receiverId: userIdBigInt},
 					],
 					status: 'ACCEPTED',
 				},
@@ -328,9 +328,9 @@ export async function getAchievementProgress(
 				where: {
 					patientId: userIdBigInt,
 					status: 'COMPLETED',
-					createdAt: { gte: startDate },
+					createdAt: {gte: startDate},
 				},
-				select: { createdAt: true },
+				select: {createdAt: true},
 			});
 			
 			const uniqueDays = new Set(

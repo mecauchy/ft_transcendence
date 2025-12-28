@@ -1,9 +1,9 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { authMiddleware } from '../middleware/auth';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {authMiddleware} from '../middleware/auth';
 import Redis from 'ioredis';
-import { config } from '../config';
-import type { IFriend } from '@speak-up/shared';
+import {config} from '../config';
+import type {IFriend} from '@speak-up/shared';
 
 // redis track presence
 const redis = new Redis({
@@ -29,7 +29,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				include: {
 					receiver: {
 						include: {
-							settings: { select: { avatar: true } },
+							settings: {select: {avatar: true}},
 						},
 					},
 				},
@@ -44,7 +44,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				include: {
 					initiator: {
 						include: {
-							settings: { select: { avatar: true } },
+							settings: {select: {avatar: true}},
 						},
 					},
 				},
@@ -59,7 +59,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				include: {
 					initiator: {
 						include: {
-							settings: { select: { avatar: true } },
+							settings: {select: {avatar: true}},
 						},
 					},
 				},
@@ -74,7 +74,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				include: {
 					receiver: {
 						include: {
-							settings: { select: { avatar: true } },
+							settings: {select: {avatar: true}},
 						},
 					},
 				},
@@ -122,7 +122,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				})),
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to fetch friends');
+			request.log.error({error}, 'Failed to fetch friends');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -132,9 +132,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 	});
 
 	// send friend request using api
-	fastify.post<{ Body: { targetId: string } }>('/', async (request, reply) => {
+	fastify.post<{Body: {targetId: string}}>('/', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const { targetId } = request.body;
+		const {targetId} = request.body;
 
 		if (!targetId) {
 			return reply.status(400).send({
@@ -157,7 +157,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		try {
 			// check if target exists
 			const targetUser = await prisma.user.findUnique({
-				where: { id: targetIdBigInt },
+				where: {id: targetIdBigInt},
 			});
 
 			if (!targetUser) {
@@ -172,8 +172,8 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			const existingFriend = await prisma.friend.findFirst({
 				where: {
 					OR: [
-						{ initiatorId: userId, receiverId: targetIdBigInt },
-						{ initiatorId: targetIdBigInt, receiverId: userId },
+						{initiatorId: userId, receiverId: targetIdBigInt},
+						{initiatorId: targetIdBigInt, receiverId: userId},
 					],
 				},
 			});
@@ -214,9 +214,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 			// TODO: send notification via websocket
 
-			return { success: true, status: 'PENDING' };
+			return {success: true, status: 'PENDING'};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to send friend request');
+			request.log.error({error}, 'Failed to send friend request');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -227,12 +227,12 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 	// answer friend req (accept/reject)
 	fastify.put<{
-		Params: { id: string };
-		Body: { action: 'accept' | 'reject' };
+		Params: {id: string};
+		Body: {action: 'accept' | 'reject'};
 	}>('/:id', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
 		const requesterId = BigInt(request.params.id);
-		const { action } = request.body;
+		const {action} = request.body;
 
 		if (!['accept', 'reject'].includes(action)) {
 			return reply.status(400).send({
@@ -268,9 +268,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 							receiverId: userId,
 						},
 					},
-					data: { status: 'ACCEPTED' },
+					data: {status: 'ACCEPTED'},
 				});
-				return { success: true, status: 'ACCEPTED' };
+				return {success: true, status: 'ACCEPTED'};
 			} else {
 				await prisma.friend.delete({
 					where: {
@@ -280,10 +280,10 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 						},
 					},
 				});
-				return { success: true, status: 'REJECTED' };
+				return {success: true, status: 'REJECTED'};
 			}
 		} catch (error) {
-			request.log.error({ error }, 'Failed to process friend request');
+			request.log.error({error}, 'Failed to process friend request');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -293,7 +293,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 	});
 
 	// remove/cancel friend
-	fastify.delete<{ Params: { id: string } }>('/:id', async (request, reply) => {
+	fastify.delete<{Params: {id: string}}>('/:id', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
 		const friendId = BigInt(request.params.id);
 
@@ -302,8 +302,8 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			const deleted = await prisma.friend.deleteMany({
 				where: {
 					OR: [
-						{ initiatorId: userId, receiverId: friendId },
-						{ initiatorId: friendId, receiverId: userId },
+						{initiatorId: userId, receiverId: friendId},
+						{initiatorId: friendId, receiverId: userId},
 					],
 				},
 			});
@@ -316,9 +316,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			return { success: true, message: 'Friend removed' };
+			return {success: true, message: 'Friend removed'};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to remove friend');
+			request.log.error({error}, 'Failed to remove friend');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -328,7 +328,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 	});
 
 	// blocking a user
-	fastify.post<{ Params: { id: string } }>('/:id/block', async (request, reply) => {
+	fastify.post<{Params: {id: string}}>('/:id/block', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
 		const targetId = BigInt(request.params.id);
 
@@ -337,8 +337,8 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			await prisma.friend.deleteMany({
 				where: {
 					OR: [
-						{ initiatorId: userId, receiverId: targetId },
-						{ initiatorId: targetId, receiverId: userId },
+						{initiatorId: userId, receiverId: targetId},
+						{initiatorId: targetId, receiverId: userId},
 					],
 				},
 			});
@@ -352,9 +352,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			return { success: true, message: 'User blocked' };
+			return {success: true, message: 'User blocked'};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to block user');
+			request.log.error({error}, 'Failed to block user');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',

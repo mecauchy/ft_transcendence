@@ -32,7 +32,7 @@ def login_to_grafana(grafana_url, username, password):
     login_data = json.dumps({
         "user": username,
         "password": password
-    }).encode('utf-8')
+   }).encode('utf-8')
     
     headers = {"Content-Type": "application/json"}
     req = urllib.request.Request(login_url, data=login_data, headers=headers)

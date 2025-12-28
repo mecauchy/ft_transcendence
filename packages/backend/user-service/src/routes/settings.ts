@@ -1,6 +1,6 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { authMiddleware } from '../middleware/auth';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {authMiddleware} from '../middleware/auth';
 
 export async function settingsRoutes(fastify: FastifyInstance) {
 	// apply middleware
@@ -12,7 +12,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
 		try {
 			const settings = await prisma.settings.findUnique({
-				where: { userId },
+				where: {userId},
 			});
 
 			if (!settings) {
@@ -52,7 +52,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 				},
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to fetch settings');
+			request.log.error({error}, 'Failed to fetch settings');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -80,14 +80,14 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 		};
 	}>('/', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const { theme, language } = request.body;
+		const {theme, language} = request.body;
 
 		try {
 			await prisma.settings.upsert({
-				where: { userId },
+				where: {userId},
 				update: {
-					...(theme && { colour: theme }),
-					...(language && { locale: language }),
+					...(theme && {colour: theme}),
+					...(language && {locale: language}),
 				},
 				create: {
 					userId,
@@ -96,9 +96,9 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			return { success: true, message: 'Settings updated' };
+			return {success: true, message: 'Settings updated'};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to update settings');
+			request.log.error({error}, 'Failed to update settings');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',

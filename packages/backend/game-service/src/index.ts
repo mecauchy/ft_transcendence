@@ -2,10 +2,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import websocket from '@fastify/websocket';
-import { config } from './config';
-import { sessionRoutes, setWebSocketManager } from './routes/session';
-import { scenarioRoutes } from './routes/scenarios';
-import { WebSocketManager } from './websocket/manager';
+import {config} from './config';
+import {sessionRoutes, setWebSocketManager} from './routes/session';
+import {scenarioRoutes} from './routes/scenarios';
+import {WebSocketManager} from './websocket/manager';
 
 const fastify = Fastify({
 	logger: {
@@ -53,17 +53,17 @@ async function start() {
 		}));
 
 		// REST routes
-		await fastify.register(sessionRoutes, { prefix: '/api/game/session' });
-		await fastify.register(scenarioRoutes, { prefix: '/api/game/scenarios' });
+		await fastify.register(sessionRoutes, {prefix: '/api/game/session'});
+		await fastify.register(scenarioRoutes, {prefix: '/api/game/scenarios'});
 
 		// webscoket route for game connections
-		fastify.get('/ws/game', { websocket: true }, (socket, request) => {
+		fastify.get('/ws/game', {websocket: true}, (socket, request) => {
 			wsManager.handleConnection(socket, request);
 		});
 
 		// handle errors
-		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
-			request.log.error({ error }, 'Unhandled error');
+		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+			request.log.error({error}, 'Unhandled error');
 			
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({

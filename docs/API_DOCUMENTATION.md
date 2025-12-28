@@ -90,7 +90,7 @@ POST /api/auth/login
     "username": "johndoe",
     "email": "john@example.com",
     "role": "PATIENT"
-  }
+ }
 }
 ```
 
@@ -146,13 +146,13 @@ GET /api/auth/callback/42?code=<auth_code>&state=<csrf_state>
         "highContrast": false,
         "textToSpeech": false,
         "fontSize": "medium"
-      }
-    },
+     }
+   },
     "stats": {
       "sessionsCompleted": 0,
       "averageTrustScore": 0
-    }
-  }
+   }
+ }
 }
 ```
 
@@ -331,12 +331,12 @@ GET /api/users/profile/me
       "highContrast": false,
       "textToSpeech": false,
       "fontSize": "medium"
-    }
-  },
+   }
+ },
   "stats": {
     "sessionsCompleted": 5,
     "averageTrustScore": 78.5
-  }
+ }
 }
 ```
 
@@ -360,8 +360,8 @@ PUT /api/users/profile/me
       "highContrast": true,
       "textToSpeech": false,
       "fontSize": "large"
-    }
-  }
+   }
+ }
 }
 ```
 
@@ -435,13 +435,13 @@ GET /api/users/settings
     "highContrast": false,
     "textToSpeech": false,
     "fontSize": "medium"
-  },
+ },
   "notifications": {
     "email": true,
     "push": true,
     "friendRequests": true,
     "sessionInvites": true
-  }
+ }
 }
 ```
 
@@ -461,10 +461,10 @@ PUT /api/users/settings
   "accessibility": {
     "highContrast": true,
     "fontSize": "large"
-  },
+ },
   "notifications": {
     "email": false
-  }
+ }
 }
 ```
 
@@ -493,13 +493,13 @@ GET /api/users/friends
       "username": "frienduser",
       "status": "ONLINE",
       "lastSeen": 1703683200000
-    },
+   },
     {
       "id": "789",
       "username": "anotherfriend",
       "status": "IN_SESSION",
       "lastSeen": 1703683200000
-    }
+   }
   ],
   "pendingRequests": [
     {
@@ -507,7 +507,7 @@ GET /api/users/friends
       "username": "pendinguser",
       "avatarUrl": "/uploads/avatars/111_xyz.png",
       "requestedAt": "2024-12-27T10:00:00.000Z"
-    }
+   }
   ],
   "sentRequests": [
     {
@@ -515,7 +515,7 @@ GET /api/users/friends
       "username": "requesteduser",
       "avatarUrl": null,
       "sentAt": "2024-12-27T09:00:00.000Z"
-    }
+   }
   ]
 }
 ```
@@ -635,12 +635,12 @@ GET /api/users/gdpr/export
     "dateOfBirth": "1995-06-15T00:00:00.000Z",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "lastModified": "2024-12-27T10:00:00.000Z"
-  },
+ },
   "settings": {
     "avatar": "/uploads/avatars/123_abc.png",
     "colour": "light",
     "locale": "en"
-  },
+ },
   "sessions": [...],
   "friends": [...],
   "oauthConnections": [...]
@@ -732,7 +732,7 @@ GET /api/game/scenarios
       "estimatedDuration": 30,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
-    },
+   },
     {
       "id": "2",
       "title": "Difficult Conversation",
@@ -741,7 +741,7 @@ GET /api/game/scenarios
       "estimatedDuration": 45,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
-    }
+   }
   ]
 }
 ```
@@ -771,7 +771,7 @@ GET /api/game/scenarios/:id
   "graphData": {
     "nodes": [...],
     "edges": [...]
-  },
+ },
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
 }
@@ -796,7 +796,7 @@ GET /api/game/scenarios/:id/stats
   "averageMetrics": {
     "trust": "75.5",
     "compliance": "68.2"
-  }
+ }
 }
 ```
 
@@ -827,10 +827,10 @@ GET /api/game/scenarios/:id/leaderboard?limit=10
         "trust": 95,
         "stress": 10,
         "compliance": 90
-      },
+     },
       "duration": 1200,
       "completedAt": "2024-12-20T15:00:00.000Z"
-    }
+   }
   ]
 }
 ```
@@ -887,7 +887,7 @@ GET /api/game/session/:id
       "stress": 30,
       "compliance": 70,
       "mood": "CALM"
-    },
+   },
     "actionNodeId": "NODE_15",
     "narrativeFlags": {},
     "inventory": [],
@@ -897,15 +897,15 @@ GET /api/game/session/:id
         "connectionStatus": "CONNECTED",
         "lastAckSequenceId": 41,
         "currentActivity": "CHOOSING"
-      },
+     },
       "doctor": {
         "userId": "AI_DOCTOR",
         "connectionStatus": "CONNECTED",
         "lastAckSequenceId": 42,
         "currentActivity": "WAITING"
-      }
-    }
-  }
+     }
+   }
+ }
 }
 ```
 
@@ -922,7 +922,7 @@ GET /api/game/session/:id
     "stress": 20,
     "compliance": 80,
     "mood": "BREAKTHROUGH"
-  }
+ }
 }
 ```
 
@@ -944,18 +944,18 @@ GET /api/game/session/:id/history
       "speaker": "DOCTOR",
       "text": "How are you feeling today?",
       "timestamp": 1703683200000
-    },
+   },
     {
       "type": "CHOICE",
       "selectedOption": 2,
       "timestamp": 1703683205000
-    }
+   }
   ],
   "finalState": {
     "sessionId": "abc123-def456-...",
     "status": "COMPLETED",
     "metrics": {...}
-  }
+ }
 }
 ```
 
@@ -999,7 +999,7 @@ GET /api/game/session/active
       "mode": "AI",
       "status": "ACTIVE",
       "createdAt": "2024-12-27T10:00:00.000Z"
-    }
+   }
   ]
 }
 ```
@@ -1054,7 +1054,7 @@ GET /api/gamification/xp/history?limit=50&offset=0
       "reason": "Session completed",
       "sessionId": "abc123-def456-...",
       "createdAt": "2024-12-27T10:30:00.000Z"
-    }
+   }
   ]
 }
 ```
@@ -1079,11 +1079,11 @@ GET /api/gamification/xp/daily?days=30
     {
       "date": "2024-12-27",
       "xp": 150
-    },
+   },
     {
       "date": "2024-12-26",
       "xp": 200
-    }
+   }
   ]
 }
 ```
@@ -1120,7 +1120,7 @@ POST /api/gamification/xp/award
       "id": "ach123",
       "name": "Level 5 Reached",
       "xpReward": 50
-    }
+   }
   ]
 }
 ```
@@ -1141,7 +1141,7 @@ GET /api/gamification/xp/rewards
     "perfectSession": 200,
     "dailyLogin": 10,
     "friendAdded": 25
-  }
+ }
 }
 ```
 
@@ -1167,7 +1167,7 @@ GET /api/gamification/achievements
       "rarity": "COMMON",
       "category": "sessions",
       "isHidden": false
-    }
+   }
   ]
 }
 ```
@@ -1195,7 +1195,7 @@ GET /api/gamification/achievements/me
     {
       "achievementId": "ach001",
       "unlockedAt": "2024-12-15T10:00:00.000Z"
-    }
+   }
   ],
   "unlockedCount": 5,
   "totalCount": 20,
@@ -1222,14 +1222,14 @@ GET /api/gamification/achievements/:id
     "xpReward": 100,
     "rarity": "UNCOMMON",
     "category": "sessions"
-  },
+ },
   "isUnlocked": false,
   "unlockedAt": null,
   "progress": {
     "progress": 7,
     "total": 10,
     "percentage": 70
-  }
+ }
 }
 ```
 
@@ -1250,13 +1250,13 @@ GET /api/gamification/achievements/progress
       "name": "First Steps",
       "isUnlocked": true,
       "progress": 100
-    },
+   },
     {
       "achievementId": "ach002",
       "name": "Getting Started",
       "isUnlocked": false,
       "progress": 70
-    }
+   }
   ]
 }
 ```
@@ -1287,7 +1287,7 @@ GET /api/gamification/leaderboard?type=XP&limit=100&offset=0
       "username": "topplayer",
       "avatarUrl": "/uploads/avatars/456_abc.png",
       "value": 15000
-    }
+   }
   ],
   "total": 100,
   "userRank": 42
@@ -1313,7 +1313,7 @@ GET /api/gamification/leaderboard/scenario/:scenarioId?limit=100&offset=0
       "username": "topplayer",
       "value": 95,
       "completedAt": "2024-12-20T15:00:00.000Z"
-    }
+   }
   ],
   "total": 50
 }
@@ -1337,7 +1337,7 @@ GET /api/gamification/leaderboard/friends?limit=50
       "username": "myfriend",
       "avatarUrl": "/uploads/avatars/789_def.png",
       "value": 8000
-    }
+   }
   ],
   "total": 5
 }
@@ -1357,12 +1357,12 @@ GET /api/gamification/leaderboard/me?type=XP
   "type": "XP",
   "userRank": 42,
   "surroundingPlayers": [
-    { "rank": 38, "userId": "111", "username": "player38", "value": 2600 },
-    { "rank": 39, "userId": "112", "username": "player39", "value": 2550 },
-    { "rank": 40, "userId": "113", "username": "player40", "value": 2520 },
-    { "rank": 41, "userId": "114", "username": "player41", "value": 2510 },
-    { "rank": 42, "userId": "123", "username": "johndoe", "value": 2500 },
-    { "rank": 43, "userId": "115", "username": "player43", "value": 2480 }
+    {"rank": 38, "userId": "111", "username": "player38", "value": 2600},
+    {"rank": 39, "userId": "112", "username": "player39", "value": 2550},
+    {"rank": 40, "userId": "113", "username": "player40", "value": 2520},
+    {"rank": 41, "userId": "114", "username": "player41", "value": 2510},
+    {"rank": 42, "userId": "123", "username": "johndoe", "value": 2500},
+    {"rank": 43, "userId": "115", "username": "player43", "value": 2480}
   ]
 }
 ```
@@ -1393,8 +1393,8 @@ const ws = new WebSocket(`ws://localhost:3000/ws/game?sessionId=${sessionId}&tok
 
 | Type | Description | Payload |
 |------|-------------|---------|
-| `CHOICE` | Player makes a choice | `{ optionId: string }` |
-| `ACTION` | Player performs an action | `{ actionType: string, data: any }` |
+| `CHOICE` | Player makes a choice | `{optionId: string}` |
+| `ACTION` | Player performs an action | `{actionType: string, data: any}` |
 | `HEARTBEAT` | Keep connection alive | `{}` |
 
 **Message Types (Server → Client):**

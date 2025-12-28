@@ -1,13 +1,13 @@
-import { WebSocket } from 'ws';
-import { FastifyRequest } from 'fastify';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import {WebSocket} from 'ws';
+import {FastifyRequest} from 'fastify';
+import jwt, {JwtPayload} from 'jsonwebtoken';
 import Redis from 'ioredis';
-import { v4 as uuidv4 } from 'uuid';
-import { config } from '../config';
-import { NarrativeEngine, createEngineFromScenario } from '../engine/narrative-engine';
-import { prisma } from '../db';
-import type { IInvestigationState } from '@speak-up/shared';
-import { EventType, type GameEvent, type IStateUpdateEvent } from '@speak-up/shared';
+import {v4 as uuidv4} from 'uuid';
+import {config} from '../config';
+import {NarrativeEngine, createEngineFromScenario} from '../engine/narrative-engine';
+import {prisma} from '../db';
+import type {IInvestigationState} from '@speak-up/shared';
+import {EventType, type GameEvent, type IStateUpdateEvent} from '@speak-up/shared';
 
 interface AuthenticatedUser {
 	userId: string;
@@ -48,8 +48,8 @@ export class WebSocketManager {
 
 	// handle new websocket conn
 	handleConnection(socket: WebSocket, request: FastifyRequest): void {
-		const query_params = request.query as { token?: string; sessionId?: string; mode?: string };
-		const { token, sessionId, mode } = query_params;
+		const query_params = request.query as {token?: string; sessionId?: string; mode?: string};
+		const {token, sessionId, mode} = query_params;
 
 		// validate token
 		if (!token) {
@@ -62,7 +62,7 @@ export class WebSocketManager {
 			const decoded = jwt.verify(token, config.jwt.secret, {
 				issuer: config.jwt.issuer,
 			}) as JwtPayload & AuthenticatedUser;
-			user = { userId: decoded.userId, role: decoded.role };
+			user = {userId: decoded.userId, role: decoded.role};
 		} catch (error) {
 			this.closeWithError(socket, 'Invalid or expired token');
 			return;
@@ -90,7 +90,7 @@ export class WebSocketManager {
 			// load session from db
 			try {
 				const dbSession = await prisma.session.findUnique({
-					where: { id: sessionId },
+					where: {id: sessionId},
 					include: {
 						scenario: true,
 					},
@@ -254,7 +254,7 @@ export class WebSocketManager {
 	private handleMessage(
 		session: GameSession,
 		clientId: string,
-		message: { type: string; payload?: unknown }
+		message: {type: string; payload?: unknown}
 	): void {
 		const client = session.clients.get(clientId);
 		if (!client) return;
@@ -278,7 +278,7 @@ export class WebSocketManager {
 
 			case 'STATE_ACK':
 				// client ACK
-				const sequenceId = (message.payload as { sequenceId: number })?.sequenceId;
+				const sequenceId = (message.payload as {sequenceId: number})?.sequenceId;
 				if (sequenceId !== undefined) {
 					session.engine.acknowledgeState(client.role as 'patient' | 'doctor', sequenceId);
 				}
@@ -286,7 +286,7 @@ export class WebSocketManager {
 
 			case 'RESYNC_REQUEST':
 				// request state resync
-				const fromSequence = (message.payload as { lastSequenceId: number })?.lastSequenceId || 0;
+				const fromSequence = (message.payload as {lastSequenceId: number})?.lastSequenceId || 0;
 				const deltaEvents = session.engine.getDeltaEvents(fromSequence);
 				this.sendToClient(client.socket, {
 					type: 'RESYNC_RESPONSE',
@@ -297,7 +297,7 @@ export class WebSocketManager {
 
 			case 'ACTIVITY_UPDATE':
 				// client activity change
-				const activity = (message.payload as { activity: string })?.activity;
+				const activity = (message.payload as {activity: string})?.activity;
 				if (activity && client.role !== 'spectator') {
 					session.engine.updateParticipantActivity(
 						client.role as 'patient' | 'doctor',
@@ -379,7 +379,7 @@ export class WebSocketManager {
 
 	// socket close with error msg
 	private closeWithError(socket: WebSocket, message: string): void {
-		this.sendToClient(socket, { type: 'ERROR', message });
+		this.sendToClient(socket, {type: 'ERROR', message});
 		socket.close(4000, message);
 	}
 
@@ -395,7 +395,7 @@ export class WebSocketManager {
 					client.socket.close(4001, 'Heartbeat timeout');
 					this.handleDisconnect(sessionId, clientId);
 				} else {
-					this.sendToClient(client.socket, { type: 'PING' });
+					this.sendToClient(client.socket, {type: 'PING'});
 				}
 			}
 		}
@@ -423,7 +423,7 @@ export class WebSocketManager {
 
 		try {
 			await prisma.session.update({
-				where: { id: sessionId },
+				where: {id: sessionId},
 				data: {
 					status: statusMap[state.status] || 'TERMINATED',
 					endedAt: new Date(),
@@ -478,7 +478,7 @@ export class WebSocketManager {
 	): Promise<string> {
 		// load scenario from database
 		const scenario = await prisma.scenario.findUnique({
-			where: { id: BigInt(scenarioId) },
+			where: {id: BigInt(scenarioId)},
 		});
 
 		if (!scenario) {

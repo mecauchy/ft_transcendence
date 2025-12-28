@@ -1,6 +1,6 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { authMiddleware } from '../middleware/auth';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {authMiddleware} from '../middleware/auth';
 
 export async function gdprRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
@@ -13,15 +13,15 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 		try {
 			// fetch user with all related data
 			const user = await prisma.user.findUnique({
-				where: { id: userId },
+				where: {id: userId},
 				include: {
 					settings: true,
 					oauth: true,
 					patientSessions: {
-						orderBy: { createdAt: 'desc' },
+						orderBy: {createdAt: 'desc'},
 					},
 					doctorSessions: {
-						orderBy: { createdAt: 'desc' },
+						orderBy: {createdAt: 'desc'},
 					},
 					friendsInitiated: true,
 					friendsReceived: true,
@@ -92,7 +92,7 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 			return exportData;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to export user data');
+			request.log.error({error}, 'Failed to export user data');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -107,8 +107,8 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 		try {
 			const sessions = await prisma.session.findMany({
-				where: { patientId: userId },
-				orderBy: { createdAt: 'desc' },
+				where: {patientId: userId},
+				orderBy: {createdAt: 'desc'},
 			});
 
 			// generate CSV
@@ -137,7 +137,7 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 			return csv;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to export CSV');
+			request.log.error({error}, 'Failed to export CSV');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -155,62 +155,62 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 			await prisma.$transaction(async (tx) => {
 				// anonymize sessions
 				await tx.session.updateMany({
-					where: { patientId: userId },
-					data: { patientId: null as unknown as bigint },
+					where: {patientId: userId},
+					data: {patientId: null as unknown as bigint},
 				});
 				await tx.session.updateMany({
-					where: { doctorId: userId },
-					data: { doctorId: null as unknown as bigint },
+					where: {doctorId: userId},
+					data: {doctorId: null as unknown as bigint},
 				});
 
 				// scrub event logs
 				await tx.eventLog.updateMany({
-					where: { emitterId: userId },
-					data: { 
-						payload: { scrubbed: true },
+					where: {emitterId: userId},
+					data: {
+						payload: {scrubbed: true},
 						emitterId: null as unknown as bigint,
 					},
 				});
 
 				// delete OAuth connections
 				await tx.oAuth.deleteMany({
-					where: { userId },
+					where: {userId},
 				});
 
 				// delete settings
 				await tx.settings.deleteMany({
-					where: { userId },
+					where: {userId},
 				});
 
 				// delete tokens
 				await tx.userKey.deleteMany({
-					where: { userId },
+					where: {userId},
 				});
 
 				// delete friendships
 				await tx.friend.deleteMany({
 					where: {
 						OR: [
-							{ initiatorId: userId },
-							{ receiverId: userId },
+							{initiatorId: userId},
+							{receiverId: userId},
 						],
 					},
 				});
 
 				// final -> delete the user
 				await tx.user.delete({
-					where: { id: userId },
+					where: {id: userId},
 				});
 			});
 
-			request.log.info({ userId: userId.toString() }, 'User account deleted (GDPR request)');
+			request.log.info({userId: userId.toString()}, 'User account deleted (GDPR request)');
 
 			return {
 				success: true,
 				message: 'Your account and personal data have been deleted. Some anonymized data may be retained for statistical purposes.',
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to delete account');
+			request.log.error({error}, 'Failed to delete account');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -220,11 +220,11 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 	});
 
 	// submit a data request
-	fastify.post<{ Body: { type: 'export' | 'delete' | 'rectify'; details?: string } }>(
+	fastify.post<{Body: {type: 'export' | 'delete' | 'rectify'; details?: string}}>(
 		'/request',
 		async (request, reply) => {
 			const userId = request.user!.userId;
-			const { type, details } = request.body;
+			const {type, details} = request.body;
 
 			try {
 				// log request for compliance
@@ -243,7 +243,7 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					requestId: `GDPR-${Date.now()}-${userId}`,
 				};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to process GDPR request');
+				request.log.error({error}, 'Failed to process GDPR request');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',

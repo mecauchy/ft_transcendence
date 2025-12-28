@@ -291,7 +291,7 @@ Update current user's profile.
 ```typescript
 {
   success: true;
-  user: { /* Updated user object */ }
+  user: {/* Updated user object */}
 }
 ```
 
@@ -339,7 +339,7 @@ Get current user's friends list.
     status: 'PENDING' | 'ACCEPTED' | 'BLOCKED';
     isOnline: boolean;
     createdAt: string;
-  }>;
+ }>;
 }
 ```
 
@@ -454,7 +454,7 @@ Get user settings.
     push: boolean;
     friendRequests: boolean;
     sessionInvites: boolean;
-  };
+ };
 }
 ```
 
@@ -475,7 +475,7 @@ Update user settings.
     push?: boolean;
     friendRequests?: boolean;
     sessionInvites?: boolean;
-  };
+ };
 }
 ```
 
@@ -483,7 +483,7 @@ Update user settings.
 ```typescript
 {
   success: true;
-  settings: { /* Updated settings */ }
+  settings: {/* Updated settings */}
 }
 ```
 
@@ -562,13 +562,13 @@ const response = await fetch('/api/game/session/start', {
   headers: {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
-  },
+ },
   body: JSON.stringify({
     patientId: userId,
     mode: 'AI'
-  })
+ })
 });
-const { sessionId, wsUrl } = await response.json();
+const {sessionId, wsUrl} = await response.json();
 // Connect to WebSocket at wsUrl
 ```
 
@@ -639,7 +639,7 @@ List user's active sessions.
     mode: 'AI' | 'P2P';
     status: 'WAITING' | 'ACTIVE' | 'PAUSED';
     createdAt: string;
-  }>;
+ }>;
 }
 ```
 
@@ -661,7 +661,7 @@ List all available scenarios.
     description: string;
     difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
     estimatedDuration: number;  // Minutes
-  }>;
+ }>;
 }
 ```
 
@@ -703,7 +703,7 @@ Get scenario statistics.
   averageMetrics: {
     trust: string | null;
     compliance: string | null;
-  };
+ };
 }
 ```
 
@@ -728,10 +728,10 @@ Get scenario leaderboard.
     userId: string;
     displayName: string;
     avatarUrl: string | null;
-    metrics: { trust, stress, compliance };
+    metrics: {trust, stress, compliance};
     duration: number;
     completedAt: string;
-  }>;
+ }>;
 }
 ```
 
@@ -781,7 +781,7 @@ Get XP transaction history.
     reason: string;
     sessionId: string | null;
     createdAt: string;
-  }>;
+ }>;
 }
 ```
 
@@ -803,7 +803,7 @@ Get daily XP breakdown for charts.
   dailyXP: Array<{
     date: string;     // YYYY-MM-DD
     amount: number;
-  }>;
+ }>;
 }
 ```
 
@@ -828,7 +828,7 @@ List all achievements.
     xpReward: number;
     rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
     category: string;
-  }>;
+ }>;
 }
 ```
 
@@ -847,7 +847,7 @@ Get current user's unlocked achievements.
     achievement: IAchievement;
     unlockedAt: string;
     progress: number;
-  }>;
+ }>;
   unlockedCount: number;
   totalCount: number;
   completionPercentage: number;
@@ -871,7 +871,7 @@ Get specific achievement details with user progress.
     progress: number;
     total: number;
     percentage: number;
-  } | null;
+ } | null;
 }
 ```
 
@@ -890,7 +890,7 @@ Get progress for all achievements.
     name: string;
     isUnlocked: boolean;
     progress: number | null;  // 0-100 or null if not trackable
-  }>;
+ }>;
 }
 ```
 
@@ -922,7 +922,7 @@ Get global leaderboard.
     level: number;
     totalXP: number;
     score: number;  // Value for the leaderboard type
-  }>;
+ }>;
   total: number;
   userRank: number;  // Current user's rank
 }
@@ -969,7 +969,7 @@ Get user's rank and surrounding players.
 
 ```typescript
 // 1. Start session via REST
-const { sessionId, wsUrl } = await startSession();
+const {sessionId, wsUrl} = await startSession();
 
 // 2. Connect WebSocket
 const ws = new WebSocket(`wss://localhost${wsUrl}&token=${accessToken}`);
@@ -998,7 +998,7 @@ ws.onmessage = (event) => {
   payload: {
     sequenceId: number;
     success: boolean;
-  };
+ };
 }
 
 // Error
@@ -1007,7 +1007,7 @@ ws.onmessage = (event) => {
   payload: {
     code: string;
     message: string;
-  };
+ };
 }
 
 // Session ended
@@ -1016,7 +1016,7 @@ ws.onmessage = (event) => {
   payload: {
     reason: string;
     finalState: IInvestigationState;
-  };
+ };
 }
 ```
 
@@ -1030,7 +1030,7 @@ ws.onmessage = (event) => {
     actionType: 'DIALOGUE_CHOICE' | 'ITEM_USE' | 'ITEM_EXAMINE';
     targetId: string;  // Choice ID or item ID
     data?: Record<string, unknown>;
-  };
+ };
 }
 
 // Heartbeat (send every 5 seconds)
@@ -1043,7 +1043,7 @@ ws.onmessage = (event) => {
   type: 'ACTIVITY';
   payload: {
     activity: 'IDLE' | 'TYPING' | 'READING' | 'INTERACTING';
-  };
+ };
 }
 ```
 
@@ -1093,9 +1093,9 @@ axios.interceptors.response.use(
       const newTokens = await refreshToken();
       error.config.headers.Authorization = `Bearer ${newTokens.accessToken}`;
       return axios.request(error.config);
-    }
+   }
     throw error;
-  }
+ }
 );
 ```
 
@@ -1154,7 +1154,7 @@ interface IInvestigationState {
     stress: number;     // 0-1, lower is better (>1 = loss)
     compliance: number; // 0-1, higher is better
     mood: 'CALM' | 'ANXIOUS' | 'DEFENSIVE' | 'BREAKTHROUGH';
-  };
+ };
   
   actionNodeId: string;  // Current dialogue node
   narrativeFlags: Record<string, boolean>;
@@ -1163,7 +1163,7 @@ interface IInvestigationState {
   participants: {
     patient: IParticipantState;
     doctor: IParticipantState;
-  };
+ };
 }
 ```
 
@@ -1176,17 +1176,17 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' }
+  headers: {'Content-Type': 'application/json'}
 });
 
 // Set token after login
 api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
 // Get profile
-const { data: profile } = await api.get('/user/me');
+const {data: profile} = await api.get('/user/me');
 
 // Start game session
-const { data: { sessionId, wsUrl } } = await api.post('/game/session/start', {
+const {data: {sessionId, wsUrl}} = await api.post('/game/session/start', {
   patientId: profile.userId,
   mode: 'AI'
 });
@@ -1195,7 +1195,7 @@ const { data: { sessionId, wsUrl } } = await api.post('/game/session/start', {
 const ws = new WebSocket(`wss://${window.location.host}${wsUrl}&token=${token}`);
 
 // Get achievements
-const { data: achievements } = await api.get('/gamification/achievements/me');
+const {data: achievements} = await api.get('/gamification/achievements/me');
 ```
 
 ---

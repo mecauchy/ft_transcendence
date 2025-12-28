@@ -2,11 +2,11 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
-import { config } from './config';
-import { profileRoutes } from './routes/profile';
-import { friendsRoutes } from './routes/friends';
-import { gdprRoutes } from './routes/gdpr';
-import { settingsRoutes } from './routes/settings';
+import {config} from './config';
+import {profileRoutes} from './routes/profile';
+import {friendsRoutes} from './routes/friends';
+import {gdprRoutes} from './routes/gdpr';
+import {settingsRoutes} from './routes/settings';
 
 const fastify = Fastify({
 	logger: {
@@ -47,14 +47,14 @@ async function start() {
 		}));
 
 		// register routes
-		await fastify.register(profileRoutes, { prefix: '/api/users' });
-		await fastify.register(friendsRoutes, { prefix: '/api/users/friends' });
-		await fastify.register(gdprRoutes, { prefix: '/api/users/gdpr' });
-		await fastify.register(settingsRoutes, { prefix: '/api/users/settings' });
+		await fastify.register(profileRoutes, {prefix: '/api/users'});
+		await fastify.register(friendsRoutes, {prefix: '/api/users/friends'});
+		await fastify.register(gdprRoutes, {prefix: '/api/users/gdpr'});
+		await fastify.register(settingsRoutes, {prefix: '/api/users/settings'});
 
 		// error handler
-		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
-			request.log.error({ error }, 'Unhandled error');
+		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+			request.log.error({error}, 'Unhandled error');
 			
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({

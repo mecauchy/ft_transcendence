@@ -63,17 +63,17 @@ class ApiClient {
 		password: string;
 		dob: string;
 	}) {
-		return this.request<{ userId: string; message: string }>('/auth/register', {
+		return this.request<{userId: string; message: string}>('/auth/register', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
 	}
 
-	async login(credentials: { email: string; password: string }) {
+	async login(credentials: {email: string; password: string}) {
 		const response = await this.request<{
 			accessToken: string;
 			refreshToken: string;
-			user: { userId: string; username: string; email: string; role: string };
+			user: {userId: string; username: string; email: string; role: string};
 		}>('/auth/login', {
 			method: 'POST',
 			body: JSON.stringify(credentials),
@@ -83,7 +83,7 @@ class ApiClient {
 	}
 
 	async logout() {
-		const result = await this.request<{ message: string }>('/auth/logout', {
+		const result = await this.request<{message: string}>('/auth/logout', {
 			method: 'POST',
 		});
 		this.setToken(null);
@@ -91,7 +91,7 @@ class ApiClient {
 	}
 
 	async refreshToken() {
-		const response = await this.request<{ accessToken: string }>('/auth/refresh', {
+		const response = await this.request<{accessToken: string}>('/auth/refresh', {
 			method: 'POST',
 		});
 		this.setToken(response.accessToken);
@@ -105,15 +105,15 @@ class ApiClient {
 
 	// 2FA
 	async enable2FA() {
-		return this.request<{ qrCode: string; secret: string }>('/auth/2fa/enable', {
+		return this.request<{qrCode: string; secret: string}>('/auth/2fa/enable', {
 			method: 'POST',
 		});
 	}
 
 	async verify2FA(code: string) {
-		return this.request<{ verified: boolean }>('/auth/2fa/verify', {
+		return this.request<{verified: boolean}>('/auth/2fa/verify', {
 			method: 'POST',
-			body: JSON.stringify({ code }),
+			body: JSON.stringify({code}),
 		});
 	}
 
@@ -132,21 +132,21 @@ class ApiClient {
 		}>(endpoint);
 	}
 
-	async updateProfile(data: { displayName?: string; avatarUrl?: string }) {
-		return this.request<{ message: string }>('/users/me', {
+	async updateProfile(data: {displayName?: string; avatarUrl?: string}) {
+		return this.request<{message: string}>('/users/me', {
 			method: 'PATCH',
 			body: JSON.stringify(data),
 		});
 	}
 
 	async getSettings() {
-		return this.request<{ avatar?: string; colour?: string; locale: string }>(
+		return this.request<{avatar?: string; colour?: string; locale: string}>(
 			'/users/me/settings'
 		);
 	}
 
-	async updateSettings(settings: { avatar?: string; colour?: string; locale?: string }) {
-		return this.request<{ message: string }>('/users/me/settings', {
+	async updateSettings(settings: {avatar?: string; colour?: string; locale?: string}) {
+		return this.request<{message: string}>('/users/me/settings', {
 			method: 'PATCH',
 			body: JSON.stringify(settings),
 		});
@@ -164,15 +164,15 @@ class ApiClient {
 	}
 
 	async sendFriendRequest(userId: string) {
-		return this.request<{ message: string }>(`/users/me/friends/${userId}`, {
+		return this.request<{message: string}>(`/users/me/friends/${userId}`, {
 			method: 'POST',
 		});
 	}
 
 	async respondToFriendRequest(userId: string, accept: boolean) {
-		return this.request<{ message: string }>(`/users/me/friends/${userId}`, {
+		return this.request<{message: string}>(`/users/me/friends/${userId}`, {
 			method: 'PATCH',
-			body: JSON.stringify({ accept }),
+			body: JSON.stringify({accept}),
 		});
 	}
 
@@ -199,8 +199,8 @@ class ApiClient {
 		}>(`/game/scenarios/${scenarioId}`);
 	}
 
-	async startSession(data: { scenarioId: string; mode: 'AI' | 'P2P' }) {
-		return this.request<{ sessionId: string; token: string }>('/game/session/start', {
+	async startSession(data: {scenarioId: string; mode: 'AI' | 'P2P'}) {
+		return this.request<{sessionId: string; token: string}>('/game/session/start', {
 			method: 'POST',
 			body: JSON.stringify(data),
 		});
@@ -254,4 +254,4 @@ class ApiClient {
 export const api = new ApiClient();
 
 // error handler export type
-export type { ApiError };
+export type {ApiError};

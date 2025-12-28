@@ -1,10 +1,10 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import { config } from './config';
-import { xpRoutes } from './routes/xp';
-import { achievementRoutes } from './routes/achievements';
-import { leaderboardRoutes } from './routes/leaderboard';
+import {config} from './config';
+import {xpRoutes} from './routes/xp';
+import {achievementRoutes} from './routes/achievements';
+import {leaderboardRoutes} from './routes/leaderboard';
 
 const fastify = Fastify({
 	logger: {
@@ -38,13 +38,13 @@ async function start() {
 		}));
 
 		// REST Routes
-		await fastify.register(xpRoutes, { prefix: '/api/gamification/xp' });
-		await fastify.register(achievementRoutes, { prefix: '/api/gamification/achievements' });
-		await fastify.register(leaderboardRoutes, { prefix: '/api/gamification/leaderboard' });
+		await fastify.register(xpRoutes, {prefix: '/api/gamification/xp'});
+		await fastify.register(achievementRoutes, {prefix: '/api/gamification/achievements'});
+		await fastify.register(leaderboardRoutes, {prefix: '/api/gamification/leaderboard'});
 
 		// handle errors
-		fastify.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
-			request.log.error({ error }, 'Unhandled error');
+		fastify.setErrorHandler((error: Error & {statusCode?: number}, request, reply) => {
+			request.log.error({error}, 'Unhandled error');
 
 			const statusCode = error.statusCode || 500;
 			reply.status(statusCode).send({

@@ -1,6 +1,6 @@
-import { prisma } from '../db';
+import {prisma} from '../db';
 import Redis from 'ioredis';
-import { config } from '../config';
+import {config} from '../config';
 
 const redis = new Redis({
 	host: config.redis.host,
@@ -37,36 +37,36 @@ export async function getGlobalLeaderboard(
 	switch (type) {
 		case 'XP':
 			users = await prisma.user.findMany({
-				where: { isActive: true },
-				orderBy: { totalXp: 'desc' },
+				where: {isActive: true},
+				orderBy: {totalXp: 'desc'},
 				take: limit,
 				skip: offset,
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 				},
 			});
 			break;
 			
 		case 'LEVEL':
 			users = await prisma.user.findMany({
-				where: { isActive: true },
-				orderBy: [{ currentLevel: 'desc' }, { totalXp: 'desc' }],
+				where: {isActive: true},
+				orderBy: [{currentLevel: 'desc'}, {totalXp: 'desc'}],
 				take: limit,
 				skip: offset,
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 				},
 			});
 			break;
 			
 		case 'SESSIONS':
 			users = await prisma.user.findMany({
-				where: { isActive: true },
+				where: {isActive: true},
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 					patientSessions: {
-						where: { status: 'COMPLETED' },
-						select: { id: true },
+						where: {status: 'COMPLETED'},
+						select: {id: true},
 					},
 				},
 			});
@@ -79,10 +79,10 @@ export async function getGlobalLeaderboard(
 			
 		case 'ACHIEVEMENTS':
 			users = await prisma.user.findMany({
-				where: { isActive: true },
+				where: {isActive: true},
 				include: {
-					settings: { select: { avatar: true } },
-					achievements: { select: { id: true } },
+					settings: {select: {avatar: true}},
+					achievements: {select: {id: true}},
 				},
 			});
 			// sort by achievement count
@@ -94,12 +94,12 @@ export async function getGlobalLeaderboard(
 			
 		default:
 			users = await prisma.user.findMany({
-				where: { isActive: true },
-				orderBy: { totalXp: 'desc' },
+				where: {isActive: true},
+				orderBy: {totalXp: 'desc'},
 				take: limit,
 				skip: offset,
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 				},
 			});
 	}
@@ -107,14 +107,14 @@ export async function getGlobalLeaderboard(
 	const entries: LeaderboardEntry[] = users.map((user, index) => {
 		let score = user.totalXp || 0;
 		if (type === 'LEVEL') score = user.currentLevel || 1;
-		if (type === 'SESSIONS') score = (user as { patientSessions?: unknown[] }).patientSessions?.length || 0;
-		if (type === 'ACHIEVEMENTS') score = (user as { achievements?: unknown[] }).achievements?.length || 0;
+		if (type === 'SESSIONS') score = (user as {patientSessions?: unknown[]}).patientSessions?.length || 0;
+		if (type === 'ACHIEVEMENTS') score = (user as {achievements?: unknown[]}).achievements?.length || 0;
 		
 		return {
 			rank: offset + index + 1,
 			userId: user.id.toString(),
 			displayName: user.username,
-			avatarUrl: (user as { settings?: { avatar?: string | null } }).settings?.avatar || null,
+			avatarUrl: (user as {settings?: {avatar?: string | null}}).settings?.avatar || null,
 			level: user.currentLevel || 1,
 			totalXP: user.totalXp || 0,
 			score,
@@ -145,19 +145,19 @@ export async function getScenarioLeaderboard(
 		where: {
 			scenarioId: BigInt(scenarioId),
 			status: 'COMPLETED',
-			patientId: { not: null },
+			patientId: {not: null},
 		},
 		include: {
 			patient: {
 				include: {
-					settings: { select: { avatar: true } },
+					settings: {select: {avatar: true}},
 				},
 			},
 		},
 	});
 	
 	// group by user, get best score
-	const userScores = new Map<string, { user: typeof sessions[0]['patient']; bestScore: number }>();
+	const userScores = new Map<string, {user: typeof sessions[0]['patient']; bestScore: number}>();
 	
 	for (const session of sessions) {
 		if (!session.patient) continue;
@@ -167,7 +167,7 @@ export async function getScenarioLeaderboard(
 		
 		const existing = userScores.get(userId);
 		if (!existing || trust > existing.bestScore) {
-			userScores.set(userId, { user: session.patient, bestScore: trust });
+			userScores.set(userId, {user: session.patient, bestScore: trust});
 		}
 	}
 	
@@ -201,7 +201,7 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 	}
 	
 	const user = await prisma.user.findUnique({
-		where: { id: BigInt(userId) },
+		where: {id: BigInt(userId)},
 	});
 	
 	if (!user) return 0;
@@ -213,7 +213,7 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 			rank = await prisma.user.count({
 				where: {
 					isActive: true,
-					totalXp: { gt: user.totalXp || 0 },
+					totalXp: {gt: user.totalXp || 0},
 				},
 			}) + 1;
 			break;
@@ -221,7 +221,7 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 			rank = await prisma.user.count({
 				where: {
 					isActive: true,
-					currentLevel: { gt: user.currentLevel || 0 },
+					currentLevel: {gt: user.currentLevel || 0},
 				},
 			}) + 1;
 			break;
@@ -229,7 +229,7 @@ export async function getUserRank(userId: string, type: LeaderboardType = 'XP'):
 			rank = await prisma.user.count({
 				where: {
 					isActive: true,
-					totalXp: { gt: user.totalXp || 0 },
+					totalXp: {gt: user.totalXp || 0},
 				},
 			}) + 1;
 	}
@@ -250,8 +250,8 @@ export async function getFriendsLeaderboard(
 	const friendships = await prisma.friend.findMany({
 		where: {
 			OR: [
-				{ initiatorId: userIdBigInt },
-				{ receiverId: userIdBigInt },
+				{initiatorId: userIdBigInt},
+				{receiverId: userIdBigInt},
 			],
 			status: 'ACCEPTED',
 		},
@@ -267,13 +267,13 @@ export async function getFriendsLeaderboard(
 	// get users
 	const users = await prisma.user.findMany({
 		where: {
-			id: { in: friendIds },
+			id: {in: friendIds},
 			isActive: true,
 		},
-		orderBy: { totalXp: 'desc' },
+		orderBy: {totalXp: 'desc'},
 		take: limit,
 		include: {
-			settings: { select: { avatar: true } },
+			settings: {select: {avatar: true}},
 		},
 	});
 	

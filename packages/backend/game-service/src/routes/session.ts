@@ -1,8 +1,8 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { authMiddleware } from '../middleware/auth';
-import { WebSocketManager } from '../websocket/manager';
-import type { ISessionStartRequest, ISessionStartResponse, ISessionHistoryResponse, GameEvent } from '@speak-up/shared';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {authMiddleware} from '../middleware/auth';
+import {WebSocketManager} from '../websocket/manager';
+import type {ISessionStartRequest, ISessionStartResponse, ISessionHistoryResponse, GameEvent} from '@speak-up/shared';
 
 // shared websocket
 let wsManager: WebSocketManager;
@@ -16,9 +16,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 	fastify.addHook('preHandler', authMiddleware);
 
 	// start new game session
-	fastify.post<{ Body: ISessionStartRequest }>('/start', async (request, reply) => {
+	fastify.post<{Body: ISessionStartRequest}>('/start', async (request, reply) => {
 		const userId = request.user!.userId;
-		const { patientId, mode } = request.body;
+		const {patientId, mode} = request.body;
 
 		// validate request
 		if (patientId !== userId) {
@@ -32,7 +32,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 		try {
 			// default scenario (or specific one if provided)
 			const scenario = await prisma.scenario.findFirst({
-				orderBy: { id: 'asc' },
+				orderBy: {id: 'asc'},
 			});
 
 			if (!scenario) {
@@ -56,7 +56,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 			return response;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to start session');
+			request.log.error({error}, 'Failed to start session');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -69,8 +69,8 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 	 * GET /api/session/:id
 	 * Get current session state
 	 */
-	fastify.get<{ Params: { id: string } }>('/:id', async (request, reply) => {
-		const { id: sessionId } = request.params;
+	fastify.get<{Params: {id: string}}>('/:id', async (request, reply) => {
+		const {id: sessionId} = request.params;
 		const userId = request.user!.userId;
 
 		try {
@@ -93,12 +93,12 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				return { state };
+				return {state};
 			}
 
 			// Load from database if not in memory
 			const dbSession = await prisma.session.findUnique({
-				where: { id: sessionId },
+				where: {id: sessionId},
 			});
 
 			if (!dbSession) {
@@ -131,7 +131,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				finalMetrics: dbSession.finalMetrics,
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get session');
+			request.log.error({error}, 'Failed to get session');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -144,14 +144,14 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 	 * GET /api/session/:id/history
 	 * Get session event history (for replay/analysis)
 	 */
-	fastify.get<{ Params: { id: string } }>('/:id/history', async (request, reply) => {
-		const { id: sessionId } = request.params;
+	fastify.get<{Params: {id: string}}>('/:id/history', async (request, reply) => {
+		const {id: sessionId} = request.params;
 		const userId = request.user!.userId;
 
 		try {
 			// Verify session access
 			const session = await prisma.session.findUnique({
-				where: { id: sessionId },
+				where: {id: sessionId},
 			});
 
 			if (!session) {
@@ -176,8 +176,8 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 			// Get event log
 			const events = await prisma.eventLog.findMany({
-				where: { sessionId: sessionId },
-				orderBy: { sequenceId: 'asc' },
+				where: {sessionId: sessionId},
+				orderBy: {sequenceId: 'asc'},
 			});
 
 			const response: ISessionHistoryResponse = {
@@ -188,7 +188,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 					sequenceId: events.length,
 					lastUpdateTimestamp: (session.endedAt || session.updatedAt).getTime(),
 					status: session.status,
-					metrics: (session.finalMetrics as { trust: number; stress: number; compliance: number; mood: 'CALM' | 'ANXIOUS' | 'DEFENSIVE' | 'BREAKTHROUGH' }) || {
+					metrics: (session.finalMetrics as {trust: number; stress: number; compliance: number; mood: 'CALM' | 'ANXIOUS' | 'DEFENSIVE' | 'BREAKTHROUGH'}) || {
 						trust: 0,
 						stress: 0,
 						compliance: 0,
@@ -216,7 +216,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 
 			return response;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get session history');
+			request.log.error({error}, 'Failed to get session history');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -229,12 +229,12 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 	 * POST /api/session/:id/surrender
 	 * End session early (patient gives up)
 	 */
-	fastify.post<{ Params: { id: string }; Body: { reason?: string } }>(
+	fastify.post<{Params: {id: string}; Body: {reason?: string}}>(
 		'/:id/surrender',
 		async (request, reply) => {
-			const { id: sessionId } = request.params;
+			const {id: sessionId} = request.params;
 			const userId = request.user!.userId;
-			const { reason } = request.body;
+			const {reason} = request.body;
 
 			try {
 				const session = wsManager.getSession(sessionId);
@@ -261,9 +261,9 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				// Terminate session
 				session.engine.terminate(reason || 'Player surrendered');
 
-				return { success: true, message: 'Session ended' };
+				return {success: true, message: 'Session ended'};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to surrender session');
+				request.log.error({error}, 'Failed to surrender session');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',
@@ -284,12 +284,12 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 			const sessions = await prisma.session.findMany({
 				where: {
 					OR: [
-						{ patientId: userId },
-						{ doctorId: userId },
+						{patientId: userId},
+						{doctorId: userId},
 					],
-					status: { in: ['WAITING', 'ACTIVE', 'PAUSED'] },
+					status: {in: ['WAITING', 'ACTIVE', 'PAUSED']},
 				},
-				orderBy: { createdAt: 'desc' },
+				orderBy: {createdAt: 'desc'},
 			});
 
 			return {
@@ -301,7 +301,7 @@ export async function sessionRoutes(fastify: FastifyInstance) {
 				})),
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to list active sessions');
+			request.log.error({error}, 'Failed to list active sessions');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -323,7 +323,7 @@ async function findAvailableDoctor(): Promise<string | null> {
 			NOT: {
 				doctorSessions: {
 					some: {
-						status: { in: ['WAITING', 'ACTIVE'] },
+						status: {in: ['WAITING', 'ACTIVE']},
 					},
 				},
 			},

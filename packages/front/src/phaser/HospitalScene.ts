@@ -18,9 +18,9 @@ export default class HospitalScene extends Phaser.Scene {
 	}
 
 	private readonly FOLDERS_LAYOUT = [
-		{ folder:"folder1", x: 0.2, y: 0.64 },
-		{ folder:"folder2", x: 0.5, y: 0.59 },
-		{ folder:"folder3", x: 0.8, y: 0.64 },
+		{folder:"folder1", x: 0.2, y: 0.64},
+		{folder:"folder2", x: 0.5, y: 0.59},
+		{folder:"folder3", x: 0.8, y: 0.64},
 	];
 
 	private folders: Record<string, Phaser.GameObjects.Sprite> = {};
@@ -116,7 +116,7 @@ export default class HospitalScene extends Phaser.Scene {
 	}
 
 	private makeFolderInteractive(folder: Phaser.GameObjects.Sprite, folderName: string) {
-		folder.setInteractive({ draggable: true });
+		folder.setInteractive({draggable: true});
 		folder.on("pointerover", () => {
 			const baseScale = folder.getData("baseScale");
 			folder.setScale(baseScale * 1.05);

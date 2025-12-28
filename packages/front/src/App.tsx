@@ -1,18 +1,18 @@
 import Login from './login.tsx'
 import Home from './home.tsx'
 import './styles/index.css'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import {AuthProvider, useAuth} from './contexts/AuthContext'
 
 function AppContent() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const {user, isLoading, isAuthenticated, logout} = useAuth();
 
   if (isLoading) {
     return <div className="loading">Chargement...</div>;
-  }
+ }
 
   const handleLogout = async () => {
     await logout();
-  };
+ };
 
   return (
     <>

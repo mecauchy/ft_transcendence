@@ -3,7 +3,7 @@ import Popup from "./ui/Popup";
 
 export default class ShopScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
-	private readonly basket_position = { x: 0.5, y: 0.85 };
+	private readonly basket_position = {x: 0.5, y: 0.85};
 	
 
 	private bg!: Phaser.GameObjects.Image;
@@ -15,20 +15,20 @@ export default class ShopScene extends Phaser.Scene {
 	private popup_active: boolean = true;
 
 	private readonly ITEMS_LAYOUT = [
-		{ item: "duck", x: 0.1, y: 0.15 },
-		{ item: "ball", x: 0.3, y: 0.15 },
-		{ item: "anxiety pills", x: 0.5, y: 0.15 },
-		{ item: "bear", x: 0.7, y: 0.15 },
-		{ item: "book", x: 0.88, y: 0.15 },
-		{ item: "camera", x: 0.1, y: 0.37 },
-		{ item: "chocolate", x: 0.3, y: 0.37 },
-		{ item: "controller", x: 0.5, y: 0.37 },
-		{ item: "flower", x: 0.7, y: 0.37 },
-		{ item: "phone", x: 0.88, y: 0.37 },
-		{ item: "sleeping pills", x: 0.1, y: 0.57 },
-		{ item: "soap", x: 0.35, y: 0.57 },
-		{ item: "water", x: 0.65, y: 0.57 },
-		{ item: "wine", x: 0.88, y: 0.57 },
+		{item: "duck", x: 0.1, y: 0.15},
+		{item: "ball", x: 0.3, y: 0.15},
+		{item: "anxiety pills", x: 0.5, y: 0.15},
+		{item: "bear", x: 0.7, y: 0.15},
+		{item: "book", x: 0.88, y: 0.15},
+		{item: "camera", x: 0.1, y: 0.37},
+		{item: "chocolate", x: 0.3, y: 0.37},
+		{item: "controller", x: 0.5, y: 0.37},
+		{item: "flower", x: 0.7, y: 0.37},
+		{item: "phone", x: 0.88, y: 0.37},
+		{item: "sleeping pills", x: 0.1, y: 0.57},
+		{item: "soap", x: 0.35, y: 0.57},
+		{item: "water", x: 0.65, y: 0.57},
+		{item: "wine", x: 0.88, y: 0.57},
 	];
 
 	private items_picks: string[] = [];

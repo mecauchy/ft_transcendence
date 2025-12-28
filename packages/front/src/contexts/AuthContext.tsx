@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { api } from '../api/client';
-import type { ApiError } from '../api/client';
+import {createContext, useContext, useState, useEffect, type ReactNode} from 'react';
+import {api} from '../api/client';
+import type {ApiError} from '../api/client';
 
 interface User {
 	userId: string;
@@ -25,7 +25,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({children}: {children: ReactNode}) {
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const login = async (email: string, password: string) => {
 		try {
-			const response = await api.login({ email, password });
+			const response = await api.login({email, password});
 			setUser({
 				...response.user,
 				displayName: response.user.username,
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const register = async (username: string, email: string, password: string, dob: string) => {
 		try {
-			await api.register({ username, email, password, dob });
+			await api.register({username, email, password, dob});
 			// after signup, auto log in
 			await login(email, password);
 		} catch (error) {

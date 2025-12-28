@@ -1,5 +1,5 @@
 // packages/shared/types/event.ts
-import { IInvestigationState } from "./state";
+import {IInvestigationState} from "./state";
 
 export enum EventType {
 	// System Events

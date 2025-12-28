@@ -47,7 +47,7 @@ fastify.setErrorHandler(
 		reply: FastifyReply
 	) => {
 		// log error safely
-		fastify.log.error({ err: error, url: request.url, method: request.method }, 'Request error');
+		fastify.log.error({err: error, url: request.url, method: request.method}, 'Request error');
 		
 		// send error response
 		if (!reply.sent) {
@@ -75,7 +75,7 @@ async function	start() {
 		});
 
 		redis.on('error', (err: Error) => {
-			fastify.log.error({ error: err }, 'Redis error occurred');
+			fastify.log.error({error: err}, 'Redis error occurred');
 		});
 
 
@@ -314,7 +314,7 @@ async function	start() {
 				connection.socket.on('message', async (message: any) => {
 					try {
 						const data = JSON.parse(message.toString());
-						request.log.info({ type: data.type }, 'Received WebSocket message');
+						request.log.info({type: data.type}, 'Received WebSocket message');
 
 						// echo message back
 						connection.socket.send(
@@ -325,7 +325,7 @@ async function	start() {
 							})
 						);
 					} catch (err: any) {
-						request.log.error({ error: err }, 'Failed to parse WebSocket message');
+						request.log.error({error: err}, 'Failed to parse WebSocket message');
 						connection.socket.send(
 							JSON.stringify({
 								type:		'ERROR',

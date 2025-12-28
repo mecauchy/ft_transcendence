@@ -25,23 +25,23 @@ export default class WorldMapScene extends Phaser.Scene {
 	private basePlayerScale = 0.3;
 
 	// Normalized building positions
-	private posShop = { x: 0.28, y: 0.34 };
-	private posHospital = { x: 0.09, y: 0.32 };
-	private posHouse = { x: 0.7, y: 0.19 };
-	private posParking = { x: 0.72, y: 0.74 };
-	private posCoffee = { x: 0.7, y: 0.58 };
+	private posShop = {x: 0.28, y: 0.34};
+	private posHospital = {x: 0.09, y: 0.32};
+	private posHouse = {x: 0.7, y: 0.19};
+	private posParking = {x: 0.72, y: 0.74};
+	private posCoffee = {x: 0.7, y: 0.58};
 
 	private waypoints = {
-		shop: { x: 0.25, y: 0.49 },
-		hospital: { x: 0.1, y: 0.49 },
-		house: { x: 0.7, y: 0.31 },
-		parking: { x: 0.79, y: 0.75 },
-		coffee: { x: 0.663, y: 0.73 },
-		center: { x: 0.5, y: 0.5 },
-		street: { x: 0.82, y: 0.4 },
+		shop: {x: 0.25, y: 0.49},
+		hospital: {x: 0.1, y: 0.49},
+		house: {x: 0.7, y: 0.31},
+		parking: {x: 0.79, y: 0.75},
+		coffee: {x: 0.663, y: 0.73},
+		center: {x: 0.5, y: 0.5},
+		street: {x: 0.82, y: 0.4},
 	}
 
-	private routes: Record<string, Array<{ x: number; y: number }>> = {
+	private routes: Record<string, Array<{x: number; y: number}>> = {
 		shop: [
 			this.waypoints.center,
 			this.waypoints.shop,
@@ -67,7 +67,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		],
 	};
 
-	private moveQueue: Array<{ x: number; y: number }> = [];
+	private moveQueue: Array<{x: number; y: number}> = [];
 	private isMoving = false;
 	private moveSpeed = 0.25;
 
@@ -112,11 +112,11 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parking = this.add.sprite(0, 0, "parking");
 		this.coffee = this.add.sprite(0, 0, "coffee");
 
-		this.shopLabel = this.add.text(0, 0, "Shop", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.hospitalLabel = this.add.text(0, 0, "Hospital", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.houseLabel = this.add.text(0, 0, "House", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.parkingLabel = this.add.text(0, 0, "Parking", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.coffeeLabel = this.add.text(0, 0, "Coffee", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
+		this.shopLabel = this.add.text(0, 0, "Shop", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.hospitalLabel = this.add.text(0, 0, "Hospital", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.houseLabel = this.add.text(0, 0, "House", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.parkingLabel = this.add.text(0, 0, "Parking", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.coffeeLabel = this.add.text(0, 0, "Coffee", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
 
 		this.popup = new Popup(this);
 		this.centerScene();
@@ -146,7 +146,7 @@ export default class WorldMapScene extends Phaser.Scene {
 	// Places a building using normalized coordinates relative to the map
 	private placeBuilding(
 		sprite: Phaser.GameObjects.Sprite,
-		pos: { x: number; y: number },
+		pos: {x: number; y: number},
 		size: number
 	) {
 		sprite.x = this.bg.x + (pos.x - 0.5) * size;
@@ -256,14 +256,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-down",
 			frames: [
-				{ key: "nurse-down-1" },
-				{ key: "nurse-down-2" },
-				{ key: "nurse-down-3" },
-				{ key: "nurse-down-4" },
-				{ key: "nurse-down-5" },
-				{ key: "nurse-down-6" },
-				{ key: "nurse-down-7" },
-				{ key: "nurse-down-8" },
+				{key: "nurse-down-1"},
+				{key: "nurse-down-2"},
+				{key: "nurse-down-3"},
+				{key: "nurse-down-4"},
+				{key: "nurse-down-5"},
+				{key: "nurse-down-6"},
+				{key: "nurse-down-7"},
+				{key: "nurse-down-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -272,14 +272,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-left",
 			frames: [
-				{ key: "nurse-left-1" },
-				{ key: "nurse-left-2" },
-				{ key: "nurse-left-3" },
-				{ key: "nurse-left-4" },
-				{ key: "nurse-left-5" },
-				{ key: "nurse-left-6" },
-				{ key: "nurse-left-7" },
-				{ key: "nurse-left-8" },
+				{key: "nurse-left-1"},
+				{key: "nurse-left-2"},
+				{key: "nurse-left-3"},
+				{key: "nurse-left-4"},
+				{key: "nurse-left-5"},
+				{key: "nurse-left-6"},
+				{key: "nurse-left-7"},
+				{key: "nurse-left-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -288,14 +288,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-right",
 			frames: [
-				{ key: "nurse-right-1" },
-				{ key: "nurse-right-2" },
-				{ key: "nurse-right-3" },
-				{ key: "nurse-right-4" },
-				{ key: "nurse-right-5" },
-				{ key: "nurse-right-6" },
-				{ key: "nurse-right-7" },
-				{ key: "nurse-right-8" },
+				{key: "nurse-right-1"},
+				{key: "nurse-right-2"},
+				{key: "nurse-right-3"},
+				{key: "nurse-right-4"},
+				{key: "nurse-right-5"},
+				{key: "nurse-right-6"},
+				{key: "nurse-right-7"},
+				{key: "nurse-right-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -304,11 +304,11 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-up",
 			frames: [
-				{ key: "nurse-up-1" },
-				{ key: "nurse-up-2" },
-				{ key: "nurse-up-3" },
-				{ key: "nurse-up-4" },
-				{ key: "nurse-up-5" },
+				{key: "nurse-up-1"},
+				{key: "nurse-up-2"},
+				{key: "nurse-up-3"},
+				{key: "nurse-up-4"},
+				{key: "nurse-up-5"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -378,7 +378,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		}
 	}
 
-	private goPopup(target: { x: number; y: number }) {
+	private goPopup(target: {x: number; y: number}) {
 		let locationName = "";
 		if (target === this.waypoints.shop) locationName = "Shop";
 		else if (target === this.waypoints.hospital) locationName = "Hospital";

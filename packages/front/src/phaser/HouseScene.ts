@@ -46,7 +46,7 @@ export default class HouseScene extends Phaser.Scene {
 	private keyS!: Phaser.Input.Keyboard.Key;
 
 	constructor() {
-		super({ key: "HouseScene" });
+		super({key: "HouseScene"});
 	}
 
 	preload() {}
@@ -166,13 +166,13 @@ export default class HouseScene extends Phaser.Scene {
 			this.offsetX + this.gameSize * 0.25,
 			this.offsetY + this.gameSize * 0.1,
 			this.score1.toString(),
-			{ fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
+			{fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
 		).setOrigin(0.5);
 		this.scoreText2 = this.add.text(
 			this.offsetX + this.gameSize * 0.75,
 			this.offsetY + this.gameSize * 0.1,
 			this.score2.toString(),
-			{ fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
+			{fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
 		).setOrigin(0.5);
 	}
 

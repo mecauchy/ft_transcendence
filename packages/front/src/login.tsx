@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import {useState} from 'react'
 import './styles/login.css'
 
 function Login({onLogin}: {onLogin: (username: string) => void}) {
@@ -134,7 +134,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			</button>
 		</form>
 	  </div>
-	  }
+	 }
 	  {registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleRegister} className='login_form'>
@@ -212,7 +212,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			</button>
 		</form>
 	  </div>
-	  }
+	 }
 	  <div className='login_api'>
 		<p>Se connecter avec :</p>
 		<div className='login_api_buttons'>

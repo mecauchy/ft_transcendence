@@ -1,8 +1,8 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { authMiddleware } from '../middleware/auth';
-import { getUserXP, getXPHistory, getDailyXP, awardXP } from '../services/xp';
-import { checkAchievements } from '../services/achievements';
-import { config } from '../config';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {authMiddleware} from '../middleware/auth';
+import {getUserXP, getXPHistory, getDailyXP, awardXP} from '../services/xp';
+import {checkAchievements} from '../services/achievements';
+import {config} from '../config';
 
 export async function xpRoutes(fastify: FastifyInstance) {
 	// auth middleware
@@ -16,7 +16,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 			const xp = await getUserXP(userId);
 			return xp;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get user XP');
+			request.log.error({error}, 'Failed to get user XP');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -26,7 +26,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 	});
 
 	// xp history for curr user from GET
-	fastify.get<{ Querystring: { limit?: string; offset?: string } }>(
+	fastify.get<{Querystring: {limit?: string; offset?: string}}>(
 		'/history',
 		async (request, reply) => {
 			const userId = request.user!.userId;
@@ -35,9 +35,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 
 			try {
 				const history = await getXPHistory(userId, limit, offset);
-				return { history };
+				return {history};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get XP history');
+				request.log.error({error}, 'Failed to get XP history');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',
@@ -48,7 +48,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 	);
 
 	// daily xp breakdown from GET
-	fastify.get<{ Querystring: { days?: string } }>(
+	fastify.get<{Querystring: {days?: string}}>(
 		'/daily',
 		async (request, reply) => {
 			const userId = request.user!.userId;
@@ -56,9 +56,9 @@ export async function xpRoutes(fastify: FastifyInstance) {
 
 			try {
 				const dailyXP = await getDailyXP(userId, days);
-				return { dailyXP };
+				return {dailyXP};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get daily XP');
+				request.log.error({error}, 'Failed to get daily XP');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',
@@ -70,7 +70,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 
 	// award xp to user from POST
 	fastify.post<{
-		Body: { userId: string; amount: number; reason: string; sessionId?: string };
+		Body: {userId: string; amount: number; reason: string; sessionId?: string};
 	}>('/award', async (request, reply) => {
 		// Check if user is admin or internal service
 		if (request.user!.role !== 'ADMIN') {
@@ -81,7 +81,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		const { userId, amount, reason, sessionId } = request.body;
+		const {userId, amount, reason, sessionId} = request.body;
 
 		if (!userId || typeof amount !== 'number' || amount <= 0 || !reason) {
 			return reply.status(400).send({
@@ -112,7 +112,7 @@ export async function xpRoutes(fastify: FastifyInstance) {
 				})),
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to award XP');
+			request.log.error({error}, 'Failed to award XP');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',

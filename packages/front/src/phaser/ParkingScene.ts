@@ -62,7 +62,7 @@ export default class ParkingScene extends Phaser.Scene {
 		const cy = Math.round(this.scale.height / 2);
 		this.breathe_circle = this.add.circle(cx, cy, 60, 0x88cffa)
 
-		this.breathe_text = this.add.text(cx, cy, "Inspire", { fontSize: "24px", color: "#ffffff" }).setOrigin(0.5);
+		this.breathe_text = this.add.text(cx, cy, "Inspire", {fontSize: "24px", color: "#ffffff"}).setOrigin(0.5);
 
 		const breatheIn = () => {
 			this.breathe_text.setText("Inspire");

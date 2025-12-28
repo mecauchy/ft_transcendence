@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 import type {
 	IInvestigationState,
 	IInventoryItem,
@@ -19,7 +19,7 @@ interface IScenarioNode {
 	id: string;
 	type: 'dialogue' | 'choice' | 'event' | 'ending';
 	content?: string;
-	choices?: { id: string; text: string; nextNodeId: string; effects?: MetricEffects }[];
+	choices?: {id: string; text: string; nextNodeId: string; effects?: MetricEffects}[];
 	nextNodeId?: string;
 	effects?: MetricEffects;
 	requirements?: Record<string, boolean>; // required scenario narrative flags
@@ -104,7 +104,7 @@ export class NarrativeEngine {
 
 	// get curr state
 	getState(): IInvestigationState {
-		return { ...this.state };
+		return {...this.state};
 	}
 
 	// get event log
@@ -144,7 +144,7 @@ export class NarrativeEngine {
 		this.eventLog.push(event);
 
 		let stateChanged = false;
-		const previousMetrics = { ...this.state.metrics };
+		const previousMetrics = {...this.state.metrics};
 
 		switch (event.type) {
 			case EventType.ITEM_INTERACTION:
@@ -201,7 +201,7 @@ export class NarrativeEngine {
 
 	// handle interacct with item
 	private handleItemInteraction(event: IItemInteractionEvent): boolean {
-		const { itemId, action, targetId } = event.payload;
+		const {itemId, action, targetId} = event.payload;
 
 		// find item index
 		const itemIndex = this.state.inventory.findIndex(i => i.id === itemId);
@@ -219,7 +219,7 @@ export class NarrativeEngine {
 		switch (action) {
 			case 'INSPECT':
 				// inspecting increases stress
-				this.applyMetricChange({ stress: 0.05 });
+				this.applyMetricChange({stress: 0.05});
 				
 				// check if item unlocks something
 				if (item.type === 'DOCUMENT' || item.type === 'CONCEPTUAL') {
@@ -230,7 +230,7 @@ export class NarrativeEngine {
 			case 'PICK_UP':
 				if (itemIndex === -1) {
 					// add item to inventory
-					this.state.inventory.push({ ...item, status: 'HELD', acquiredAt: Date.now() });
+					this.state.inventory.push({...item, status: 'HELD', acquiredAt: Date.now()});
 				} else {
 					this.state.inventory[itemIndex].status = 'HELD';
 				}
@@ -241,7 +241,7 @@ export class NarrativeEngine {
 					// handle combination logic
 					this.state.narrativeFlags[`COMBINED_${itemId}_${targetId}`] = true;
 					// solving a problem reduces stress
-					this.applyMetricChange({ stress: -0.1, trust: 0.05 });
+					this.applyMetricChange({stress: -0.1, trust: 0.05});
 				}
 				break;
 		}
@@ -251,7 +251,7 @@ export class NarrativeEngine {
 
 	// handle dialogue
 	private handleDialogueChoice(event: IDialogueChoiceEvent): boolean {
-		const { nodeId, choiceId } = event.payload;
+		const {nodeId, choiceId} = event.payload;
 
 		// check if correct node (protect choices out of bounds)
 		if (this.state.actionNodeId !== nodeId) {
@@ -288,18 +288,18 @@ export class NarrativeEngine {
 
 	// handle doctor intervention
 	private handleIntervention(event: IInterventionTriggeredEvent): boolean {
-		const { techniqueId, intensity, targetMetric } = event.payload;
+		const {techniqueId, intensity, targetMetric} = event.payload;
 
 		// use intensity var to affect targeted metric
 		const effect = (intensity / 10) * 0.15; // Max 15% change per intervention
 
 		if (targetMetric === 'STRESS') {
 			// if it reduces stress
-			this.applyMetricChange({ stress: -effect });
+			this.applyMetricChange({stress: -effect});
 		} else if (targetMetric === 'TRUST') {
 			// if it builds trust
 			const trustEffect = intensity > 7 ? effect * 0.8 : effect;
-			this.applyMetricChange({ trust: trustEffect });
+			this.applyMetricChange({trust: trustEffect});
 		}
 
 		// record intervention in flags
@@ -364,7 +364,7 @@ export class NarrativeEngine {
 
 	// update mood
 	private updateMood(): void {
-		const { stress, trust } = this.state.metrics;
+		const {stress, trust} = this.state.metrics;
 
 		if (stress > 0.8) {
 			this.state.metrics.mood = 'ANXIOUS';

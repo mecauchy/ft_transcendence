@@ -1,5 +1,5 @@
-import { prisma } from '../db';
-import { config } from '../config';
+import {prisma} from '../db';
+import {config} from '../config';
 import Redis from 'ioredis';
 
 const redis = new Redis({
@@ -57,8 +57,8 @@ export async function getUserXP(userId: string): Promise<UserXP> {
 	}
 	
 	const result = await prisma.xpLog.aggregate({
-		where: { userId: BigInt(userId) },
-		_sum: { amount: true },
+		where: {userId: BigInt(userId)},
+		_sum: {amount: true},
 	});
 	
 	const totalXP = result._sum.amount || 0;
@@ -88,7 +88,7 @@ export async function awardXP(
 	amount: number,
 	reason: string,
 	sessionId?: string
-): Promise<{ xpLog: XPLog; levelUp: boolean; newLevel: number }> {
+): Promise<{xpLog: XPLog; levelUp: boolean; newLevel: number}> {
 	// get curr xp for level check
 	const beforeXP = await getUserXP(userId);
 	const userIdBigInt = BigInt(userId);
@@ -110,7 +110,7 @@ export async function awardXP(
 		const newLevel = calculateLevel(newTotalXP);
 		
 		await tx.user.update({
-			where: { id: userIdBigInt },
+			where: {id: userIdBigInt},
 			data: {
 				currentLevel: newLevel,
 				totalXp: newTotalXP,
@@ -137,7 +137,7 @@ export async function awardXP(
 	const newLevel = calculateLevel(newTotalXP);
 	const levelUp = newLevel > beforeXP.level;
 	
-	return { xpLog, levelUp, newLevel };
+	return {xpLog, levelUp, newLevel};
 }
 
 // get xp history for a user
@@ -147,8 +147,8 @@ export async function getXPHistory(
 	offset: number = 0
 ): Promise<XPLog[]> {
 	const logs = await prisma.xpLog.findMany({
-		where: { userId: BigInt(userId) },
-		orderBy: { createdAt: 'desc' },
+		where: {userId: BigInt(userId)},
+		orderBy: {createdAt: 'desc'},
 		take: limit,
 		skip: offset,
 	});
@@ -164,16 +164,16 @@ export async function getXPHistory(
 }
 
 // get daily xp summary
-export async function getDailyXP(userId: string, days: number = 30): Promise<{ date: string; amount: number }[]> {
+export async function getDailyXP(userId: string, days: number = 30): Promise<{date: string; amount: number}[]> {
 	const startDate = new Date();
 	startDate.setDate(startDate.getDate() - days);
 	
 	const logs = await prisma.xpLog.findMany({
 		where: {
 			userId: BigInt(userId),
-			createdAt: { gte: startDate },
+			createdAt: {gte: startDate},
 		},
-		orderBy: { createdAt: 'desc' },
+		orderBy: {createdAt: 'desc'},
 	});
 	
 	// group by date
@@ -184,6 +184,6 @@ export async function getDailyXP(userId: string, days: number = 30): Promise<{ d
 	}
 	
 	return Array.from(dailyMap.entries())
-		.map(([date, amount]) => ({ date, amount }))
+		.map(([date, amount]) => ({date, amount}))
 		.sort((a, b) => b.date.localeCompare(a.date));
 }

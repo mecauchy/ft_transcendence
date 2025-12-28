@@ -1,7 +1,7 @@
 // packages/shared/types/session.ts
 
-import { GameEvent } from "./event";
-import { IInvestigationState } from "./state";
+import {GameEvent} from "./event";
+import {IInvestigationState} from "./state";
 
 export interface ISessionStartRequest {
 	patientId: string;      // User ID of the Patient

@@ -467,7 +467,7 @@ services:
       - logging_net
       - service_mesh
     healthcheck:
-      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => { if (r.statusCode !== 200 && r.statusCode !== 302) { console.error(\"Status: \" + r.statusCode); process.exit(1); } process.exit(0); }).on(\"error\", (e) => { console.error(e); process.exit(1); })'"
+      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => {if (r.statusCode !== 200 && r.statusCode !== 302) {console.error(\"Status: \" + r.statusCode); process.exit(1);} process.exit(0);}).on(\"error\", (e) => {console.error(e); process.exit(1);})'"
       interval: 30s
       timeout: 10s
       retries: 5

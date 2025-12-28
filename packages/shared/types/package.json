@@ -6,10 +6,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc"
-  },
+ },
   "devDependencies": {
     "typescript": "^5.9.3"
-  },
+ },
   "keywords": ["types", "contracts"],
   "author": "",
   "license": "MIT"

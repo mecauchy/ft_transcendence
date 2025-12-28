@@ -1,12 +1,12 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../db';
-import { authMiddleware } from '../middleware/auth';
-import { config } from '../config';
-import type { IUserProfile } from '@speak-up/shared';
-import { UserRole } from '@speak-up/shared';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {prisma} from '../db';
+import {authMiddleware} from '../middleware/auth';
+import {config} from '../config';
+import type {IUserProfile} from '@speak-up/shared';
+import {UserRole} from '@speak-up/shared';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 
 export async function profileRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
@@ -18,7 +18,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 		try {
 			const user = await prisma.user.findUnique({
-				where: { id: userId },
+				where: {id: userId},
 				select: {
 					id: true,
 					username: true,
@@ -59,7 +59,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			let avgTrust = 0;
 			if (sessionsCompleted > 0) {
 				const totalTrust = sessions.reduce((sum, s) => {
-					const metrics = s.finalMetrics as { trust?: number } | null;
+					const metrics = s.finalMetrics as {trust?: number} | null;
 					return sum + (metrics?.trust || 0);
 				}, 0);
 				avgTrust = totalTrust / sessionsCompleted;
@@ -89,7 +89,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			return profile;
 		} catch (error) {
-			request.log.error({ error }, 'Failed to fetch user profile');
+			request.log.error({error}, 'Failed to fetch user profile');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -115,16 +115,16 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		};
 	}>('/me', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const { username, email, preferences } = request.body;
+		const {username, email, preferences} = request.body;
 
 		try {
 			// update user table if email or username given
 			if (username || email) {
 				await prisma.user.update({
-					where: { id: userId },
+					where: {id: userId},
 					data: {
-						...(username && { username }),
-						...(email && { email }),
+						...(username && {username}),
+						...(email && {email}),
 						updatedAt: new Date(),
 					},
 				});
@@ -133,10 +133,10 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			// update settings if preferences given
 			if (preferences) {
 				await prisma.settings.upsert({
-					where: { userId },
+					where: {userId},
 					update: {
-						...(preferences.language && { locale: preferences.language }),
-						...(preferences.theme && { colour: preferences.theme }),
+						...(preferences.language && {locale: preferences.language}),
+						...(preferences.theme && {colour: preferences.theme}),
 					},
 					create: {
 						userId,
@@ -146,9 +146,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			return { success: true, message: 'Profile updated successfully' };
+			return {success: true, message: 'Profile updated successfully'};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to update profile');
+			request.log.error({error}, 'Failed to update profile');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -187,7 +187,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			const filePath = path.join(config.upload.avatarPath, newFilename);
 
 			// directory sanity
-			await fs.mkdir(config.upload.avatarPath, { recursive: true });
+			await fs.mkdir(config.upload.avatarPath, {recursive: true});
 
 			// save file
 			const buffer = await file.toBuffer();
@@ -195,15 +195,15 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			// get old avatar for cleanup
 			const existingSettings = await prisma.settings.findUnique({
-				where: { userId },
-				select: { avatar: true },
+				where: {userId},
+				select: {avatar: true},
 			});
 
 			// update DB
 			const avatarUrl = `/uploads/avatars/${newFilename}`;
 			await prisma.settings.upsert({
-				where: { userId },
-				update: { avatar: avatarUrl },
+				where: {userId},
+				update: {avatar: avatarUrl},
 				create: {
 					userId,
 					avatar: avatarUrl,
@@ -216,9 +216,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				await fs.unlink(oldPath).catch(() => {}); // ignores error
 			}
 
-			return { success: true, url: avatarUrl };
+			return {success: true, url: avatarUrl};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to upload avatar');
+			request.log.error({error}, 'Failed to upload avatar');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -228,12 +228,12 @@ export async function profileRoutes(fastify: FastifyInstance) {
 	});
 
 	// get someone's profile
-	fastify.get<{ Params: { id: string } }>('/:id', async (request, reply) => {
-		const { id } = request.params;
+	fastify.get<{Params: {id: string}}>('/:id', async (request, reply) => {
+		const {id} = request.params;
 
 		try {
 			const user = await prisma.user.findUnique({
-				where: { id: BigInt(id) },
+				where: {id: BigInt(id)},
 				select: {
 					id: true,
 					username: true,
@@ -261,7 +261,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				role: user.role,
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to fetch user profile');
+			request.log.error({error}, 'Failed to fetch user profile');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect} from "react";
 import Navbar from "./components/navbar.tsx";
 import Game from "./game.tsx";
 import Profile from "./profile.tsx";
 import Settings from "./settings.tsx";
 
-function Home({ username, onLogout }: { username: string | null, onLogout: () => void }) {
+function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
 		const current = window.location.pathname.replace("/", "");
@@ -15,7 +15,7 @@ function Home({ username, onLogout }: { username: string | null, onLogout: () =>
 	};
 	const [page, setPage] = useState<string>(getInitialPage());	
 	useEffect(() => {
-		window.history.replaceState({ page: 'game' }, "", "/game");
+		window.history.replaceState({page: 'game'}, "", "/game");
 	}, []);
 	
 	//handlers
@@ -38,7 +38,7 @@ function Home({ username, onLogout }: { username: string | null, onLogout: () =>
 
 	const changePage = (newPage: string) => {
 		setPage(newPage);
-		window.history.pushState({ page: newPage }, '', `/${newPage}`);
+		window.history.pushState({page: newPage}, '', `/${newPage}`);
 	}
 
 	//render

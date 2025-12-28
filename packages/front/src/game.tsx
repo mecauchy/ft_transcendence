@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import {useState, useEffect, useRef} from "react";
 import Phaser from "phaser";
 import WorldMapScene from "./phaser/WorldMapScene";
 import ShopScene from "./phaser/ShopScene";

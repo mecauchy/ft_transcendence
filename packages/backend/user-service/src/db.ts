@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { readFileSync, existsSync } from 'fs';
+import {PrismaClient} from '@prisma/client';
+import {readFileSync, existsSync} from 'fs';
 
 const globalForPrisma = globalThis as unknown as {
 	prisma: PrismaClient | undefined;

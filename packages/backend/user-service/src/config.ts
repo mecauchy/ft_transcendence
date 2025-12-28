@@ -9,7 +9,7 @@ export const config = {
 		user: process.env.DB_USER || 'root_admin',
 		password: process.env.DB_PASSWORD || '',
 		database: process.env.DB_NAME || 'user_db',
-		ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+		ssl: process.env.NODE_ENV === 'production' ? {rejectUnauthorized: true} : false,
 	},
 
 	redis: {

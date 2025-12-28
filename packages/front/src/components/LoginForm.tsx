@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { api } from '../api/client';
-import type { ApiError } from '../api/client';
+import {useState} from 'react';
+import {api} from '../api/client';
+import type {ApiError} from '../api/client';
 import '../styles/login.css';
 
 interface LoginProps {
 	onLogin: (username: string) => void;
 }
 
-function Login({ onLogin }: LoginProps) {
+function Login({onLogin}: LoginProps) {
 
 	// default state
 	const [email, setEmail] = useState('');
@@ -38,7 +38,7 @@ function Login({ onLogin }: LoginProps) {
 		setIsLoading(true);
 
 		try {
-			const response = await api.login({ email, password });
+			const response = await api.login({email, password});
 			console.log('Login successful:', response.user);
 			onLogin(response.user.username);
 		} catch (err) {

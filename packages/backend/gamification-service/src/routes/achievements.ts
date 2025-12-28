@@ -1,5 +1,5 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { authMiddleware } from '../middleware/auth';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {authMiddleware} from '../middleware/auth';
 import {
 	getAllAchievements,
 	getUserAchievements,
@@ -15,9 +15,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 	fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
 		try {
 			const achievements = await getAllAchievements();
-			return { achievements };
+			return {achievements};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get achievements');
+			request.log.error({error}, 'Failed to get achievements');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -43,7 +43,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 				),
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get user achievements');
+			request.log.error({error}, 'Failed to get user achievements');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -53,10 +53,10 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 	});
 
 	// get specific achievement
-	fastify.get<{ Params: { id: string } }>(
+	fastify.get<{Params: {id: string}}>(
 		'/:id',
 		async (request, reply) => {
-			const { id } = request.params;
+			const {id} = request.params;
 			const userId = request.user!.userId;
 
 			try {
@@ -75,7 +75,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 				const userAchievements = await getUserAchievements(userId);
 				const isUnlocked = userAchievements.some((ua) => ua.achievementId === id);
 
-				let progress: { progress: number; total: number; percentage: number } | null = null;
+				let progress: {progress: number; total: number; percentage: number} | null = null;
 				if (!isUnlocked) {
 					try {
 						progress = await getAchievementProgress(userId, id);
@@ -94,7 +94,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 					progress,
 				};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get achievement');
+				request.log.error({error}, 'Failed to get achievement');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',
@@ -143,9 +143,9 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 				})
 			);
 
-			return { progress: progressList };
+			return {progress: progressList};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to get achievement progress');
+			request.log.error({error}, 'Failed to get achievement progress');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -156,7 +156,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 
 	// check and unlock achievements based on an event
 	fastify.post<{
-		Body: { userId: string; eventType: string; eventData: Record<string, unknown> };
+		Body: {userId: string; eventType: string; eventData: Record<string, unknown>};
 	}>('/check', async (request, reply) => {
 		// only admins can trigger this
 		if (request.user!.role !== 'ADMIN') {
@@ -167,7 +167,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		const { userId, eventType, eventData } = request.body;
+		const {userId, eventType, eventData} = request.body;
 
 		if (!userId || !eventType) {
 			return reply.status(400).send({
@@ -191,7 +191,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 				})),
 			};
 		} catch (error) {
-			request.log.error({ error }, 'Failed to check achievements');
+			request.log.error({error}, 'Failed to check achievements');
 			return reply.status(500).send({
 				statusCode: 500,
 				error: 'Internal Server Error',
@@ -201,7 +201,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 	});
 
 	// recently unlocked achievements global scope
-	fastify.get<{ Querystring: { limit?: string } }>(
+	fastify.get<{Querystring: {limit?: string}}>(
 		'/recent',
 		async (request, reply) => {
 			const limit = Math.min(parseInt(request.query.limit || '10'), 50);
@@ -213,7 +213,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 					limit,
 				};
 			} catch (error) {
-				request.log.error({ error }, 'Failed to get recent achievements');
+				request.log.error({error}, 'Failed to get recent achievements');
 				return reply.status(500).send({
 					statusCode: 500,
 					error: 'Internal Server Error',

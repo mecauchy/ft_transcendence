@@ -1,5 +1,5 @@
-import jwt, { SignOptions, JwtPayload } from 'jsonwebtoken';
-import { config } from '../config';
+import jwt, {SignOptions, JwtPayload} from 'jsonwebtoken';
+import {config} from '../config';
 import Redis from 'ioredis';
 
 // config redis for tokens
@@ -50,14 +50,14 @@ export async function generateTokens(payload: TokenPayload): Promise<GeneratedTo
 	const accessToken = jwt.sign(accessTokenPayload, config.jwt.secret, accessTokenOptions);
 	const refreshToken = jwt.sign(refreshTokenPayload, config.jwt.secret, refreshTokenOptions);
 
-	return { accessToken, refreshToken };
+	return {accessToken, refreshToken};
 }
 
 // verify a token
 export async function verifyAccessToken(token: string): Promise<TokenPayload> {
 	const decoded = jwt.verify(token, config.jwt.secret, {
 		issuer: config.jwt.issuer,
-	}) as JwtPayload & TokenPayload & { type: string };
+	}) as JwtPayload & TokenPayload & {type: string};
 
 	if (decoded.type !== 'access') {
 		throw new Error('Invalid token type');
@@ -80,7 +80,7 @@ export async function verifyAccessToken(token: string): Promise<TokenPayload> {
 export async function verifyRefreshToken(token: string): Promise<TokenPayload> {
 	const decoded = jwt.verify(token, config.jwt.secret, {
 		issuer: config.jwt.issuer,
-	}) as JwtPayload & TokenPayload & { type: string };
+	}) as JwtPayload & TokenPayload & {type: string};
 
 	if (decoded.type !== 'refresh') {
 		throw new Error('Invalid token type');
