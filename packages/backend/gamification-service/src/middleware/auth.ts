@@ -16,8 +16,8 @@ interface JWTPayload {
 	userId: string;
 	email: string;
 	role: string;
-	iat: number;
-	exp: number;
+	timeIssued: number;
+	timeExp: number;
 }
 
 // JWT middleware for auth

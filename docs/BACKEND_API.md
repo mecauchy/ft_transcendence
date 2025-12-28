@@ -65,8 +65,8 @@ interface JWTPayload {
   userId: string;      // User's database ID
   email: string;       // User's email
   role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
-  iat: number;         // Issued at timestamp
-  exp: number;         // Expiration timestamp
+  timeIssued: number;         // Issued at timestamp
+  timeExp: number;         // Expiration timestamp
 }
 ```
 

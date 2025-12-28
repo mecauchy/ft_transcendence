@@ -104,9 +104,9 @@ export async function blacklistToken(token: string): Promise<void> {
 		// decode
 		const decoded = jwt.decode(token) as JwtPayload;
 
-		if (decoded?.exp) {
+		if (decoded?.timeExp) {
 			// set blacklist entry with TTL matching token expiry
-			const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+			const ttl = decoded.timeExp - Math.floor(Date.now() / 1000);
 			if (ttl > 0) {
 				await redis.setex(`blacklist:${token}`, ttl, '1');
 			}

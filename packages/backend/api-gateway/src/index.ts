@@ -1,6 +1,4 @@
-// packages/backend/api-gateway/src/index.ts
-
-import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import Fastify, {FastifyRequest, FastifyReply} from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
@@ -10,11 +8,11 @@ import fastifyCookie from '@fastify/cookie';
 import session from '@fastify/session';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import { config } from './config';
-import { VaultClient } from './vault/client';
-import { authGuard, optionalAuth } from './middleware/auth';
+import {config} from './config';
+import {VaultClient} from './vault/client';
+import {authGuard, optionalAuth} from './middleware/auth';
 
-// Import shared contracts for type safety
+// import shared contracts
 import type {
 	IAuthResponse,
 	IUserProfile,
@@ -34,37 +32,42 @@ const fastify = Fastify({
 			},
 		},
 	},
-	trustProxy: false, // Disabled temporarily to avoid null socket crash in proxy responses
+	// disabled to avoid nullproxy crashes
+	trustProxy: false,
 	requestIdHeader: 'x-request-id',
 	requestIdLogLabel: 'reqId',
 });
 
-// Custom error handler to prevent crashes when socket is null during proxy responses
-fastify.setErrorHandler((error: Error & { statusCode?: number }, request: FastifyRequest, reply: FastifyReply) => {
-	// Safely log the error without accessing potentially null socket properties
-	fastify.log.error({ err: error, url: request.url, method: request.method }, 'Request error');
-	
-	// Send error response if not already sent
-	if (!reply.sent) {
-		reply.status(error.statusCode || 500).send({
-			statusCode: error.statusCode || 500,
-			error: error.name || 'Internal Server Error',
-			message: error.message || 'An unexpected error occurred',
-		});
+// custom err handler to avoid null socket proxy response
+fastify.setErrorHandler(
+	(
+		error: Error &
+		{statusCode?: number},
+		request: FastifyRequest,
+		reply: FastifyReply
+	) => {
+		// log error safely
+		fastify.log.error({ err: error, url: request.url, method: request.method }, 'Request error');
+		
+		// send error response
+		if (!reply.sent) {
+			reply.status(error.statusCode || 500).send({
+				statusCode:	error.statusCode	|| 500,
+				error:		error.name			|| 'Internal Server Error',
+				message:	error.message		|| 'An unexpected error occurred',
+			});
+		}
 	}
-});
+);
 
-// =====================================================
-// INFRASTRUCTURE SETUP
-// =====================================================
-async function start() {
+// setup infrastructure
+async function	start() {
+	// try to init redis client
 	try {
-
-		// Initialize redis client for rate limiting and presence tracking
 		const redis = new Redis({
-			host: config.redis.host,
-			port: config.redis.port,
-			retryStrategy: (times: number) => Math.min(times * 50, 2000), // Exponential backoff for retries
+			host:			config.redis.host,
+			port:			config.redis.port,
+			retryStrategy:	(times: number) => Math.min(times * 50, 2000), // expo retry delays
 		});
 
 		redis.on('connect', () => {
@@ -76,16 +79,15 @@ async function start() {
 		});
 
 
-		// Vault client for secret management
+		// init vault client
 		const vaultConfig = {
 			...config.vault,
-			token: config.vault.token,
+			token:	config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
 		await vault.authenticate();
 
-		// Register cookie and session middleware
-		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json
+		// register cookies and middleware
 		await fastify.register(fastifyCookie);
 		await fastify.register(session, {
 			secret: process.env.SESSION_SECRET || 'dev-session-secret-must-be-32-chars-long',
@@ -96,195 +98,198 @@ async function start() {
 			},
 		});
 		
-		// =====================================================
-		// MIDDLEWARE
-		// =====================================================
-
-		// Helmet for security headers
+		// middleware init security headers
 		await fastify.register(helmet, {
 			contentSecurityPolicy: {
 				directives: {
-					defaultSrc: ["'self'"],
-					styleSrc: ["'self'", "'unsafe-inline'"],
-					scriptSrc: ["'self'"],
-					imgSrc: ["'self'", 'data:', 'https:'],
-					connectSrc: ["'self'", 'ws:', 'wss:'],
+					defaultSrc:	["'self'"],
+					styleSrc:	["'self'", "'unsafe-inline'"],
+					scriptSrc:	["'self'"],
+					imgSrc:		["'self'", 'data:', 'https:'],
+					connectSrc:	["'self'", 'ws:', 'wss:'],
 				},
 			},
 			hsts: {
-				maxAge: 31536000,
-				includeSubDomains: true,
-				preload: true,
+				maxAge:				31536000,
+				includeSubDomains:	true,
+				preload:			true,
 			},
 		});
 
-		// CORS configuration
-		await fastify.register( cors, {
-			origin: config.cors.origin,
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-			allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+		// config CORS
+		await fastify.register(cors, {
+			origin:			config.cors.origin,
+			methods:		['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+			allowedHeaders:	['Content-Type', 'Authorization', 'X-Request-ID'],
 		});
 
-		// Rate limiting with token bucket algorithm for DDoS protection
-		await fastify.register( rateLimit, {
-			max: config.rateLimit.max,
-			timeWindow: config.rateLimit.timeWindow,
-			redis: redis as any,
-			skipOnError: false,
-			continueExceeding: true,
-			enableDraftSpec: true,
-			cache: 10000,
-			allowList: ['127.0.0.1'],
+		// config rate limiting
+		await fastify.register(rateLimit, {
+			max:				config.rateLimit.max,
+			timeWindow:			config.rateLimit.timeWindow,
+			redis:				redis as any,
+			skipOnError:		false,
+			continueExceeding:	true,
+			enableDraftSpec:	true,
+			cache:				10000,
+			allowList:			['127.0.0.1'],
 		} as any);
 
-		// WebSocket support for game services
+		// support websocket for gameservices
 		await fastify.register(websocket, {
 			options: {
-				maxPayload: 1048576, // 1 MB
-				verifyClient: (info: any, next: (allow: boolean) => void) => {
-					// TODO: verify JWT token from query params or headers or cookies
+				maxPayload:		1048576, // 1MB max ws payload
+				verifyClient:	(info: any, next: (allow: boolean) => void) => {
+					// TODO - verify jwt tok here from query/headers/cookies
 					next(true);
 				},
 			},
 		});
 
-		// =====================================================
-		// HEALTH CHECK & MONITORING
-		// =====================================================
+		// healthcheck and monitoring
 		fastify.get('/health', async () => {
 			const vaultHealthy = await vault.isHealthy();
 			const redisHealthy = redis.status === 'ready';
 
 			return {
-				status: vaultHealthy && redisHealthy ? 'healthy' : 'degraded',
-				timestamp: new Date().toISOString(),
-				services: {
-					redis: redisHealthy,
-					vault: vaultHealthy,
+				status:		vaultHealthy && redisHealthy ? 'healthy' : 'degraded',
+				timestamp:	new Date().toISOString(),
+				services:	{
+					redis:	redisHealthy,
+					vault:	vaultHealthy,
 				},
-				uptime: process.uptime(),
-				memory: process.memoryUsage(),
+				uptime:		process.uptime(),
+				memory:		process.memoryUsage(),
 			};
 		});
 
-		// Prometheus metrics endpoint
+		// prometheus endpoint
 		fastify.get('/metrics', async () => {
 			return {
-				activeConnections: 0, // TODO: track from redis
-				totalRequests: 0, // TODO: implement counter
-				errorRates: 0, // TODO: implement error tracking
-				latency: 0, // TODO: implement latency tracking
+				// TODO: track all of these values
+				activeConnections:	0,
+				totalRequests:		0,
+				errorRates:			0,
+				latency:			0,
 			};
 		});
 
-		// =====================================================
-		// ROUTE: AUTH SERVICE (/api/auth/*)
-		// =====================================================
-		await fastify.register( proxy, {
-			upstream: config.services.authService,
-			prefix: '/api/auth',
-			rewritePrefix: '/api/auth',
-			http2: false,
+		// auth service route
+		await fastify.register(proxy, {
+			upstream:		config.services.authService,
+			prefix:			'/api/auth',
+			rewritePrefix:	'/api/auth',
+			http2:			false,
 			preHandler: async (request: FastifyRequest) => {
 				request.log.info(
-					{ path: request.url, method: request.method },
+					{path: request.url, method: request.method},
 					'Proxying request to Auth Service'
 				);
 			},
 		});
 
-		// =====================================================
-		// ROUTE: USER SERVICE (/api/users/*) - PROTECTED
-		// =====================================================
+		// user service route
 		await fastify.register(proxy, {
-			upstream: config.services.userService,
-			prefix: '/api/users',
-			rewritePrefix: '/api/users',
-			http2: false,
+			upstream:		config.services.userService,
+			prefix:			'/api/users',
+			rewritePrefix:	'/api/users',
+			http2:			false,
 			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
 				await authGuard(request, reply);
-				if (reply.sent) return; // Stop if authGuard sent a response
+				// if authguard sends response, stop here
+				if (reply.sent)
+					return;
 				request.log.info(
-					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					{path: request.url, method: request.method, userId: request.headers['x-user-id']},
 					'Proxying authenticated request to User Service'
 				);
 			},
 		});
 
-		// =====================================================
-		// ROUTE: GAME SERVICE (/api/game/*) - PROTECTED
-		// =====================================================
+		// game service route
 		await fastify.register(proxy, {
-			upstream: config.services.gameService,
-			prefix: '/api/game',
-			rewritePrefix: '/api/game',
-			http2: false,
+			upstream:		config.services.gameService,
+			prefix:			'/api/game',
+			rewritePrefix:	'/api/game',
+			http2:			false,
 			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
 				await authGuard(request, reply);
-				if (reply.sent) return;
+				// if authguard sends response, stop here
+				if (reply.sent)
+					return;
 				request.log.info(
-					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					{path: request.url, method: request.method, userId: request.headers['x-user-id']},
 					'Proxying authenticated request to Game Service'
 				);
 			},
 		});
 
-		// =====================================================
-		// ROUTE: GAMIFICATION SERVICE (/api/gamification/*) - PROTECTED
-		// =====================================================
+		// gamification service route
 		await fastify.register(proxy, {
-			upstream: config.services.gamificationService,
-			prefix: '/api/gamification',
-			rewritePrefix: '/api/gamification',
-			http2: false,
+			upstream:		config.services.gamificationService,
+			prefix:			'/api/gamification',
+			rewritePrefix:	'/api/gamification',
+			http2:			false,
 			preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
 				await authGuard(request, reply);
-				if (reply.sent) return;
+				// if authguard sends response, stop here
+				if (reply.sent)
+					return;
 				request.log.info(
-					{ path: request.url, method: request.method, userId: request.headers['x-user-id'] },
+					{path: request.url, method: request.method, userId: request.headers['x-user-id']},
 					'Proxying authenticated request to Gamification Service'
 				);
 			},
 		});
 
-		// =====================================================
-		// ROUTE: WEBSOCKET - INVESTIGATION (PROTECTED)
-		// =====================================================
-		await fastify.register(async (fastify: { get: (arg0: string, arg1: { websocket: any; }, arg2: (connection: any, request: FastifyRequest) => Promise<void>) => void; }) => {
-			fastify.get('/investigation', { websocket: true as any }, async (connection: any, request: FastifyRequest) => {
+		// websocket route
+		await fastify.register(async (fastify: {
+				get: (
+					arg0: string,
+					arg1: {websocket: any;},
+					arg2: (connection: any, request: FastifyRequest) => Promise<void>
+				) => void;
+			}) => {
+				fastify.get('/investigation', {websocket: true as any}, async (connection: any, request: FastifyRequest) => {
 				const token = (request.query as any).token as string;
 
+				// log new ws connection
 				request.log.info(
-					{ token: token ? '***' : 'missing', ip: request.ip },
+					{token: token ? '***' : 'missing', ip: request.ip},
 					'New WebSocket connection to Investigation Service'
 				);
 
-				// Validate JWT token from query params
+				// validate jwt tok from query params
 				if (!token) {
-					request.log.warn({ ip: request.ip }, 'WebSocket connection rejected: missing token');
+					request.log.warn({ip: request.ip}, 'WebSocket connection rejected: missing token');
 					connection.socket.send(JSON.stringify({
-						type: 'ERROR',
-						code: 'AUTH_REQUIRED',
-						message: 'Authentication token required. Pass ?token=<jwt> in query string.',
+						type:		'ERROR',
+						code:		'AUTH_REQUIRED',
+						message:	'Authentication token required. Pass ?token=<jwt> in query string.',
 					}));
 					connection.socket.close(4001, 'Authentication required');
 					return;
 				}
 
-				let userId: string;
-				let userRole: string;
+				let userId:		string;
+				let userRole:	string;
 
+				// try verify jwt token
 				try {
 					const decoded = jwt.verify(token, config.security.jwtSecret, {
-						algorithms: ['HS256'],
-					}) as { userId: string; role: string; requires2FA?: boolean; twoFAVerified?: boolean };
+						algorithms:	['HS256'],
+					}) as {
+						userId:			string;
+						role:			string;
+						requires2FA?:	boolean;
+						twoFAVerified?:	boolean};
 
-					// Check 2FA
+					// check 2FA
 					if (decoded.requires2FA && !decoded.twoFAVerified) {
 						connection.socket.send(JSON.stringify({
-							type: 'ERROR',
-							code: '2FA_REQUIRED',
-							message: '2FA verification required before connecting.',
+							type:		'ERROR',
+							code:		'2FA_REQUIRED',
+							message:	'2FA verification required before connecting.',
 						}));
 						connection.socket.close(4003, '2FA required');
 						return;
@@ -292,14 +297,15 @@ async function start() {
 
 					userId = decoded.userId;
 					userRole = decoded.role;
-					request.log.info({ userId, role: userRole }, 'WebSocket authenticated');
+					request.log.info({userId, role: userRole}, 'WebSocket authenticated');
 
 				} catch (err) {
-					request.log.warn({ ip: request.ip, error: (err as Error).message }, 'WebSocket auth failed');
+					// on token verify err, log to console
+					request.log.warn({ip: request.ip, error: (err as Error).message}, 'WebSocket auth failed');
 					connection.socket.send(JSON.stringify({
-						type: 'ERROR',
-						code: 'AUTH_FAILED',
-						message: 'Invalid or expired token.',
+						type:		'ERROR',
+						code:		'AUTH_FAILED',
+						message:	'Invalid or expired token.',
 					}));
 					connection.socket.close(4001, 'Authentication failed');
 					return;
@@ -310,21 +316,21 @@ async function start() {
 						const data = JSON.parse(message.toString());
 						request.log.info({ type: data.type }, 'Received WebSocket message');
 
-						// Placeholder: Echo message back
+						// echo message back
 						connection.socket.send(
 							JSON.stringify({
-								type: 'ACK',
-								message: 'Gateway received your message',
-								timestamp: Date.now(),
+								type:		'ACK',
+								message:	'Gateway received your message',
+								timestamp:	Date.now(),
 							})
 						);
 					} catch (err: any) {
 						request.log.error({ error: err }, 'Failed to parse WebSocket message');
 						connection.socket.send(
 							JSON.stringify({
-								type: 'ERROR',
-								message: 'Invalid message format',
-								timestamp: Date.now(),
+								type:		'ERROR',
+								message:	'Invalid message format',
+								timestamp:	Date.now(),
 							})
 						);
 					}
@@ -335,92 +341,82 @@ async function start() {
 				});
 
 				connection.socket.on('error', (err: any) => {
-					request.log.error({ error: err }, 'WebSocket error occurred');
+					request.log.error({error: err}, 'WebSocket error occurred');
 				});
 
-				// Send initial ACK
+				// send ack
 				connection.socket.send(
 					JSON.stringify({
-						type: 'CONNECTED',
-						message: 'Welcome to Speak-Up Investigation Engine',
-						timestamp: Date.now(),
+						type:		'CONNECTED',
+						message:	'Welcome to Speak-Up Investigation Engine',
+						timestamp:	Date.now(),
 					})
 				);
 			});
 		});
 
-		// =====================================================
-		// ERROR HANDLING
-		// =====================================================
+		// error handler
 		fastify.setErrorHandler((error: any, request: FastifyRequest) => {
-			request.log.error({ error }, 'Unhandled error occurred');
+			request.log.error({error}, 'Unhandled error occurred');
 
 			if (error?.statusCode === 429) {
 				return {
-					statusCode: 429,
-					error: 'Too Many Requests',
-					message: 'You have exceeded your request rate limit.',
+					statusCode:	429,
+					error:		'Too Many Requests',
+					message:	'You have exceeded your request rate limit.',
 				};
 			}
 
 			return {
-				statusCode: error?.statusCode || 500,
-				error: error?.name || 'Internal Server Error',
-				message: error?.message || 'An unexpected error occurred.',
-				requestId: request.id,
+				statusCode:	error?.statusCode	|| 500,
+				error:		error?.name			|| 'Internal Server Error',
+				message:	error?.message		|| 'An unexpected error occurred.',
+				requestId:	request.id,
 			};
 		});
 
-		// =====================================================
-		// START THE SERVER
-		// =====================================================
+		// finally, start the server
 		const address = await fastify.listen({
-			host: config.host,
-			port: config.port,
+			host:	config.host,
+			port:	config.port,
 		});
 
 		fastify.log.info(`
-╔════════════════════════════════════════════════════════════╗
-║           API Gateway - Speak Up Platform                  ║
-╚════════════════════════════════════════════════════════════╝
+|API Gateway - Speak Up Platform|
+	Server:	${address}
 
-  🚀 Server:        ${address}
-  
-  📡 Routes:
-     /api/auth/*         → ${config.services.authService} (public)
-     /api/users/*        → ${config.services.userService} (🔒 protected)
-     /api/game/*         → ${config.services.gameService} (🔒 protected)
-     /api/gamification/* → ${config.services.gamificationService} (🔒 protected)
-     /investigation      → WebSocket (🔒 token required)
-  
-  🔒 Security:
-     ✓ AuthGuard (JWT verification at gateway)
-     ✓ Helmet (CSP, HSTS)
-     ✓ CORS enabled
-     ✓ Rate limiting (${config.rateLimit.max} req/${config.rateLimit.timeWindow})
-  
-  💾 Infrastructure:
-     Redis:  ${config.redis.host}:${config.redis.port}
-     Vault:  ${config.vault.address}
+	Routes:
+		/api/auth/*			${config.services.authService}			(public)
+		/api/users/*			${config.services.userService}		(protected)
+		/api/game/*			${config.services.gameService}			(protected)
+		/api/gamification/*	${config.services.gamificationService}	(protected)
+		/investigation		WebSocket (token required)
 
-  📊 Monitoring:
-     /health
-     /metrics
-	 
-  Logs at level: ${config.logLevel}
+	Security:
+		AuthGuard	(JWT verification at gateway)
+		Helmet		(CSP, HSTS)
+		CORS		enabled
+		Rate limit	(${config.rateLimit.max} req/${config.rateLimit.timeWindow})
+
+	Infrastructure:
+		Redis:	${config.redis.host}:${config.redis.port}
+		Vault:	${config.vault.address}
+	Monitoring:
+		/health
+		/metrics
+
+	Logs at level:	${config.logLevel}
 	`);
 
 	} catch (err) {
 		const error = err instanceof Error ? err : new Error(String(err));
-		fastify.log.error({ error: { message: error.message, stack: error.stack, name: error.name } }, 'Error starting server');
+		fastify.log.error({error: {message: error.message, stack: error.stack, name: error.name}}, 'Error starting server');
 		console.error('Full error:', err);
 		process.exit(1);
 	}
 }
 
-// ====================================================
-// GRACEFUL SHUTDOWN
-// ====================================================
+// shutdown from sigint/sigterm
 const signals = ['SIGINT', 'SIGTERM'];
 
 signals.forEach((signal) => {
@@ -432,5 +428,5 @@ signals.forEach((signal) => {
 	});
 });
 
-// Start the server
+// start the server
 start();
