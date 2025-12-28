@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-studio setup
 
 # Colors for output
 BLUE := \033[0;34m
@@ -10,12 +10,16 @@ NC := \033[0m
 PROJECT_NAME := ft_transcendence
 VAULT_ADDR := https://localhost:8200
 POSTGRES_USER := root_admin
+PRISMA_DIR := packages/shared/prisma
 
 # Help target
 help:
 	@echo "$(BLUE)╔════════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(BLUE)║           $(PROJECT_NAME) - Essential Commands             ║$(NC)"
 	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(GREEN)🚀 Quick Start:$(NC)"
+	@echo "  make setup                - Full setup: secrets + db + prisma + start"
 	@echo ""
 	@echo "$(GREEN)🚀 Runtime:$(NC)"
 	@echo "  make up                   - Start all containers (including monitoring)"
@@ -28,6 +32,12 @@ help:
 	@echo "  make build-local          - Same as 'make build'"
 	@echo "  make build-docker         - Rebuild Docker images"
 	@echo "  make secrets              - Generate missing development secrets"
+	@echo ""
+	@echo "$(GREEN)🗄️  Database & Prisma:$(NC)"
+	@echo "  make prisma-env           - Generate Prisma .env from secrets"
+	@echo "  make prisma-migrate       - Deploy Prisma migrations to database"
+	@echo "  make prisma-studio        - Open Prisma Studio (DB browser)"
+	@echo "  make db                   - Connect to PostgreSQL CLI"
 	@echo ""
 	@echo "$(GREEN)🔐 Secrets & Webhooks:$(NC)"
 	@echo "  ./scripts/webhook-manager.sh save '<url>'  - Save Discord webhook URL locally"
@@ -79,6 +89,96 @@ dev: secrets
 secrets:
 	@echo "$(BLUE)→ Generating development secrets...$(NC)"
 	@./infra/secret/generate_dev_secrets.sh
+
+# ============================================================================
+# FULL SETUP (for new developers)
+# ============================================================================
+
+setup: secrets
+	@echo "$(BLUE)╔════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║           Full Project Setup                               ║$(NC)"
+	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(BLUE)→ Step 1/4: Starting database...$(NC)"
+	@docker compose up -d postgres
+	@echo "$(YELLOW)→ Waiting for PostgreSQL to be ready...$(NC)"
+	@sleep 5
+	@until docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) > /dev/null 2>&1; do \
+		echo "$(YELLOW)  Waiting for PostgreSQL...$(NC)"; \
+		sleep 2; \
+	done
+	@echo "$(GREEN)✓ PostgreSQL is ready$(NC)"
+	@echo ""
+	@echo "$(BLUE)→ Step 2/4: Generating Prisma .env...$(NC)"
+	@$(MAKE) -s prisma-env
+	@echo ""
+	@echo "$(BLUE)→ Step 3/4: Deploying database migrations...$(NC)"
+	@$(MAKE) -s prisma-migrate
+	@echo ""
+	@echo "$(BLUE)→ Step 4/4: Starting all services...$(NC)"
+	@docker compose up -d
+	@sleep 3
+	@docker compose ps
+	@echo ""
+	@echo "$(GREEN)╔════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(GREEN)║           ✓ Setup Complete!                                ║$(NC)"
+	@echo "$(GREEN)╚════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Access the application:$(NC)"
+	@echo "  Frontend:      https://localhost"
+	@echo "  API:           https://localhost/api"
+	@echo "  Prisma Studio: make prisma-studio"
+	@echo ""
+	@echo "$(YELLOW)Test the API:$(NC)"
+	@echo "  curl -k https://localhost/api/auth/register -X POST \\"
+	@echo "    -H 'Content-Type: application/json' \\"
+	@echo "    -d '{\"username\":\"test\",\"email\":\"test@example.com\",\"password\":\"SecurePass123!\",\"dob\":\"1995-01-01\"}'"
+	@echo ""
+
+# ============================================================================
+# PRISMA / DATABASE
+# ============================================================================
+
+prisma-env:
+	@echo "$(BLUE)→ Generating Prisma .env file...$(NC)"
+	@if [ ! -f infra/secret/postgres_db_pass.txt ]; then \
+		echo "$(RED)✗ Secrets not found. Run 'make secrets' first$(NC)"; \
+		exit 1; \
+	fi
+	@PG_PASS=$$(cat infra/secret/postgres_db_pass.txt | tr -d '\n'); \
+	PG_PASS_ENCODED=$$(echo -n "$$PG_PASS" | sed 's/+/%2B/g; s/=/%3D/g; s/\//%2F/g'); \
+	echo "DATABASE_URL=\"postgresql://$(POSTGRES_USER):$${PG_PASS_ENCODED}@localhost:5432/game_db?schema=public\"" > $(PRISMA_DIR)/.env
+	@echo "$(GREEN)✓ Created $(PRISMA_DIR)/.env$(NC)"
+
+prisma-migrate:
+	@echo "$(BLUE)→ Syncing database with Prisma schema...$(NC)"
+	@if [ ! -f $(PRISMA_DIR)/.env ]; then \
+		echo "$(YELLOW)→ Prisma .env not found, generating...$(NC)"; \
+		$(MAKE) -s prisma-env; \
+	fi
+	@cd $(PRISMA_DIR) && npx prisma db push
+	@echo "$(GREEN)✓ Database schema synced successfully$(NC)"
+
+prisma-studio:
+	@echo "$(BLUE)→ Starting Prisma Studio...$(NC)"
+	@if [ ! -f $(PRISMA_DIR)/.env ]; then \
+		echo "$(YELLOW)→ Prisma .env not found, generating...$(NC)"; \
+		$(MAKE) prisma-env; \
+	fi
+	@echo "$(GREEN)Opening Prisma Studio at http://localhost:5555$(NC)"
+	@cd $(PRISMA_DIR) && npx prisma studio
+
+prisma-generate:
+	@echo "$(BLUE)→ Generating Prisma client...$(NC)"
+	@cd $(PRISMA_DIR) && npx prisma generate
+	@echo "$(GREEN)✓ Prisma client generated$(NC)"
+
+prisma-reset:
+	@echo "$(RED)⚠️  WARNING: This will DELETE all data and re-run migrations!$(NC)"
+	@echo "$(YELLOW)Continuing in 5 seconds... Press Ctrl+C to cancel$(NC)"
+	@sleep 5
+	@cd $(PRISMA_DIR) && npx prisma migrate reset --force
+	@echo "$(GREEN)✓ Database reset complete$(NC)"
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"
@@ -225,16 +325,25 @@ clean-all:
 	@echo "  - All containers"
 	@echo "  - All volumes (data loss!)"
 	@echo "  - All images"
-	@echo "$(RED)Continuing in 10 seconds... Press Ctrl+C to cancel$(NC)"
-	@sleep 10
+	@echo "  - All secrets"
+	@echo "  - Prisma .env"
+	@echo "$(RED)Continuing in 5 seconds... Press Ctrl+C to cancel$(NC)"
+	@sleep 5
 	@echo "$(BLUE)→ Stopping and removing containers...$(NC)"
-	@docker compose down -v --remove-orphans 2>/dev/null || true
+	@docker compose --profile monitoring down -v --remove-orphans 2>/dev/null || true
 	@echo "$(BLUE)→ Removing all project images...$(NC)"
-	@docker images --filter reference='ft_transcendence-*' -q | xargs -r docker image rm -f
+	@docker images --filter reference='transcendence-*' -q | xargs -r docker image rm -f 2>/dev/null || true
 	@echo "$(BLUE)→ Removing all project volumes...$(NC)"
-	@docker volume ls -q --filter label=com.docker.compose.project=$(PROJECT_NAME) | xargs -r docker volume rm 2>/dev/null || true
-	@echo "$(BLUE)→ Full system prune...$(NC)"
-	@docker system prune -af --volumes
+	@docker volume ls -q | grep -E "transcendence|postgres|redis|vault|grafana|prometheus" | xargs -r docker volume rm 2>/dev/null || true
+	@echo "$(BLUE)→ Removing secrets...$(NC)"
+	@rm -f infra/secret/*.txt 2>/dev/null || true
+	@rm -rf infra/secret/.secrets 2>/dev/null || true
+	@echo "$(BLUE)→ Removing Prisma .env...$(NC)"
+	@rm -f $(PRISMA_DIR)/.env 2>/dev/null || true
+	@echo "$(BLUE)→ Pruning Docker system...$(NC)"
+	@docker system prune -f
 	@echo "$(GREEN)✓ Complete nuclear cleanup finished$(NC)"
+	@echo ""
+	@echo "$(YELLOW)To start fresh, run: make setup$(NC)"
 
 .DEFAULT_GOAL := help
