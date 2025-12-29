@@ -22,7 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # - name: create .env for CI
-      #   run: cp .env.example .env
+      
+      # Create the secret directory structure that Docker expects
+      - name: Setup secrets for CI
+        run: |
+          mkdir -p infra/secret
+          cp infra/secrets/*. txt infra/secret/
+      
       - name: Build Docker container
         run: docker compose build
