@@ -3,8 +3,8 @@ import i18n from '../i18n';
 /**
  * Utility to get translations in Phaser scenes (outside of React components)
  */
-export const t = (key: string): string => {
-  return i18n.t(key);
+export const t = (key: string, options?: Record<string, unknown>): string => {
+  return i18n.t(key, options);
 };
 
 /**
