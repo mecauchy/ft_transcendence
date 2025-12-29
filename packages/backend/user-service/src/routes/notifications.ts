@@ -36,7 +36,7 @@ export async function createNotification(params: CreateNotificationParams): Prom
 			type,
 			title,
 			message,
-			data: data || {},
+			data: (data as any) || {},
 		},
 	});
 

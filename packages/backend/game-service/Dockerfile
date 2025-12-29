@@ -2,6 +2,11 @@ FROM node:18-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Build shared types first
+WORKDIR /shared/types
+COPY packages/shared/types ./
+RUN pnpm install && pnpm run build
+
 WORKDIR /app
 
 COPY packages/backend/game-service/package.json ./
@@ -25,20 +30,20 @@ FROM node:18-alpine AS production
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 RUN corepack enable
+RUN apk add --no-cache su-exec
 
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY packages/backend/game-service/package.json ./
+COPY packages/backend/game-service/entrypoint.sh ./
 
-RUN chown -R nodejs:nodejs /app
-
-USER nodejs
+RUN chmod +x ./entrypoint.sh && chown -R nodejs:nodejs /app
 
 EXPOSE 3003
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 	CMD wget --no-verbose --tries=1 --spider http://localhost:3003/health || exit 1
 
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

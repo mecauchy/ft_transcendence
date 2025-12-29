@@ -125,12 +125,12 @@ setup: secrets
 	@echo "$(GREEN)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Access the application:$(NC)"
-	@echo "  Frontend:      https://localhost"
-	@echo "  API:           https://localhost/api"
+	@echo "  Frontend:      https://localhost:8443"
+	@echo "  API:           https://localhost:8443/api"
 	@echo "  Prisma Studio: make prisma-studio"
 	@echo ""
 	@echo "$(YELLOW)Test the API:$(NC)"
-	@echo "  curl -k https://localhost/api/auth/register -X POST \\"
+	@echo "  curl -k https://localhost:8443/api/auth/register -X POST \\"
 	@echo "    -H 'Content-Type: application/json' \\"
 	@echo "    -d '{\"username\":\"test\",\"email\":\"test@example.com\",\"password\":\"SecurePass123!\",\"dob\":\"1995-01-01\"}'"
 	@echo ""
@@ -156,7 +156,7 @@ prisma-migrate:
 		echo "$(YELLOW)→ Prisma .env not found, generating...$(NC)"; \
 		$(MAKE) -s prisma-env; \
 	fi
-	@cd $(PRISMA_DIR) && npx prisma db push
+	@cd $(PRISMA_DIR) && npm install && ./node_modules/.bin/prisma db push
 	@echo "$(GREEN)✓ Database schema synced successfully$(NC)"
 
 prisma-studio:
@@ -166,18 +166,18 @@ prisma-studio:
 		$(MAKE) prisma-env; \
 	fi
 	@echo "$(GREEN)Opening Prisma Studio at http://localhost:5555$(NC)"
-	@cd $(PRISMA_DIR) && npx prisma studio
+	@cd $(PRISMA_DIR) && ./node_modules/.bin/prisma studio
 
 prisma-generate:
 	@echo "$(BLUE)→ Generating Prisma client...$(NC)"
-	@cd $(PRISMA_DIR) && npx prisma generate
+	@cd $(PRISMA_DIR) && ./node_modules/.bin/prisma generate
 	@echo "$(GREEN)✓ Prisma client generated$(NC)"
 
 prisma-reset:
 	@echo "$(RED)⚠️  WARNING: This will DELETE all data and re-run migrations!$(NC)"
 	@echo "$(YELLOW)Continuing in 5 seconds... Press Ctrl+C to cancel$(NC)"
 	@sleep 5
-	@cd $(PRISMA_DIR) && npx prisma migrate reset --force
+	@cd $(PRISMA_DIR) && ./node_modules/.bin/prisma migrate reset --force
 	@echo "$(GREEN)✓ Database reset complete$(NC)"
 
 down:

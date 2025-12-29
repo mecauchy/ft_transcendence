@@ -79,7 +79,7 @@ export async function internalRoutes(fastify: FastifyInstance) {
 					type:	type as any,
 					title,
 					message,
-					data:	data || {},
+					data:	(data as any) || {},
 				},
 			});
 
