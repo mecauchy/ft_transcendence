@@ -39,14 +39,14 @@ function Network() {
 		const response = await api.getFriends();
 
 		setFriends(
-		  response.friends.map((f: any) => ({
+		  response.friends.map((f: {id: string; username: string}) => ({
 			id: f.id,
 			username: f.username,
 		  }))
 		);
 
 		setFriendRequests(
-		  response.pendingRequests.map((r: any) => ({
+		  response.pendingRequests.map((r: {id: string; username: string}) => ({
 			id: r.id,
 			username: r.username,
 		  }))

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {createContext, useContext, useState, useEffect, type ReactNode} from 'react';
 import {api} from '../api/client';
 import type {ApiError} from '../api/client';
