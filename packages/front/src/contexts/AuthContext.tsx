@@ -33,6 +33,12 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
+				// Check if we have a token in localStorage
+				const storedToken = localStorage.getItem('accessToken');
+				if (storedToken) {
+					api.setToken(storedToken);
+				}
+
 				// try get current profile
 				const profile = await api.getProfile();
 				setUser({
@@ -46,7 +52,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
 					totalXp: profile.totalXp,
 				});
 			} catch {
-				// no auth
+				// no auth - clear stored token
+				localStorage.removeItem('accessToken');
 				setUser(null);
 			} finally {
 				setIsLoading(false);
@@ -59,6 +66,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	const login = async (login: string, password: string) => {
 		try {
 			const response = await api.login({login, password});
+			localStorage.setItem('accessToken', response.accessToken);
 			setUser({
 				...response.user,
 				displayName: response.user.username,
@@ -86,6 +94,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		} catch {
 			// clear local state
 		}
+		localStorage.removeItem('accessToken');
 		setUser(null);
 	};
 

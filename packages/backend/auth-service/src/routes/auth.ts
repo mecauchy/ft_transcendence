@@ -1,4 +1,5 @@
 import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {randomUUID} from 'crypto';
 import {config} from '../config';
 import {prisma} from '../db';
 import {generateTokens, verifyRefreshToken, blacklistToken} from '../services/jwt';
@@ -219,7 +220,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		authUrl.searchParams.set('scope', 'public');
 
 		// generate CSRF token
-		const state = crypto.randomUUID();
+		const state = randomUUID();
 		authUrl.searchParams.set('state', state);
 		reply.header('Set-Cookie', `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/`);
 
@@ -351,7 +352,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 					return response;
 				}
 
-				const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
+				const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
 				return reply.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
 
 			} catch (error) {

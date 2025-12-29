@@ -27,7 +27,7 @@ export const config = {
 	oauth: {
 		clientId:			process.env.OAUTH_42_CLIENT_ID		|| '',
 		clientSecret:		process.env.OAUTH_42_CLIENT_SECRET	|| '',
-		redirectUri:		process.env.OAUTH_42_REDIRECT_URI	|| 'http://localhost:3000/api/auth/callback/42',
+		redirectUri:		process.env.OAUTH_42_REDIRECT_URI	|| 'https://localhost:8443/api/auth/callback/42',
 		authorizationUrl:	'https://api.intra.42.fr/oauth/authorize',
 		tokenUrl:			'https://api.intra.42.fr/oauth/token',
 		userInfoUrl:		'https://api.intra.42.fr/v2/me',

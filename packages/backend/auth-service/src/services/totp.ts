@@ -1,5 +1,6 @@
 import * as OTPAuth from 'otpauth';
 import * as QRCode from 'qrcode';
+import {randomBytes} from 'crypto';
 
 const APP_NAME = 'SpeakUp';
 
@@ -75,10 +76,7 @@ export function generateBackupCodes(count: number = 10): string[] {
 
 	for (let i = 0; i < count; i++) {
 		// gen alphanum codes
-		const code = Array.from(crypto.getRandomValues(new Uint8Array(4)))
-			.map(b => b.toString(16).padStart(2, '0'))
-			.join('')
-			.toUpperCase();
+		const code = randomBytes(4).toString('hex').toUpperCase();
 		codes.push(code);
 	}
 

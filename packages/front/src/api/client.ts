@@ -100,7 +100,7 @@ class ApiClient {
 
 	// OAuth login
 	getOAuthUrl(provider: '42' | 'github') {
-		return `${API_BASE}/auth/oauth/${provider}`;
+		return `${API_BASE}/auth/login/${provider}`;
 	}
 
 	// 2FA
