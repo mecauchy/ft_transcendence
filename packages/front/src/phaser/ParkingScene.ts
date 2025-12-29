@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 export default class ParkingScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -28,10 +29,10 @@ export default class ParkingScene extends Phaser.Scene {
 
 		if (!this.game_started) {
 			this.popup.show(
-				"You have parked your car. Now, breathe. Press ESC to go back.",
+				t("scenes.parking.welcome"),
 				[
 					{
-						label: "Got it",
+						label: t("scenes.parking.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -62,10 +63,10 @@ export default class ParkingScene extends Phaser.Scene {
 		const cy = Math.round(this.scale.height / 2);
 		this.breathe_circle = this.add.circle(cx, cy, 60, 0x88cffa)
 
-		this.breathe_text = this.add.text(cx, cy, "Inspire", {fontSize: "24px", color: "#ffffff"}).setOrigin(0.5);
+		this.breathe_text = this.add.text(cx, cy, t("scenes.parking.inspire"), {fontSize: "24px", color: "#ffffff"}).setOrigin(0.5);
 
 		const breatheIn = () => {
-			this.breathe_text.setText("Inspire");
+			this.breathe_text.setText(t("scenes.parking.inspire"));
 
 			this.tweens.add({
 				targets: this.breathe_circle,
@@ -77,12 +78,12 @@ export default class ParkingScene extends Phaser.Scene {
 		};
 
 		const hold = (expire: boolean) => {
-			this.breathe_text.setText("Hold");
+			this.breathe_text.setText(t("scenes.parking.hold"));
 			this.time.delayedCall(2000, expire ? breatheOut : breatheIn);
 		};
 
 		const breatheOut = () => {
-			this.breathe_text.setText("Expire");
+			this.breathe_text.setText(t("scenes.parking.expire"));
 
 			this.tweens.add({
 				targets: this.breathe_circle,

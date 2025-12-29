@@ -2,6 +2,7 @@
 import {createContext, useContext, useState, useEffect, type ReactNode} from 'react';
 import {api} from '../api/client';
 import type {ApiError} from '../api/client';
+import i18n from '../i18n';
 
 interface User {
 	userId: string;
@@ -38,15 +39,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				// try get current profile
 				const profile = await api.getProfile();
 				setUser({
-					userId: profile.userId,
+					userId: profile.userId || profile.id || '',
 					username: profile.username,
 					email: profile.email,
 					role: 'PATIENT', // set by default, could be fetched
-					displayName: profile.displayName,
+					displayName: profile.displayName || profile.alias,
 					avatarUrl: profile.avatarUrl,
 					level: profile.level,
 					totalXp: profile.totalXp,
 				});
+				// Apply user's language preference from profile
+				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
+					i18n.changeLanguage(profile.preferences.language);
+				}
 			} catch {
 				// no auth
 				setUser(null);
@@ -65,6 +70,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				...response.user,
 				displayName: response.user.username,
 			});
+			// Fetch profile to get language preference after login
+			try {
+				const profile = await api.getProfile();
+				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
+					i18n.changeLanguage(profile.preferences.language);
+				}
+			} catch {
+				// Ignore if profile fetch fails
+			}
 		} catch (error) {
 			const apiError = error as ApiError;
 			throw new Error(apiError.message || 'Login failed');

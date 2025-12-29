@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import { api } from "./api/client";
+import { useTranslation } from "react-i18next";
 
 //todo : websocket for real-time updates
 
@@ -11,6 +12,7 @@ type UserPreview = {
 
 function Network() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [friendUsername, setFriendUsername] = useState("");
   const [friends, setFriends] = useState<UserPreview[]>([]);
@@ -92,13 +94,13 @@ function Network() {
   // Render
   return (
 	<div className="pt-20 pl-10 text-white">
-	  <h2 className="text-2xl font-bold mb-4">Network</h2>
+	  <h2 className="text-2xl font-bold mb-4">{t('network.title')}</h2>
 
 	  {/* ADD FRIEND */}
 	  <div className="mb-6">
 		<input
 		  type="text"
-		  placeholder="Enter friend's username"
+		  placeholder={t('network.enterFriendUsername')}
 		  className="border border-gray-300 rounded-md p-2 w-64 text-white bg-transparent focus:bg-purple-600 focus:outline-none"
 		  value={friendUsername}
 		  onChange={e => setFriendUsername(e.target.value)}
@@ -107,16 +109,16 @@ function Network() {
 		  className="ml-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
 		  onClick={handleAddFriend}
 		>
-		  Add Friend
+		  {t('network.addFriend')}
 		</button>
 	  </div>
 
 	  {/* FRIEND LIST */}
 	  <div className="mb-6 bg-white/10 p-4 rounded-md w-80">
-		<h3 className="text-xl font-semibold mb-2">Friends</h3>
+		<h3 className="text-xl font-semibold mb-2">{t('network.friends')}</h3>
 		<ul>
 		  {friends.length === 0 && (
-			<li className="text-white/60">No friends yet</li>
+			<li className="text-white/60">{t('network.noFriends')}</li>
 		  )}
 		  {friends.map(friend => (
 			<li key={friend.id} className="mb-1">
@@ -128,10 +130,10 @@ function Network() {
 
 	  {/* FRIEND REQUESTS */}
 	  <div className="bg-white/10 p-4 rounded-md w-80">
-		<h3 className="text-xl font-semibold mb-2">Friend Requests</h3>
+		<h3 className="text-xl font-semibold mb-2">{t('network.friendRequests')}</h3>
 		<ul>
 		  {friendRequests.length === 0 && (
-			<li className="text-white/60">No pending requests</li>
+			<li className="text-white/60">{t('network.noPendingRequests')}</li>
 		  )}
 		  {friendRequests.map(request => (
 			<li
@@ -144,13 +146,13 @@ function Network() {
 				  className="px-2 py-1 bg-green-500 rounded hover:bg-green-600"
 				  onClick={() => handleAcceptFriend(request)}
 				>
-					Accept
+					{t('network.accept')}
 				</button>
 				<button
 					className="px-2 py-1 bg-red-500 rounded hover:bg-red-600"
 					onClick={() => handleDeclineFriend(request)}
 				>
-				  Decline
+				  {t('network.decline')}
 				</button>
 				</div>
 			</li>

@@ -1,18 +1,34 @@
 import {useState, useEffect} from 'react'
 import {useAuth} from './contexts/AuthContext'
 import { api } from './api/client';
+import { useTranslation } from 'react-i18next';
 
 function Settings() {
 	const { user, refreshUser } = useAuth();
+	const { t, i18n } = useTranslation();
 	const [username, setUsername] = useState(user?.username || '');
 	const [email, setEmail] = useState(user?.email || '');
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
-	const [language, setLanguage] = useState<'en' | 'fr'>('en');
+	const [language, setLanguage] = useState<'en' | 'fr' | 'es'>((i18n.language as 'en' | 'fr' | 'es') || 'en');
 	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+
+	// Sync language state with current i18n language when it changes externally
+	useEffect(() => {
+		const currentLang = i18n.language as 'en' | 'fr' | 'es';
+		if (['en', 'fr', 'es'].includes(currentLang)) {
+			setLanguage(currentLang);
+		}
+	}, [i18n.language]);
 
 	const handle2FAChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setIs2FAEnabled(e.target.checked);
+	}
+
+	const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const newLang = e.target.value as 'en' | 'fr' | 'es';
+		setLanguage(newLang);
+		// Don't change language immediately - wait for form submit
 	}
 
 	const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -28,12 +44,14 @@ function Settings() {
 					language: language,
 				},
 			});
-			setMessage({type: 'success', text: 'Profile updated successfully!'});
+			// Apply the language change after successful API update
+			i18n.changeLanguage(language);
+			setMessage({type: 'success', text: t('settings.profileUpdated')});
 			// Refresh user data in context
 			await refreshUser();
 		} catch (error: unknown) {
 			const err = error as {message?: string};
-			setMessage({type: 'error', text: err.message || 'Failed to update profile'});
+			setMessage({type: 'error', text: err.message || t('settings.updateFailed')});
 		} finally {
 			setIsLoading(false);
 		}
@@ -41,7 +59,7 @@ function Settings() {
 
 	return (
 		<div className="max-w-md mx-auto mt-32 p-6 bg-white/10 rounded-lg shadow-md">
-			<h1 className="text-2xl font-bold mb-6">Settings</h1>
+			<h1 className="text-2xl font-bold mb-6">{t('settings.title')}</h1>
 			
 			{message && (
 				<div className={`p-4 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -52,7 +70,7 @@ function Settings() {
 			<form onSubmit={handleUpdateProfile} className="space-y-4">
 				<div>
 					<label htmlFor="username" className="block text-sm font-medium mb-1">
-						Username
+						{t('settings.username')}
 					</label>
 					<input
 						id="username"
@@ -60,13 +78,13 @@ function Settings() {
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="Enter your username"
+						placeholder={t('settings.enterUsername')}
 					/>
 				</div>
 
 				<div>
 					<label htmlFor="email" className="block text-sm font-medium mb-1">
-						Email
+						{t('settings.email')}
 					</label>
 					<input
 						id="email"
@@ -74,27 +92,28 @@ function Settings() {
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="Enter your email"
+						placeholder={t('settings.enterEmail')}
 					/>
 				</div>
 
 				<div>
 					<label htmlFor="language" className="block text-sm font-medium mb-1">
-						Language
+						{t('settings.language')}
 					</label>
 					<select
 						id="language"
 						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						value={language}
-						onChange={(e) => setLanguage(e.target.value as 'en' | 'fr')}
+						onChange={handleLanguageChange}
 					>
-						<option value="en">English (en)</option>
-						<option value="fr">French (fr)</option>
+						<option value="en">{t('languages.en')} (EN)</option>
+						<option value="fr">{t('languages.fr')} (FR)</option>
+						<option value="es">{t('languages.es')} (ES)</option>
 					</select>
 				</div>
 				<div>
 					<label htmlFor='2fa' className="block text-sm font-medium mb-1">
-						Two-Factor Authentication (2FA)
+						{t('settings.twoFactor')}
 					</label>
 					<input
 						id='2fa'
@@ -103,7 +122,7 @@ function Settings() {
 						onChange={handle2FAChange}
 						className="mr-2 leading-tight"
 					/>
-					<span>Enable 2FA</span>
+					<span>{t('settings.enable2FA')}</span>
 				</div>
 
 				<button
@@ -111,7 +130,7 @@ function Settings() {
 					disabled={isLoading}
 					className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{isLoading ? 'Saving...' : 'Save Changes'}
+					{isLoading ? t('settings.saving') : t('settings.saveChanges')}
 				</button>
 			</form>
 		</div>

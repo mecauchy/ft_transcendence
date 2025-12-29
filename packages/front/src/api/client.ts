@@ -121,14 +121,20 @@ class ApiClient {
 	async getProfile(userId?: string) {
 		const endpoint = userId ? `/users/${userId}` : '/users/me';
 		return this.request<{
-			userId: string;
+			id?: string;
+			userId?: string;
+			alias?: string;
 			username: string;
 			email: string;
 			displayName?: string;
 			avatarUrl?: string;
-			level: number;
-			totalXp: number;
-			createdAt: string;
+			level?: number;
+			totalXp?: number;
+			createdAt?: string;
+			preferences?: {
+				language?: 'en' | 'fr' | 'es';
+				theme?: 'light' | 'dark';
+			};
 		}>(endpoint);
 	}
 
@@ -136,7 +142,7 @@ class ApiClient {
 		username?: string;
 		email?: string;
 		preferences?: {
-			language?: 'en' | 'fr';
+			language?: 'en' | 'fr' | 'es';
 			theme?: 'light' | 'dark';
 		};
 	}) {

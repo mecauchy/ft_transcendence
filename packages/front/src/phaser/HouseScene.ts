@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 export default class HouseScene extends Phaser.Scene {
 
@@ -90,10 +91,10 @@ export default class HouseScene extends Phaser.Scene {
 
 	private showWelcomePopup() {
 		this.popup.show(
-			"Welcome to the House! Get ready to play Pong!",
+			t("scenes.house.welcome"),
 			[
 				{
-					label: "IA Opponent",
+					label: t("scenes.house.iaOpponent"),
 					onClick: () => {
 						this.popup.hide();
 						this.ia_mode = true;
@@ -109,14 +110,14 @@ export default class HouseScene extends Phaser.Scene {
 					}
 				},
 				{
-					label: "Two Players",
+					label: t("scenes.house.localMultiplayer"),
 					onClick: () => {
 						this.popup.hide();
 						this.game_started = true;
 					}
 				},
 				{
-					label: "Forgive",
+					label: t("common.cancel"),
 					onClick: () => {
 						this.scene.start("WorldMapScene");
 					}
@@ -127,10 +128,10 @@ export default class HouseScene extends Phaser.Scene {
 
 	private ia_popup() {
 		this.popup.show(
-			"Choose your difficulty:",
+			t("scenes.house.chooseDifficulty"),
 			[
 				{
-					label: "Easy",
+					label: t("scenes.house.easy"),
 					onClick: () => {
 						this.ia_difficulty = 0.7;
 						this.popup.hide();
@@ -138,7 +139,7 @@ export default class HouseScene extends Phaser.Scene {
 					}
 				},
 				{
-					label: "Medium",
+					label: t("scenes.house.medium"),
 					onClick: () => {
 						this.ia_difficulty = 0.3;
 						this.popup.hide();
@@ -146,7 +147,7 @@ export default class HouseScene extends Phaser.Scene {
 					}
 				},
 				{
-					label: "Hard",
+					label: t("scenes.house.hard"),
 					onClick: () => {
 						this.ia_difficulty = 0.0;
 						this.popup.hide();
@@ -368,11 +369,12 @@ export default class HouseScene extends Phaser.Scene {
 		if (this.score1 >= 5 || this.score2 >= 5) {
 			this.game_started = false;
 			if (!this.ia_mode) {
+				const winner = this.score1 >= 5 ? t("scenes.house.player1") : t("scenes.house.player2");
 				this.popup.show(
-					`Game Over! ${this.score1 >= 5 ? 'Player 1' : 'Player 2'} wins!`,
+					t("scenes.house.gameOverPlayer", { player: winner }),
 					[
 						{
-							label: "OK",
+							label: t("common.ok"),
 							onClick: () => {
 								this.score1 = 0;
 								this.score2 = 0;
@@ -384,11 +386,12 @@ export default class HouseScene extends Phaser.Scene {
 				)
 			}
 			else {
+				const message = this.score2 >= 5 ? t("scenes.house.youWin") : t("scenes.house.iaWins");
 				this.popup.show(
-					`Game Over! ${this.score2 >= 5 ? 'You win!' : 'IA wins!'}`,
+					message,
 					[
 						{
-							label: "OK",
+							label: t("common.ok"),
 							onClick: () => {
 								this.score1 = 0;
 								this.score2 = 0;

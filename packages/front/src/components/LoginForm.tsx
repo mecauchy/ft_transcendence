@@ -2,12 +2,14 @@ import {useState} from 'react';
 import {api} from '../api/client';
 import type {ApiError} from '../api/client';
 import '../styles/login.css';
+import {useTranslation} from 'react-i18next';
 
 interface LoginProps {
 	onLogin: (username: string) => void;
 }
 
 function Login({onLogin}: LoginProps) {
+	const {t} = useTranslation();
 
 	// default state
 	const [ulogin, setLogin] = useState('');
@@ -125,7 +127,7 @@ function Login({onLogin}: LoginProps) {
 		<div className="login_container">
 			<img src="/controler.png" alt="Logo" className="login_logo_image" />
 			<p className="login_title">ft_transcendance</p>
-			<p className="login_subtitle">Speak-up</p>
+			<p className="login_subtitle">{t('home.subtitle')}</p>
 
 			{/* Error message */}
 			{error && <div className="login_error">{error}</div>}
@@ -134,21 +136,21 @@ function Login({onLogin}: LoginProps) {
 			{!registerMode && (
 				<div className="login_button_container">
 					<form onSubmit={handleSubmit} className="login_form">
-						<p className="username">Login</p>
+						<p className="username">{t('auth.login')}</p>
 						<input
 							type="string"
 							className="username_input"
-							placeholder="Entrez votre nom d'utilisateur ou votre adresse email"
+							placeholder={t('auth.enterUsernameOrEmail')}
 							value={ulogin}
 							onChange={(e) => setLogin(e.target.value)}
 							disabled={isLoading}
 							required
 						/>
-						<p className="password">Mot de passe</p>
+						<p className="password">{t('auth.password')}</p>
 						<input
 							type="password"
 							className="password_input"
-							placeholder="Entrez votre mot de passe"
+							placeholder={t('auth.enterPassword')}
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							disabled={isLoading}
@@ -156,7 +158,7 @@ function Login({onLogin}: LoginProps) {
 						/>
 						<br />
 						<button className="login_button" type="submit" disabled={isLoading}>
-							{isLoading ? 'Connexion...' : 'Se connecter'}
+							{isLoading ? t('auth.connecting') : t('auth.connect')}
 						</button>
 					</form>
 				</div>
@@ -166,27 +168,27 @@ function Login({onLogin}: LoginProps) {
 			{registerMode && (
 				<div className="login_button_container">
 					<form onSubmit={handleRegister} className="login_form">
-						<p className="username">Adresse email</p>
+						<p className="username">{t('auth.email')}</p>
 						<input
 							type="email"
 							className="username_input"
-							placeholder="Entrez votre adresse email"
+							placeholder={t('auth.enterEmail')}
 							value={createEmail}
 							onChange={(e) => setCreateEmail(e.target.value)}
 							disabled={isLoading}
 							required
 						/>
-						<p className="username">Nom d'utilisateur</p>
+						<p className="username">{t('auth.username')}</p>
 						<input
 							type="text"
 							className="username_input"
-							placeholder="Choisissez un nom d'utilisateur"
+							placeholder={t('auth.chooseUsername')}
 							value={createUsername}
 							onChange={(e) => setCreateUsername(e.target.value)}
 							disabled={isLoading}
 							required
 						/>
-						<p className="username">Date de naissance</p>
+						<p className="username">{t('auth.birthdate')}</p>
 						<input
 							type="date"
 							className="username_input"
@@ -195,11 +197,11 @@ function Login({onLogin}: LoginProps) {
 							disabled={isLoading}
 							required
 						/>
-						<p className="password">Mot de passe</p>
+						<p className="password">{t('auth.password')}</p>
 						<input
 							type="password"
 							className="password_input"
-							placeholder="Choisissez un mot de passe"
+							placeholder={t('auth.choosePassword')}
 							value={createPassword}
 							onChange={handleCreatePassword}
 							disabled={isLoading}
@@ -207,17 +209,17 @@ function Login({onLogin}: LoginProps) {
 						/>
 						{/* Password requirements */}
 						<div className="password_requirements">
-							<span className={uppercasePresent ? 'valid' : ''}>Majuscule</span>
-							<span className={lowercasePresent ? 'valid' : ''}>Minuscule</span>
-							<span className={numberPresent ? 'valid' : ''}>Chiffre</span>
-							<span className={specialCharPresent ? 'valid' : ''}>Spécial (@$!%*?&)</span>
-							<span className={createPassword.length >= 8 ? 'valid' : ''}>8+ caractères</span>
+							<span className={uppercasePresent ? 'valid' : ''}>{t('passwordRequirements.uppercase')}</span>
+							<span className={lowercasePresent ? 'valid' : ''}>{t('passwordRequirements.lowercase')}</span>
+							<span className={numberPresent ? 'valid' : ''}>{t('passwordRequirements.number')}</span>
+							<span className={specialCharPresent ? 'valid' : ''}>{t('passwordRequirements.specialChar')}</span>
+							<span className={createPassword.length >= 8 ? 'valid' : ''}>{t('passwordRequirements.characters')}</span>
 						</div>
-						<p className="password">Confirmer le mot de passe</p>
+						<p className="password">{t('auth.confirmPassword')}</p>
 						<input
 							type="password"
 							className="password_input"
-							placeholder="Confirmez votre mot de passe"
+							placeholder={t('auth.confirmPassword')}
 							value={confirmPassword}
 							onChange={(e) => {
 								setConfirmPassword(e.target.value);
@@ -227,7 +229,7 @@ function Login({onLogin}: LoginProps) {
 							required
 						/>
 						{badConfirmation && (
-							<p className="error_message">Les mots de passe ne correspondent pas</p>
+							<p className="error_message">{t('auth.passwordsDontMatch')}</p>
 						)}
 						<br />
 						<button
@@ -235,7 +237,7 @@ function Login({onLogin}: LoginProps) {
 							type="submit"
 							disabled={isLoading || !passwordFormat}
 						>
-							{isLoading ? 'Inscription...' : "S'inscrire"}
+							{isLoading ? t('auth.registering') : t('auth.signUp')}
 						</button>
 					</form>
 				</div>
@@ -245,11 +247,11 @@ function Login({onLogin}: LoginProps) {
 			<div className="oauth_container">
 				<button className="oauth_button github" onClick={handleGithubLogin} disabled={isLoading}>
 					<img src="/github_logo.png" alt="GitHub" />
-					Continuer avec GitHub
+					{t('auth.continueWithGithub')}
 				</button>
 				<button className="oauth_button forty_two" onClick={handle42Login} disabled={isLoading}>
 					<img src="/42_logo.png" alt="42" />
-					Continuer avec 42
+					{t('auth.continueWith42')}
 				</button>
 			</div>
 
@@ -257,13 +259,13 @@ function Login({onLogin}: LoginProps) {
 			<p className="toggle_mode">
 				{registerMode ? (
 					<>
-						Déjà un compte?{' '}
-						<span onClick={() => setRegisterMode(false)}>Se connecter</span>
+						{t('auth.alreadyHaveAccount')}{' '}
+						<span onClick={() => setRegisterMode(false)}>{t('auth.connect')}</span>
 					</>
 				) : (
 					<>
-						Pas de compte?{' '}
-						<span onClick={() => setRegisterMode(true)}>S'inscrire</span>
+						{t('auth.noAccount')}{' '}
+						<span onClick={() => setRegisterMode(true)}>{t('auth.signUp')}</span>
 					</>
 				)}
 			</p>

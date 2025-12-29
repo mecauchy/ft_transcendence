@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 export default class WorldMapScene extends Phaser.Scene {
 	private player!: Phaser.GameObjects.Sprite;
@@ -112,11 +113,11 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parking = this.add.sprite(0, 0, "parking");
 		this.coffee = this.add.sprite(0, 0, "coffee");
 
-		this.shopLabel = this.add.text(0, 0, "Shop", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
-		this.hospitalLabel = this.add.text(0, 0, "Hospital", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
-		this.houseLabel = this.add.text(0, 0, "House", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
-		this.parkingLabel = this.add.text(0, 0, "Parking", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
-		this.coffeeLabel = this.add.text(0, 0, "Coffee", {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.shopLabel = this.add.text(0, 0, t("scenes.worldMap.shop"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.hospitalLabel = this.add.text(0, 0, t("scenes.worldMap.hospital"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.houseLabel = this.add.text(0, 0, t("scenes.worldMap.house"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.parkingLabel = this.add.text(0, 0, t("scenes.worldMap.parking"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.coffeeLabel = this.add.text(0, 0, t("scenes.worldMap.coffee"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
 
 		this.popup = new Popup(this);
 		this.centerScene();
@@ -387,12 +388,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		else if (target === this.waypoints.coffee) locationName = "Coffee";
 
 		if (locationName === "") return;
+
+		const translatedLocation = t(`scenes.worldMap.${locationName.toLowerCase()}`);
 		
 		this.popup.show(
-			`You have arrived at the ${locationName}. What would you like to do?`,
+			t("scenes.worldMap.arrivedAt", { location: translatedLocation }),
 			[
 				{
-					label: "Enter",
+					label: t("common.enter"),
 					onClick: () => {
 						console.log(`Entering the ${locationName}...`);
 						this.popup.hide();
@@ -401,7 +404,7 @@ export default class WorldMapScene extends Phaser.Scene {
 					},
 				},
 				{
-					label: "Leave",
+					label: t("common.leave"),
 					onClick: () => {
 						console.log(`Leaving the ${locationName}...`);
 						this.popup.hide();
