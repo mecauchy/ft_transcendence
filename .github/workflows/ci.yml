@@ -2,7 +2,7 @@ name: CI - ft_transcendence
 
 on:
   push:
-    branches: ["master", "dev"]
+    branches: ["master", "dev", "feature/*"]
   pull_request:
     branches: ["master", "dev"]
 
@@ -22,7 +22,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # - name: create .env for CI
-      #   run: cp .env.example .env
-      - name: Build Docker container
-        run: docker compose build
+
+      # 1. Create Dummy Secrets (Critical for Docker Compose)
+      #    We use openssl to generate random files so the containers can mount them.
+      - name: Create Secrets for CI
+        run: |
+          mkdir -p infra/secret
+          openssl rand -base64 32 > infra/secret/jwt_secret.txt
+          openssl rand -base64 32 > infra/secret/vault_token.txt
+          echo "Dummy secrets created."
+
+      # 2. Build and Start Auth Infrastructure
+      #    We only start what is needed for JWT flow (Auth + Gateway + DBs)
+      - name: Start Services
+        run: |
+          docker compose build auth-service api-gateway redis vault
+          docker compose up -d auth-service api-gateway redis vault
+
+      # 3. Wait for Services
+      #    Give containers time to initialize (Vault, Redis connection, etc.)
+      - name: Wait for Health
+        run: |
+          echo "Waiting for services to stabilize..."
+          sleep 15
+          docker compose ps
+
+      # 4. Run Integration Test
+      #    We use SKIP_PROTECTED=true because User Service is not running yet.
+      - name: Run JWT Flow Test
+        env:
+          GATEWAY_URL: http://localhost:3000
+          SKIP_PROTECTED: true
+        run: |
+          chmod +x ./scripts/test_jwt_flow.sh
+          ./scripts/test_jwt_flow.sh
+
+      # 5. Debug Logs (Only runs if previous step fails)
+      - name: Dump Logs on Failure
+        if: failure()
+        run: docker compose logs

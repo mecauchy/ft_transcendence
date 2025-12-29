@@ -51,6 +51,7 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     environment:
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
       - PORT=3000
       - HOST=0.0.0.0
       - AUTH_SERVICE_URL=http://auth-service:3001
@@ -474,3 +475,5 @@ secrets:
     file: ./infra/secret/vault_token.txt
   postgres_db_pass:
     file: ./infra/secret/postgres_db_pass.txt
+  jwt_secret:
+    file: ./infra/secret/jwt_secret.txt
