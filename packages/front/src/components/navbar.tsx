@@ -18,7 +18,7 @@ function Navbar({setPage, username}: {setPage: (page: string) => void, username:
   			</div>
 
   			<div className="nav_right">
-  			  <button className="nav_button" onClick={() => setPage("profile")}>{username}<div className='hat'>^</div></button>
+  			  <button className="nav_button" onClick={() => setPage("network")}>Network</button>
   			  <button className="nav_button" onClick={() => setPage("settings")}>Settings</button>
   			  <button className="nav_button logout" onClick={() => setPage("logout")}>
   			    Logout ({username})
