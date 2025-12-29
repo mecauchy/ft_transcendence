@@ -3,9 +3,11 @@ import '../styles/navbar.css'
 function Navbar({setPage, username}: {setPage: (page: string) => void, username: string | null}) {
 	  return (
 		<nav className="navbar">
-  			<div className="nav_logo">
+  			<div className="flex">
 				<img src="/controler.png" alt="Logo" className="logo_image" />
-				ft_transcendance
+				<p className="mt-5 text-white">
+					ft_transcendance
+				</p>
 			</div>
 
   			<div className="nav_left">

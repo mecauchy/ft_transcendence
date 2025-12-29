@@ -21,6 +21,7 @@ interface AuthContextType {
 	register: (username: string, email: string, password: string, dob: string) => Promise<void>;
 	logout: () => Promise<void>;
 	loginWithOAuth: (provider: '42' | 'github') => void;
+	refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,6 +95,24 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		window.location.href = api.getOAuthUrl(provider);
 	};
 
+	const refreshUser = async () => {
+		try {
+			const profile = await api.getProfile();
+			setUser({
+				userId: profile.userId,
+				username: profile.username,
+				email: profile.email,
+				role: 'PATIENT',
+				displayName: profile.displayName,
+				avatarUrl: profile.avatarUrl,
+				level: profile.level,
+				totalXp: profile.totalXp,
+			});
+		} catch {
+			// Keep current user if refresh fails
+		}
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -104,6 +123,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				register,
 				logout,
 				loginWithOAuth,
+				refreshUser,
 			}}
 		>
 			{children}

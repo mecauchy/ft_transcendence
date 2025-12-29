@@ -132,9 +132,16 @@ class ApiClient {
 		}>(endpoint);
 	}
 
-	async updateProfile(data: {displayName?: string; avatarUrl?: string}) {
-		return this.request<{message:	string}>('/users/me', {
-			method: 'PATCH',
+	async updateProfile(data: {
+		username?: string;
+		email?: string;
+		preferences?: {
+			language?: 'en' | 'fr';
+			theme?: 'light' | 'dark';
+		};
+	}) {
+		return this.request<{success: boolean; message: string}>('/users/me', {
+			method: 'PUT',
 			body: JSON.stringify(data),
 		});
 	}
