@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import {useAuth} from './contexts/AuthContext'
 import { api } from './api/client';
 
@@ -9,6 +9,11 @@ function Settings() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 	const [language, setLanguage] = useState<'en' | 'fr'>('en');
+	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+
+	const handle2FAChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setIs2FAEnabled(e.target.checked);
+	}
 
 	const handleUpdateProfile = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -86,6 +91,19 @@ function Settings() {
 						<option value="en">English (en)</option>
 						<option value="fr">French (fr)</option>
 					</select>
+				</div>
+				<div>
+					<label htmlFor='2fa' className="block text-sm font-medium mb-1">
+						Two-Factor Authentication (2FA)
+					</label>
+					<input
+						id='2fa'
+						type="checkbox"
+						checked={is2FAEnabled}
+						onChange={handle2FAChange}
+						className="mr-2 leading-tight"
+					/>
+					<span>Enable 2FA</span>
 				</div>
 
 				<button
