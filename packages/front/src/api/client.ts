@@ -163,23 +163,36 @@ class ApiClient {
 	async getFriends() {
 		return this.request<{
 			friends: Array<{
-				odId: string;
+				id: string;
 				username: string;
-				status: 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+				status: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 			}>;
-		}>('/users/me/friends');
+			pendingRequests: Array<{
+				id: string;
+				username: string;
+				avatarUrl?: string;
+				requestedAt: string;
+			}>;
+			sentRequests: Array<{
+				id: string;
+				username: string;
+				avatarUrl?: string;
+				sentAt: string;
+			}>;
+		}>('/users/friends');
 	}
 
-	async sendFriendRequest(userId: string) {
-		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
+	async sendFriendRequest(targetUsername: string) {
+		return this.request<{message: string}>('/users/friends', {
 			method: 'POST',
+			body: JSON.stringify({targetUsername}),
 		});
 	}
 
-	async respondToFriendRequest(userId: string, accept: boolean) {
-		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
-			method: 'PATCH',
-			body: JSON.stringify({accept}),
+	async respondToFriendRequest(requesterId: string, accept: boolean) {
+		return this.request<{message: string}>(`/users/friends/${requesterId}`, {
+			method: 'PUT',
+			body: JSON.stringify({action: accept ? 'accept' : 'reject'}),
 		});
 	}
 
