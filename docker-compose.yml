@@ -54,8 +54,6 @@ services:
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
       - PORT=3000
       - HOST=0.0.0.0
-    ports:
-      - "3000:3000"
     networks:
       - dmz_net
       - service_mesh
@@ -66,13 +64,13 @@ services:
     secrets:
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
+      - source: session_secret
+        target: /run/secrets/session_secret
+      - source: api_gateway_role_id
+        target: /run/secrets/vault_role_id
+      - source: api_gateway_secret_id
+        target: /run/secrets/vault_secret_id
     command: ["node", "dist/index.js"]
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 10s
 
   # AUTH SERVICE - Provides token issuance and auth endpoints
   auth-service:
@@ -85,9 +83,7 @@ services:
       - PORT=3001
       - HOST=0.0.0.0
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
-      - VAULT_ADDR=http://vault:8200
-    ports:
-      - "3001:3001"
+      - VAULT_ADDR=https://vault:8200
     networks:
       - service_mesh
       - dmz_net
@@ -97,13 +93,11 @@ services:
     secrets:
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
+      - source: auth_service_role_id
+        target: /run/secrets/vault_role_id
+      - source: auth_service_secret_id
+        target: /run/secrets/vault_secret_id
     command: ["node", "dist/index.js"]
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://127.0.0.1:3001/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 10s
 
   vault:
     image: hashicorp/vault:1.13.3
@@ -111,19 +105,20 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_ADDR=http://0.0.0.0:8200
-      - VAULT_SKIP_VERIFY=true
+      - VAULT_ADDR=https://0.0.0.0:8200
+      - VAULT_CACERT=/vault/tls/vault.crt
     volumes:
       - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
       - ./infra/vault/policies:/policies:ro
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
+      - ./infra/certs:/vault/tls:ro
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
     healthcheck:
-      # In dev mode Vault is not configured with TLS; use HTTP for local healthcheck.
-      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
+      # TLS-enabled healthcheck using self-signed cert
+      test: ["CMD", "sh", "-c", "wget --no-check-certificate --spider --tries=1 --timeout=2 https://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -227,7 +222,7 @@ services:
     entrypoint: /entrypoint.sh
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -269,7 +264,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -308,7 +303,7 @@ services:
     ports:
       - 3010:3001
     environment:
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -328,3 +323,13 @@ secrets:
     file: ./infra/secret/vault_token.txt
   jwt_secret:
     file: ./infra/secret/jwt_secret.txt
+  session_secret:
+    file: ./infra/secret/session_secret.txt
+  api_gateway_role_id:
+    file: ./infra/secret/api-gateway_role_id
+  api_gateway_secret_id:
+    file: ./infra/secret/api-gateway_secret_id
+  auth_service_role_id:
+    file: ./infra/secret/auth-service_role_id
+  auth_service_secret_id:
+    file: ./infra/secret/auth-service_secret_id

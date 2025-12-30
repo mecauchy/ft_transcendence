@@ -1,11 +1,17 @@
 #!/bin/bash
-# Script to save and load Discord webhook URL from local file
-# This keeps secrets safe without committing them to git
 
 set -e
 VAULT_ADDR=${VAULT_ADDR:-http://vault:8200}
-SECRETS_DIR="/home/macauchy/ft_transcendence/infra/secret"
-WEBHOOK_FILE="$SECRETS_DIR/alertmanager_webhook.txt"
+# Resolve script directory and set secrets path idempotently (can be overridden by env)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SECRETS_DIR="${SECRETS_DIR:-$SCRIPT_DIR/../infra/secret}"
+# Normalize to absolute path if possible
+if cd "$SECRETS_DIR" >/dev/null 2>&1; then
+	SECRETS_DIR="$(pwd -P)"
+else
+	SECRETS_DIR="$(cd "$SCRIPT_DIR" >/dev/null 2>&1 && cd ../infra/secret 2>/dev/null && pwd -P || printf '%s' "$SECRETS_DIR")"
+fi
+WEBHOOK_FILE="${WEBHOOK_FILE:-$SECRETS_DIR/alertmanager_webhook.txt}"
 
 # Create secrets directory if it doesn't exist
 mkdir -p "$SECRETS_DIR"

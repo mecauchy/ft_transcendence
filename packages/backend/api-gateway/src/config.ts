@@ -12,7 +12,7 @@ export const config = {
   vault: {
     address:
       process.env.VAULT_ADDRESS ??
-      (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
+      (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'https://vault:8200'),
       // In development return a sane default token; in production make it explicit (function throws)
       token:
         process.env.VAULT_TOKEN ||
@@ -28,17 +28,17 @@ export const config = {
       process.env.AUTH_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://auth:3001'
-        : 'http://auth:3001'),
+        : 'https://auth:3001'),
     userService:
       process.env.USER_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://user:3002'
-        : 'http://user:3002'),
+        : 'https://user:3002'),
     gameService:
       process.env.GAME_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
         ? 'https://game:3003'
-        : 'http://game:3003'),
+        : 'https://game:3003'),
   },
 
   cors: {

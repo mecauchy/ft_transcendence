@@ -17,6 +17,11 @@ if [ -f "$SECRETS_DIR/vault_token.txt" ]; then
   export VAULT_TOKEN="$(cat "$SECRETS_DIR/vault_token.txt")"
 fi
 
+# Load session secret for @fastify/session middleware
+if [ -f "$SECRETS_DIR/session_secret" ]; then
+  export SESSION_SECRET="$(cat "$SECRETS_DIR/session_secret" | tr -d '\n')"
+fi
+
 if [ "${NODE_ENV:-development}" = "production" ]; then
   if [ -z "$VAULT_ROLE_ID" ] || [ -z "$VAULT_SECRET_ID" ]; then
     echo "FATAL: VAULT_ROLE_ID and VAULT_SECRET_ID are required in production and were not provided via Docker secrets or environment" >&2

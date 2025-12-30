@@ -1,6 +1,7 @@
 // packages/backend/api-gateway/src/vault/client.ts
 
 import Vault from 'node-vault';
+import https from 'https';
 
 interface VaultConfig {
 	address?: string;
@@ -19,9 +20,25 @@ export class VaultClient implements IVaultClient {
 	private client: any;
 
 	constructor(config: VaultConfig = {}) {
-		this.address = config.address || process.env.VAULT_ADDRESS || 'http://vault:8200';
+		this.address = config.address || process.env.VAULT_ADDRESS || 'https://vault:8200';
 		this.token = config.token || process.env.VAULT_TOKEN;
-		this.client = Vault({ apiVersion: 'v1', endpoint: this.address });
+		
+		// Configure TLS settings for self-signed certificates in dev
+		const vaultOptions: any = { 
+			apiVersion: 'v1', 
+			endpoint: this.address 
+		};
+		
+		// Allow self-signed certs in dev, strict in production
+		if (process.env.VAULT_SKIP_VERIFY === 'true') {
+			vaultOptions.requestOptions = {
+				agent: new https.Agent({
+					rejectUnauthorized: false
+				})
+			};
+		}
+		
+		this.client = Vault(vaultOptions);
 	}
 
 	async init(): Promise<void> {
@@ -69,11 +86,22 @@ export class VaultClient implements IVaultClient {
 
 	private async loginWithAppRole(roleId: string, secretId: string): Promise<void> {
 		const url = `${this.address.replace(/\/$/, '')}/v1/auth/approle/login`;
-		const res = await fetch(url, {
+		
+		// Configure fetch options for HTTPS with self-signed certs
+		const fetchOptions: any = {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ role_id: roleId, secret_id: secretId }),
-		});
+		};
+		
+		// Allow self-signed certs in dev
+		if (process.env.VAULT_SKIP_VERIFY === 'true') {
+			fetchOptions.agent = new https.Agent({
+				rejectUnauthorized: false
+			});
+		}
+		
+		const res = await fetch(url, fetchOptions);
 
 		if (!res.ok) {
 			const body = await res.text().catch(() => '<non-text response>');

@@ -8,17 +8,53 @@ on:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: SANITY CHECKS
+  # JOB 1: SECRET SCANNING (GITLEAKS)
   # ------------------------------------------------------------------
-  check-repository:
+  secret-scan:
+    name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check repository cleanliness
+        with:
+          fetch-depth: 0  # Full history for comprehensive scanning
+      
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Optional for Gitleaks Pro
+      
+      - name: Report Secret Detection
+        if: failure()
         run: |
-          if [ -f .env ]; then echo "❌ Error: .env file detected in repo!"; exit 1; fi
-          if [ -d node_modules ]; then echo "❌ Error: node_modules detected in repo!"; exit 1; fi
-          echo "✅ Repository is clean."
+          echo "CRITICAL: Secrets detected in repository!"
+          echo "This PR is BLOCKED until secrets are removed from history."
+          exit 1
+
+  # ------------------------------------------------------------------
+  # JOB 2: SANITY CHECKS
+  # ------------------------------------------------------------------
+  check-repository:
+    name: 🧹 Repository Cleanliness
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for sensitive files
+        run: |
+          if [ -f .env ]; then echo "Error: .env file detected in repo!"; exit 1; fi
+          if [ -d node_modules ]; then echo "Error: node_modules detected in repo!"; exit 1; fi
+          
+          # Check for accidentally committed secret files
+          if ls infra/secret/*.txt 2>/dev/null | grep -v "README.txt" | grep -v ".gitkeep"; then
+            echo "Error: Secret .txt files detected in repo!"
+            echo "Files should be gitignored. Found:"
+            ls infra/secret/*.txt | grep -v "README.txt"
+            exit 1
+          fi
+          
+          echo "Repository is clean."
 
   # ------------------------------------------------------------------
   # JOB 2: TYPE CHECKING & CONTRACT ENFORCEMENT (The "Contract Enforcer")
@@ -89,14 +125,40 @@ jobs:
       - name: Activate TS Problem Matcher
         run: echo "::add-matcher::.github/tsc-matcher.json"
 
-      - name: Create Secrets for CI
+      - name: Generate Mock Secrets for CI Build
         run: |
+          echo "Generating mock secrets for CI environment..."
           mkdir -p infra/secret
+          
+          # Generate random secrets (32 bytes base64)
           openssl rand -base64 32 > infra/secret/jwt_secret.txt
+          openssl rand -base64 48 > infra/secret/session_secret.txt
           openssl rand -base64 32 > infra/secret/vault_token.txt
-          echo "dummy-role-id" > infra/secret/gateway_role_id.txt
-          echo "dummy-secret-id" > infra/secret/gateway_secret_id.txt
-          echo "Dummy secrets created."
+          
+          # Database passwords
+          openssl rand -base64 32 > infra/secret/postgres_db_pass.txt
+          openssl rand -base64 32 > infra/secret/auth_db_pass.txt
+          openssl rand -base64 32 > infra/secret/chat_db_pass.txt
+          openssl rand -base64 32 > infra/secret/game_db_pass.txt
+          openssl rand -base64 32 > infra/secret/user_db_pass.txt
+          openssl rand -base64 32 > infra/secret/redis_password.txt
+          
+          # Monitoring credentials
+          openssl rand -base64 32 > infra/secret/grafana_pass.txt
+          openssl rand -base64 32 > infra/secret/kuma_pass.txt
+          echo "https://discord.com/api/webhooks/mock/ci-test" > infra/secret/alertmanager_webhook.txt
+          
+          # AppRole credentials (dummy UUIDs for CI)
+          echo "00000000-0000-0000-0000-000000000001" > infra/secret/api-gateway_role_id
+          echo "00000000-0000-0000-0000-000000000002" > infra/secret/api-gateway_secret_id
+          echo "00000000-0000-0000-0000-000000000003" > infra/secret/auth-service_role_id
+          echo "00000000-0000-0000-0000-000000000004" > infra/secret/auth-service_secret_id
+          
+          # Set proper permissions
+          chmod 600 infra/secret/*.txt infra/secret/*_role_id infra/secret/*_secret_id
+          
+          echo "Mock secrets created (CI environment only)"
+          echo "These are NOT production secrets and will be discarded after build"
 
       - name: Start Services
         run: |
