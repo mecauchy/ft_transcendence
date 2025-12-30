@@ -104,6 +104,8 @@ model User {
 	oauth		OAuth?
 	userKey		UserKey?
 	settings	Settings?
+	gamePong	GamePong?
+	gameBreathe	GameBreathe?
 	
 	// friendships
 	friendsInitiated	Friend[]	@relation("FriendInitiator")
@@ -201,14 +203,22 @@ model Friend {
 }
 
 model GamePong {
-	id			BigInt		@id @default(autoincrement()) @map("gamepong_id")
-	playerId	BigInt?		@map("player_id")
+	id			BigInt		@id @default(autoincrement()) @map("game_pong_id")
+	playerId	BigInt?		@map("game_pong_player_id")
 	mode		PongMode
 	difficulty	PongDifficulty
-	score1		Int			@map("score_1")
-	score2		Int			@map("score_2")
+	score1		Int			@map("game_pong_score_1")
+	score2		Int			@map("game_pong_score_2")
 	winner		PongWinner
-	endedAt		DateTime?	@map("ended_at") @db.Timestamptz
+	startedAt	DateTime?	@map("game_pong_started_at") @db.Timestamptz
+	endedAt		DateTime?	@map("game_pong_ended_at") @db.Timestamptz
+}
+
+model GameBreathe {
+	id			BigInt		@id @default(autoincrement()) @map("game_breathe_id")
+	playerId	BigInt?		@map("game_breathe_player_id")
+	startedAt	DateTime?	@map("game_breathe_started_at") @db.Timestamptz
+	endedAt		DateTime?	@map("game_breathe_ended_at") @db.Timestamptz
 }
 
 model Scenario {

@@ -197,6 +197,16 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					},
 				});
 
+				// delete pong stats
+				await tx.gamePong.deleteMany({
+					where: {userId},
+				});
+
+				// delete breathe stats
+				await tx.gameBreathe.deleteMany({
+					where: {userId},
+				});
+
 				// final -> delete the user
 				await tx.user.delete({
 					where: {id: userId},

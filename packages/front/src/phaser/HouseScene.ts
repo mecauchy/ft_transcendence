@@ -43,6 +43,8 @@ export default class HouseScene extends Phaser.Scene {
 	private score1 = 0;
 	private score2 = 0;
 
+	private startTimeStamp = null;
+
 	private keyW!: Phaser.Input.Keyboard.Key;
 	private keyS!: Phaser.Input.Keyboard.Key;
 
@@ -87,6 +89,7 @@ export default class HouseScene extends Phaser.Scene {
 		this.ballSpeedY_n = 0.005;
 		this.score1 = 0;
 		this.score2 = 0;
+		this.startTimeStamp = new Date().toISOString();
 	}
 
 	private showWelcomePopup() {
@@ -386,7 +389,8 @@ export default class HouseScene extends Phaser.Scene {
 									score1: this.score1,
 									score2: this.score2,
 									winner: this.score1 >= 5 ? (this.ia_mode ? "player" : "player1") : (this.ia_mode ? "ia" : "player2"),
-									timestamp: new Date().toISOString()
+									timestamp1:	this.startTimeStamp,
+									timestamp2: new Date().toISOString()
 								};
 								try {
 									fetch("/api/game-stats", {

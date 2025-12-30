@@ -80,7 +80,15 @@ CREATE TABLE game_pong (
 	game_pong_score_1		INTEGER NOT NULL,
 	game_pong_score_2		INTEGER NOT NULL,
 	game_pong_winner		pong_winner NOT NULL,
-	ended_at				TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	game_breathe_started_at	TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	game_breathe_ended_at	TIMESTAMPTZ
+);
+
+CREATE TABLE game_breathe (
+	game_breathe_id			BIGSERIAL PRIMARY KEY,
+	game_breathe_player_id	BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+	game_breathe_started_at	TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	game_breathe_ended_at	TIMESTAMPTZ
 );
 
 CREATE TABLE scenarios (

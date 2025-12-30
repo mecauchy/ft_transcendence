@@ -84,8 +84,8 @@ async function start() {
 	Server:	${address}
 
 	REST Endpoints:
-		POST	/api/game/pong
-		POST	/api/game/breathe	TODO
+		POST	/api/game/pong				- Save pong game stats
+		POST	/api/game/breathe			- Save the breathe session stats
 		POST	/api/session/start			- Start new session
 		GET		/api/session/:id			- Get session state
 		GET		/api/session/:id/history	- Get session event history

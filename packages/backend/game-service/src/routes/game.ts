@@ -2,7 +2,7 @@ import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {prisma} from '../db';
 import {authMiddleware} from '../middleware/auth';
 import {WebSocketManager} from '../websocket/manager';
-import type {IPongGame} from '@speak-up/shared';
+import type {IPongGame, IBreatheGame} from '@speak-up/shared';
 
 // shared websocket
 let wsManager: WebSocketManager;
@@ -16,7 +16,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	fastify.addHook('preHandler', authMiddleware);
 
 	// receive data from pong game
-	fastify.post<{Body: IPongGame}>('/start', async (request, reply) => {
+	fastify.post<{Body: IPongGame}>('/pong', async (request, reply) => {
 		const userId = request.user!.userId;
 
 		// validate request
@@ -36,7 +36,8 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				score1,
 				score2,
 				winner,
-				timestamp
+				timestamp1,
+				timestamp2
 			} = request.body;
 
 			const gameLog = await prisma.pongGame.create({
@@ -47,7 +48,51 @@ export async function gameRoutes(fastify: FastifyInstance) {
 					score1,
 					score2,
 					winner,
-					timestamp: new Date(timestamp)
+					timestamp1: new Date(timestamp1),
+					timestamp2: new Date(timestamp2)
+				}
+			});
+
+			return reply.send({
+				success: true,
+				gameId: gameLog.id
+			});
+
+			return ;
+		} catch (error) {
+			request.log.error({error}, 'Failed to log game');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to start session',
+			});
+		}
+	});
+
+	fastify.post<{Body: IBreatheGame}>('/breathe', async (request, reply) => {
+		const userId = request.user!.userId;
+
+		// validate request
+		if (request.playerid !== userId) {
+			return reply.status(403).send({
+				statusCode:	403,
+				error:		'Forbidden',
+				message:	'Can only send stats for yourself',
+			});
+		}
+
+		try {
+			// Store game stats in DB
+			const {
+				timestamp1,
+				timestamp2
+			} = request.body;
+
+			const gameLog = await prisma.breatheGame.create({
+				data: {
+					playerId: userId,
+					timestamp1: new Date(timestamp1),
+					timestamp2: new Date(timestamp2)
 				}
 			});
 
