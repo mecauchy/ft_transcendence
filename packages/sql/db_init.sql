@@ -4,6 +4,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE user_role AS ENUM('PATIENT', 'DOCTOR', 'ADMIN');
 CREATE TYPE friend_status AS ENUM('PENDING', 'ACCEPTED', 'BLOCKED');
+CREATE TYPE pong_mode AS ENUM('AI', 'LOCAL');
+CREATE TYPE pong_difficulty AS ENUM('EASY', 'MEDIUM', 'HARD', 'LOCAL');
+CREATE TYPE pong_winner AS ENUM('PLAYER', 'AI', 'PLAYER1', 'PLAYER2');
 CREATE TYPE session_mode AS ENUM('AI', 'P2P');
 CREATE TYPE session_status AS ENUM('WAITING', 'ACTIVE', 'PAUSED', 'COMPLETED', 'TERMINATED');
 CREATE TYPE token_status AS ENUM('ACTIVE', 'REVOKED');
@@ -69,6 +72,16 @@ CREATE TABLE friends (
 CREATE INDEX idx_friends_friend ON friends (friend_userid);
 CREATE INDEX idx_friends_status ON friends (friend_status);
 
+CREATE TABLE game_pong (
+	game_pong_id			BIGSERIAL PRIMARY KEY,
+	game_pong_player_id		BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+	game_pong_mode			pong_mode NOT NULL,
+	game_pong_difficulty	pong_difficulty NOT NULL,
+	game_pong_score_1		INTEGER NOT NULL,
+	game_pong_score_2		INTEGER NOT NULL,
+	game_pong_winner		pong_winner NOT NULL,
+	ended_at				TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE scenarios (
 	scenario_id				BIGSERIAL PRIMARY KEY,

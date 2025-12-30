@@ -141,7 +141,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			return reply.status(400).send({
 				statusCode:	400,
 				error:		'Bad Request',
-				message:	'Target user ID or username is required',
+				message:	'Target username is required',
 			});
 		}
 

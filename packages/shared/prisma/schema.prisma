@@ -20,6 +20,25 @@ enum FriendStatus {
 	BLOCKED
 }
 
+enum PongMode {
+	AI
+	LOCAL
+}
+
+enum PongDifficulty {
+	EASY
+	MEDIUM
+	HARD
+	LOCAL
+}
+
+enum PongWinner {
+	PLAYER
+	AI
+	PLAYER1
+	PLAYER2
+}
+
 enum SessionMode {
 	AI
 	P2P
@@ -179,6 +198,17 @@ model Friend {
 	@@index([receiverId], map: "idx_friends_friend")
 	@@index([status], map: "idx_friends_status")
 	@@map("friends")
+}
+
+model GamePong {
+	id			BigInt		@id @default(autoincrement()) @map("gamepong_id")
+	playerId	BigInt?		@map("player_id")
+	mode		PongMode
+	difficulty	PongDifficulty
+	score1		Int			@map("score_1")
+	score2		Int			@map("score_2")
+	winner		PongWinner
+	endedAt		DateTime?	@map("ended_at") @db.Timestamptz
 }
 
 model Scenario {

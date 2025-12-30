@@ -376,6 +376,27 @@ export default class HouseScene extends Phaser.Scene {
 						{
 							label: t("common.ok"),
 							onClick: () => {
+								// Send game stats to backend
+								// Replace with your actual player ID source
+								const playerid = window.playerid || localStorage.getItem('playerid') || "unknown";
+								const gameData = {
+									playerid,
+									mode: this.ia_mode ? "ia" : "local",
+									difficulty: this.ia_mode ? this.ia_difficulty : null,
+									score1: this.score1,
+									score2: this.score2,
+									winner: this.score1 >= 5 ? (this.ia_mode ? "player" : "player1") : (this.ia_mode ? "ia" : "player2"),
+									timestamp: new Date().toISOString()
+								};
+								try {
+									fetch("/api/game-stats", {
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify(gameData)
+									});
+								} catch (e) {
+									console.error("Failed to send game stats", e);
+								}
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();
@@ -393,6 +414,7 @@ export default class HouseScene extends Phaser.Scene {
 						{
 							label: t("common.ok"),
 							onClick: () => {
+								
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();
