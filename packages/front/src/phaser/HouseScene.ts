@@ -379,11 +379,9 @@ export default class HouseScene extends Phaser.Scene {
 						{
 							label: t("common.ok"),
 							onClick: () => {
-								// Send game stats to backend
-								// Replace with your actual player ID source
-								const playerid = window.playerid || localStorage.getItem('playerid') || "unknown";
+								// sends game stat to backend
 								const gameData = {
-									playerid,
+									playerid: "",
 									mode: this.ia_mode ? "ia" : "local",
 									difficulty: this.ia_mode ? this.ia_difficulty : null,
 									score1: this.score1,
