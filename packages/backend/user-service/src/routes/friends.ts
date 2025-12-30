@@ -133,11 +133,11 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 	});
 
 	// send friend request using api
-	fastify.post<{Body: {targetId?: string; targetUsername?: string}}>('/', async (request, reply) => {
+	fastify.post<{Body: {targetUsername?: string}}>('/', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const {targetId, targetUsername} = request.body;
+		const {targetUsername} = request.body;
 
-		if (!targetId && !targetUsername) {
+		if (!targetUsername) {
 			return reply.status(400).send({
 				statusCode:	400,
 				error:		'Bad Request',
@@ -147,13 +147,8 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 
 		let targetUser;
 		try {
-			// find target user by ID or username
-			if (targetId) {
-				const targetIdBigInt = BigInt(targetId);
-				targetUser = await prisma.user.findUnique({
-					where: {id: targetIdBigInt},
-				});
-			} else if (targetUsername) {
+			// find target username
+			if (targetUsername) {
 				targetUser = await prisma.user.findUnique({
 					where: {username: targetUsername},
 				});

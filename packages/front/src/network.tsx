@@ -14,19 +14,20 @@ function Network() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const [friendUsername, setFriendUsername] = useState("");
+  const [targetUsername, settargetUsername] = useState("");
   const [friends, setFriends] = useState<UserPreview[]>([]);
   const [friendRequests, setFriendRequests] = useState<UserPreview[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Add friend
   const handleAddFriend = async () => {
-	if (!friendUsername.trim()) return;
+	if (!targetUsername.trim()) return;
 
 	try {
-	  await api.sendFriendRequest(friendUsername);
+	  await api.sendFriendRequest(targetUsername);
+	  console.log('sent to ' + targetUsername);
 	  setRefreshKey(prev => prev + 1);
-	  setFriendUsername("");
+	  settargetUsername("");
 	} catch (error) {
 	  console.error("Failed to add friend:", error);
 	}
@@ -100,10 +101,10 @@ function Network() {
 	  <div className="mb-6">
 		<input
 		  type="text"
-		  placeholder={t('network.enterFriendUsername')}
+		  placeholder={t('network.entertargetUsername')}
 		  className="border border-gray-300 rounded-md p-2 w-64 text-white bg-transparent focus:bg-purple-600 focus:outline-none"
-		  value={friendUsername}
-		  onChange={e => setFriendUsername(e.target.value)}
+		  value={targetUsername}
+		  onChange={e => settargetUsername(e.target.value)}
 		/>
 		<button
 		  className="ml-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
