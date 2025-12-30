@@ -1,9 +1,11 @@
 import {useState} from 'react'
 import './styles/login.css'
 import {useAuth} from './contexts/AuthContext'
+import {useTranslation} from 'react-i18next'
 
 function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const {login, register, loginWithOAuth} = useAuth();
+	const {t} = useTranslation();
 
 	//state
 	const [ulogin, setLogin] = useState<string>('');
@@ -34,7 +36,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 		}
 
 		if (!passwordFormat) {
-			setErrorMessage('Le mot de passe ne respecte pas les exigences');
+			setErrorMessage(t('auth.passwordRequirements'));
 			return;
 		}
 
@@ -43,7 +45,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			await register(createUsername, createEmail, createPassword, birthdate);
 			onLogin(createUsername);
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : 'Échec de l\'inscription');
+			setErrorMessage(error instanceof Error ? error.message : t('auth.registerFailed'));
 		} finally {
 			setIsLoading(false);
 		}
@@ -89,7 +91,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 		setErrorMessage('');
 
 		if (!ulogin || !password) {
-			setErrorMessage('Veuillez remplir tous les champs');
+			setErrorMessage(t('auth.fillAllFields'));
 			return;
 		}
 
@@ -98,7 +100,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			await login(ulogin, password);
 			// onLogin is handled by AuthContext - the user state change will trigger re-render
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : 'Échec de la connexion');
+			setErrorMessage(error instanceof Error ? error.message : t('auth.loginFailed'));
 		} finally {
 			setIsLoading(false);
 		}
@@ -126,7 +128,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	<div className='login_container'>
 		<img src='/controler.png' alt='Logo' className='login_logo_image' />
 	  <p className='login_title'>ft_transcendance</p>
-	  <p className='login_subtitle'>Quand parler devient une mécanique de jeu.</p>
+	  <p className='login_subtitle'>{t('home.subtitle')}</p>
 	  
 	  {errorMessage && (
 		<div className='login_error_message'>
@@ -137,21 +139,21 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	  {!registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleSubmit} className='login_form'>
-			<p className='username'>Login</p>
+			<p className='username'>{t('auth.login')}</p>
 			<input
 			  type="string"
 			  className='username_input'
-			  placeholder="Entrez votre nom d'utilisateur ou votre adresse email"
+			  placeholder={t('auth.enterUsernameOrEmail')}
 			  value={ulogin}
 			  onChange={handleChangeLogin}
 			  disabled={isLoading}
 			  required
 			/>
-			<p className='password'>Mot de passe</p>
+			<p className='password'>{t('auth.password')}</p>
 			<input
 			  type="password"
 			  className='password_input'
-			  placeholder="Entrez votre mot de passe"
+			  placeholder={t('auth.enterPassword')}
 			  value={password}
 			  onChange={handleChangePassword}
 			  disabled={isLoading}
@@ -162,7 +164,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			className='login_button'
 			type="submit"
 			disabled={isLoading}>
-				{isLoading ? 'Connexion...' : 'Se connecter'}
+				{isLoading ? t('auth.connecting') : t('auth.connect')}
 			</button>
 		</form>
 	  </div>
@@ -170,27 +172,27 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	  {registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleRegister} className='login_form'>
-			<p className='username'>Entrez votre adresse email</p>
+			<p className='username'>{t('auth.enterEmail')}</p>
 			<input
 			  type="email"
 			  className='username_input'
-			  placeholder="Entrez votre adresse email"
+			  placeholder={t('auth.enterEmail')}
 			  value={createEmail}
 			  onChange={handleCreateEmail}
 			  disabled={isLoading}
 			  required
 			/>
-			<p className='username'>Choisissez un nom d'utilisateur</p>
+			<p className='username'>{t('auth.chooseUsername')}</p>
 			<input
 			  type="text"
 			  className='username_input'
-			  placeholder="Entrez votre nom d'utilisateur"
+			  placeholder={t('auth.enterUsername')}
 			  value={createUsername}
 			  onChange={handleCreateUsername}
 			  disabled={isLoading}
 			  required
 			/>
-			<p className='birthdate'>Date de naissance</p>
+			<p className='birthdate'>{t('auth.birthdate')}</p>
 			<input 
 			  type="date"
 			  id="birthdate"
@@ -200,11 +202,11 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			  disabled={isLoading}
 			  required
 			/>
-			<p className='password'>Choisissez un mot de passe</p>
+			<p className='password'>{t('auth.choosePassword')}</p>
 			<input
 			  type="password"
 			  className='password_input'
-			  placeholder="Entrez votre mot de passe"
+			  placeholder={t('auth.enterPassword')}
 			  value={createPassword}
 			  onChange={handleCreatePassword}
 			  disabled={isLoading}
@@ -215,31 +217,31 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			}`}>
 				<div className="password_requirements">
 					<p className={createPassword.length >= 8 ? 'requirement_met' : 'requirement_not_met'}>
-						{createPassword.length >= 8 ? '✔' : '✘'} Au moins 8 caractères
+						{createPassword.length >= 8 ? '✔' : '✘'} {t('passwordRequirements.minChars')}
 					</p>
 					<p className={uppercasePresent ? 'requirement_met' : 'requirement_not_met'}>
-						{uppercasePresent ? '✔' : '✘'} Une lettre majuscule
+						{uppercasePresent ? '✔' : '✘'} {t('passwordRequirements.uppercase')}
 					</p>
 					<p className={lowercasePresent ? 'requirement_met' : 'requirement_not_met'}>
-						{lowercasePresent ? '✔' : '✘'} Une lettre minuscule
+						{lowercasePresent ? '✔' : '✘'} {t('passwordRequirements.lowercase')}
 					</p>
 					<p className={numberPresent ? 'requirement_met' : 'requirement_not_met'}>
-						{numberPresent ? '✔' : '✘'} Un chiffre
+						{numberPresent ? '✔' : '✘'} {t('passwordRequirements.number')}
 					</p>
 					<p className={specialCharPresent ? 'requirement_met' : 'requirement_not_met'}>
-						{specialCharPresent ? '✔' : '✘'} Un caractère spécial (@$!%*?&)
+						{specialCharPresent ? '✔' : '✘'} {t('passwordRequirements.specialChar')}
 					</p>
 				</div>
 			</div>
 			<br />
 			{badConfirmation &&
-			<p className='password_confirmation_error'>Les mots de passe ne correspondent pas</p>
+			<p className='password_confirmation_error'>{t('auth.passwordsDontMatch')}</p>
 			}
 			<input
 			  type="password"
 			  readOnly={passwordFormat ? false : true}
 			  className={badConfirmation ? 'password_input_error' : 'password_input'}
-			  placeholder="Confirmez votre mot de passe"
+			  placeholder={t('auth.confirmPassword')}
 			  value={confirmPassword}
 			  onChange={handleConfirmPassword}
 			  disabled={isLoading}
@@ -250,13 +252,13 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			className='login_button'
 			type="submit"
 			disabled={isLoading}>
-				{isLoading ? 'Inscription...' : 'S\'inscrire'}
+				{isLoading ? t('auth.registering') : t('auth.signUp')}
 			</button>
 		</form>
 	  </div>
 	 }
 	  <div className='login_api'>
-		<p>Se connecter avec :</p>
+		<p>{t('auth.loginWith')}</p>
 		<div className='login_api_buttons'>
 			<button className='login_api_button_github'
 			onClick={handleGithubLogin}
@@ -278,16 +280,16 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			onClick={() => setRegisterMode(true)}
 			disabled={isLoading}
 			type="button">
-				Pas encore de compte ? Créez-en un ici
+				{t('auth.createAccountHere')}
 			</button>}
 			{registerMode &&
 			<button className='login_register_button'
 			onClick={() => setRegisterMode(false)}
 			disabled={isLoading}
 			type="button">
-				Déjà un compte ? Connectez-vous ici
+				{t('auth.loginHere')}
 			</button>}
-			<p>Lancez une session et faites vos premiers choix.</p>
+			<p>{t('auth.startSession')}</p>
 	  </div>
 	</div>
   )

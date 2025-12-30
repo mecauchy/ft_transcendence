@@ -1,14 +1,14 @@
 import {useState, useEffect} from "react";
 import Navbar from "./components/navbar.tsx";
 import Game from "./game.tsx";
-import Profile from "./profile.tsx";
+import Network from "./network.tsx";
 import Settings from "./settings.tsx";
 
 function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
 		const current = window.location.pathname.replace("/", "");
-		if (["tournament", "game", "profile", "settings"].includes(current)) {
+		if (["tournament", "game", "network", "settings"].includes(current)) {
 			return current;
 		}
 		return "game";
@@ -46,7 +46,7 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 	<div className='home_container'>
 		<Navbar setPage={changePage} username={username} />
 		{page === 'game' && <Game />}
-		{page === 'profile' && <Profile />}
+		{page === 'network' && <Network />}
 		{page === 'settings' && <Settings />}
 	</div>
   	)

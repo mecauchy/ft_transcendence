@@ -133,39 +133,47 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 	});
 
 	// send friend request using api
-	fastify.post<{Body: {targetId: string}}>('/', async (request, reply) => {
+	fastify.post<{Body: {targetId?: string; targetUsername?: string}}>('/', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const {targetId} = request.body;
+		const {targetId, targetUsername} = request.body;
 
-		if (!targetId) {
+		if (!targetId && !targetUsername) {
 			return reply.status(400).send({
 				statusCode:	400,
 				error:		'Bad Request',
-				message:	'Target user ID is required',
+				message:	'Target user ID or username is required',
 			});
 		}
 
-		const targetIdBigInt = BigInt(targetId);
-
-		if (targetIdBigInt === userId) {
-			return reply.status(400).send({
-				statusCode:	400,
-				error:		'Bad Request',
-				message:	'Cannot send friend request to yourself',
-			});
-		}
-
+		let targetUser;
 		try {
-			// check if target exists
-			const targetUser = await prisma.user.findUnique({
-				where: {id: targetIdBigInt},
-			});
+			// find target user by ID or username
+			if (targetId) {
+				const targetIdBigInt = BigInt(targetId);
+				targetUser = await prisma.user.findUnique({
+					where: {id: targetIdBigInt},
+				});
+			} else if (targetUsername) {
+				targetUser = await prisma.user.findUnique({
+					where: {username: targetUsername},
+				});
+			}
 
 			if (!targetUser) {
 				return reply.status(404).send({
 					statusCode:	404,
 					error:		'Not Found',
 					message:	'Target user not found',
+				});
+			}
+
+			const targetIdBigInt = targetUser.id;
+
+			if (targetIdBigInt === userId) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'Cannot send friend request to yourself',
 				});
 			}
 

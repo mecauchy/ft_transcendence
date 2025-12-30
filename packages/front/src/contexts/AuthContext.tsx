@@ -1,6 +1,8 @@
+/* eslint-disable react-refresh/only-export-components */
 import {createContext, useContext, useState, useEffect, type ReactNode} from 'react';
 import {api} from '../api/client';
 import type {ApiError} from '../api/client';
+import i18n from '../i18n';
 
 interface User {
 	userId: string;
@@ -21,6 +23,7 @@ interface AuthContextType {
 	register: (username: string, email: string, password: string, dob: string) => Promise<void>;
 	logout: () => Promise<void>;
 	loginWithOAuth: (provider: '42' | 'github') => void;
+	refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,15 +45,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				// try get current profile
 				const profile = await api.getProfile();
 				setUser({
-					userId: profile.userId,
+					userId: profile.userId || profile.id || '',
 					username: profile.username,
 					email: profile.email,
 					role: 'PATIENT', // set by default, could be fetched
-					displayName: profile.displayName,
+					displayName: profile.displayName || profile.alias,
 					avatarUrl: profile.avatarUrl,
 					level: profile.level,
 					totalXp: profile.totalXp,
 				});
+				// Apply user's language preference from profile
+				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
+					i18n.changeLanguage(profile.preferences.language);
+				}
 			} catch {
 				// no auth - clear stored token
 				localStorage.removeItem('accessToken');
@@ -71,6 +78,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				...response.user,
 				displayName: response.user.username,
 			});
+			// Fetch profile to get language preference after login
+			try {
+				const profile = await api.getProfile();
+				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
+					i18n.changeLanguage(profile.preferences.language);
+				}
+			} catch {
+				// Ignore if profile fetch fails
+			}
 		} catch (error) {
 			const apiError = error as ApiError;
 			throw new Error(apiError.message || 'Login failed');
@@ -103,6 +119,24 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		window.location.href = api.getOAuthUrl(provider);
 	};
 
+	const refreshUser = async () => {
+		try {
+			const profile = await api.getProfile();
+			setUser({
+				userId: profile.userId,
+				username: profile.username,
+				email: profile.email,
+				role: 'PATIENT',
+				displayName: profile.displayName,
+				avatarUrl: profile.avatarUrl,
+				level: profile.level,
+				totalXp: profile.totalXp,
+			});
+		} catch {
+			// Keep current user if refresh fails
+		}
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -113,6 +147,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				register,
 				logout,
 				loginWithOAuth,
+				refreshUser,
 			}}
 		>
 			{children}

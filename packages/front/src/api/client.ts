@@ -121,20 +121,33 @@ class ApiClient {
 	async getProfile(userId?: string) {
 		const endpoint = userId ? `/users/${userId}` : '/users/me';
 		return this.request<{
-			userId: string;
+			id?: string;
+			userId?: string;
+			alias?: string;
 			username: string;
 			email: string;
 			displayName?: string;
 			avatarUrl?: string;
-			level: number;
-			totalXp: number;
-			createdAt: string;
+			level?: number;
+			totalXp?: number;
+			createdAt?: string;
+			preferences?: {
+				language?: 'en' | 'fr' | 'es';
+				theme?: 'light' | 'dark';
+			};
 		}>(endpoint);
 	}
 
-	async updateProfile(data: {displayName?: string; avatarUrl?: string}) {
-		return this.request<{message:	string}>('/users/me', {
-			method: 'PATCH',
+	async updateProfile(data: {
+		username?: string;
+		email?: string;
+		preferences?: {
+			language?: 'en' | 'fr' | 'es';
+			theme?: 'light' | 'dark';
+		};
+	}) {
+		return this.request<{success: boolean; message: string}>('/users/me', {
+			method: 'PUT',
 			body: JSON.stringify(data),
 		});
 	}
@@ -156,23 +169,36 @@ class ApiClient {
 	async getFriends() {
 		return this.request<{
 			friends: Array<{
-				odId: string;
+				id: string;
 				username: string;
-				status: 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+				status: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 			}>;
-		}>('/users/me/friends');
+			pendingRequests: Array<{
+				id: string;
+				username: string;
+				avatarUrl?: string;
+				requestedAt: string;
+			}>;
+			sentRequests: Array<{
+				id: string;
+				username: string;
+				avatarUrl?: string;
+				sentAt: string;
+			}>;
+		}>('/users/friends');
 	}
 
-	async sendFriendRequest(userId: string) {
-		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
+	async sendFriendRequest(targetUsername: string) {
+		return this.request<{message: string}>('/users/friends', {
 			method: 'POST',
+			body: JSON.stringify({targetUsername}),
 		});
 	}
 
-	async respondToFriendRequest(userId: string, accept: boolean) {
-		return this.request<{message:	string}>(`/users/me/friends/${userId}`, {
-			method: 'PATCH',
-			body: JSON.stringify({accept}),
+	async respondToFriendRequest(requesterId: string, accept: boolean) {
+		return this.request<{message: string}>(`/users/friends/${requesterId}`, {
+			method: 'PUT',
+			body: JSON.stringify({action: accept ? 'accept' : 'reject'}),
 		});
 	}
 

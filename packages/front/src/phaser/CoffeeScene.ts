@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 type CardData = {
 	container: Phaser.GameObjects.Container;
@@ -55,10 +56,10 @@ export default class CoffeeScene extends Phaser.Scene {
 
 		if (!this.game_started) {
 			this.popup.show(
-				"Drag your thoughts to categorize them if you want. Click 'STOP' to accept.",
+				t("scenes.coffee.welcome"),
 				[
 					{
-						label: "Got it!",
+						label: t("scenes.coffee.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -69,26 +70,26 @@ export default class CoffeeScene extends Phaser.Scene {
 		}
 
 		// Example cards
-		this.createCard("Time changes everything");
-		this.createCard("People disappoint often");
-		this.createCard("Effort matters more");
-		this.createCard("Feelings fade away");
-		this.createCard("Silence feels heavy");
-		this.createCard("Trust breaks easily");
-		this.createCard("Nothing lasts forever");
-		this.createCard("Memories lie sometimes");
-		this.createCard("Words leave scars");
-		this.createCard("Choices have consequences");
-		this.createCard("Love feels risky");
-		this.createCard("Regret comes late");
-		this.createCard("Pain teaches lessons");
-		this.createCard("Comfort kills growth");
-		this.createCard("Fear limits dreams");
-		this.createCard("Happiness feels temporary");
-		this.createCard("Loneliness feels familiar");
-		this.createCard("Attention feels addictive");
-		this.createCard("Control is illusion");
-		this.createCard("Meaning is personal");
+		this.createCard(t("scenes.coffee.thoughts.timeChanges"));
+		this.createCard(t("scenes.coffee.thoughts.peopleDisappoint"));
+		this.createCard(t("scenes.coffee.thoughts.effortMatters"));
+		this.createCard(t("scenes.coffee.thoughts.feelingsFade"));
+		this.createCard(t("scenes.coffee.thoughts.silenceHeavy"));
+		this.createCard(t("scenes.coffee.thoughts.trustBreaks"));
+		this.createCard(t("scenes.coffee.thoughts.nothingLasts"));
+		this.createCard(t("scenes.coffee.thoughts.memoriesLie"));
+		this.createCard(t("scenes.coffee.thoughts.wordsScars"));
+		this.createCard(t("scenes.coffee.thoughts.choicesConsequences"));
+		this.createCard(t("scenes.coffee.thoughts.loveRisky"));
+		this.createCard(t("scenes.coffee.thoughts.regretLate"));
+		this.createCard(t("scenes.coffee.thoughts.painTeaches"));
+		this.createCard(t("scenes.coffee.thoughts.comfortKills"));
+		this.createCard(t("scenes.coffee.thoughts.fearLimits"));
+		this.createCard(t("scenes.coffee.thoughts.happinessTemporary"));
+		this.createCard(t("scenes.coffee.thoughts.lonelinessFamiliar"));
+		this.createCard(t("scenes.coffee.thoughts.attentionAddictive"));
+		this.createCard(t("scenes.coffee.thoughts.controlIllusion"));
+		this.createCard(t("scenes.coffee.thoughts.meaningPersonal"));
 
 		this.centerScene();
 

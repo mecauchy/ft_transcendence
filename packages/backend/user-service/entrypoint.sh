@@ -1,8 +1,12 @@
 #!/bin/sh
+# Read secrets as root before switching to nodejs user
 if [ -f "/run/secrets/postgres_db_pass.txt" ]; then
-	export DB_PASSWORD=$(cat /run/secrets/postgres_db_pass.txt)
+	DB_PASSWORD=$(cat /run/secrets/postgres_db_pass.txt)
+	export DB_PASSWORD
 fi
 if [ -f "/tmp/vault_token" ]; then
-	export VAULT_TOKEN=$(cat /tmp/vault_token)
+	VAULT_TOKEN=$(cat /tmp/vault_token)
+	export VAULT_TOKEN
 fi
-exec su-exec nodejs node dist/index.js
+# Use exec with environment variables preserved
+exec su-exec nodejs sh -c 'export DB_PASSWORD="'"$DB_PASSWORD"'" VAULT_TOKEN="'"$VAULT_TOKEN"'" && node dist/index.js'
