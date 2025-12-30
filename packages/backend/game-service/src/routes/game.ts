@@ -20,13 +20,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		const userId = request.user!.userId;
 
 		// validate request
-		if (request.playerid !== userId) {
-			return reply.status(403).send({
-				statusCode:	403,
-				error:		'Forbidden',
-				message:	'Can only send stats for yourself',
-			});
-		}
+		// if (request.playerid !== userId) {
+		// 	return reply.status(403).send({
+		// 		statusCode:	403,
+		// 		error:		'Forbidden',
+		// 		message:	'Can only send stats for yourself',
+		// 	});
+		// }
 
 		try {
 			// Store game stats in DB
@@ -40,16 +40,16 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				timestamp2
 			} = request.body;
 
-			const gameLog = await prisma.pongGame.create({
+			const gameLog = await prisma.gamePong.create({
 				data: {
-					playerId: userId,
+					playerId: Number(userId),
 					mode,
 					difficulty,
-					score1,
-					score2,
+					score1: Number(score1),
+					score2: Number(score2),
 					winner,
-					timestamp1: new Date(timestamp1),
-					timestamp2: new Date(timestamp2)
+					startedAt: new Date(timestamp1),
+					endedAt: new Date(timestamp2)
 				}
 			});
 
@@ -73,13 +73,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		const userId = request.user!.userId;
 
 		// validate request
-		if (request.playerid !== userId) {
-			return reply.status(403).send({
-				statusCode:	403,
-				error:		'Forbidden',
-				message:	'Can only send stats for yourself',
-			});
-		}
+		// if (request.playerid !== userId) {
+		// 	return reply.status(403).send({
+		// 		statusCode:	403,
+		// 		error:		'Forbidden',
+		// 		message:	'Can only send stats for yourself',
+		// 	});
+		// }
 
 		try {
 			// Store game stats in DB
@@ -88,11 +88,11 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				timestamp2
 			} = request.body;
 
-			const gameLog = await prisma.breatheGame.create({
+			const gameLog = await prisma.gameBreathe.create({
 				data: {
-					playerId: userId,
-					timestamp1: new Date(timestamp1),
-					timestamp2: new Date(timestamp2)
+					playerId: Number(userId),
+					startedAt: new Date(timestamp1),
+					endedAt: new Date(timestamp2)
 				}
 			});
 
