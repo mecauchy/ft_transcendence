@@ -5,6 +5,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Build shared types first
 WORKDIR /shared/types
 COPY packages/shared/types ./
+ENV CI=true
 RUN pnpm install && pnpm run build
 
 WORKDIR /app

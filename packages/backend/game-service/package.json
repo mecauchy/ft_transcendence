@@ -34,5 +34,6 @@
 	},
 	"prisma": {
 		"schema": "../../shared/prisma/schema.prisma"
-	}
+	},
+	"packageManager": "pnpm@10.26.2"
 }
