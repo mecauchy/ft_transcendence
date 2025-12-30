@@ -1,0 +1,176 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "gotIt": "Got it",
+    "yes": "Yes",
+    "no": "No",
+    "error": "Error",
+    "success": "Success",
+    "ok": "OK",
+    "buy": "Buy",
+    "finish": "Finish",
+    "returningToMap": "Returning to the world map.",
+    "enter": "Enter",
+    "leave": "Leave"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "password": "Password",
+    "email": "Email",
+    "username": "Username",
+    "birthdate": "Date of birth",
+    "enterUsername": "Enter your username",
+    "enterEmail": "Enter your email",
+    "enterUsernameOrEmail": "Enter your username or email address",
+    "enterPassword": "Enter your password",
+    "confirmPassword": "Confirm your password",
+    "choosePassword": "Choose a password",
+    "chooseUsername": "Choose a username",
+    "connecting": "Connecting...",
+    "connect": "Log in",
+    "registering": "Registering..",
+    "signUp": "Sign up",
+    "loginWith": "Log in with:",
+    "continueWithGithub": "Continue with GitHub",
+    "continueWith42": "Continue with 42",
+    "noAccount": "No account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "createAccountHere": "Don't have an account? Create one here",
+    "loginHere": "Already have an account? Log in here",
+    "startSession": "Start a session and make your first choices.",
+    "fillAllFields": "Please fill in all fields",
+    "loginFailed": "Login failed",
+    "registerFailed": "Registration failed",
+    "passwordsDontMatch": "Passwords do not match",
+    "passwordRequirements": "Password does not meet requirements"
+  },
+  "passwordRequirements": {
+    "minChars": "At least 8 characters",
+    "uppercase": "One uppercase letter",
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "specialChar": "One special character (@$!%*?&)",
+    "characters": "8+ characters"
+  },
+  "nav": {
+    "play": "Play",
+    "network": "Network",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "home": {
+    "title": "ft_transcendance",
+    "subtitle": "When talking becomes a game mechanic."
+  },
+  "game": {
+    "launchGame": "LAUNCH GAME",
+    "startGame": "Start Game"
+  },
+  "network": {
+    "title": "Network",
+    "addFriend": "Add Friend",
+    "enterFriendUsername": "Enter friend's username",
+    "friends": "Friends",
+    "noFriends": "No friends yet",
+    "friendRequests": "Friend Requests",
+    "noPendingRequests": "No pending requests",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "settings": {
+    "title": "Settings",
+    "username": "Username",
+    "email": "Email",
+    "language": "Language",
+    "twoFactor": "Two-Factor Authentication (2FA)",
+    "enable2FA": "Enable 2FA",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully!",
+    "updateFailed": "Failed to update profile",
+    "enterUsername": "Enter your username",
+    "enterEmail": "Enter your email"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "French",
+    "es": "Spanish"
+  },
+  "scenes": {
+    "worldMap": {
+      "shop": "Shop",
+      "hospital": "Hospital",
+      "house": "House",
+      "parking": "Parking",
+      "coffee": "Coffee",
+      "arrivedAt": "You have arrived at the {{location}}. What would you like to do?"
+    },
+    "shop": {
+      "welcome": "You have entered the shop. Browse 3 items and make your purchases.",
+      "gotIt": "Got it",
+      "selectedItem": "You selected the {{item}}. Would you like to purchase it?",
+      "purchased": "You have purchased: {{items}}."
+    },
+    "coffee": {
+      "welcome": "Drag your thoughts to categorize them if you want. Click 'STOP' to accept.",
+      "gotIt": "Got it!",
+      "thoughts": {
+        "timeChanges": "Time changes everything",
+        "peopleDisappoint": "People disappoint often",
+        "effortMatters": "Effort matters more",
+        "feelingsFade": "Feelings fade away",
+        "silenceHeavy": "Silence feels heavy",
+        "trustBreaks": "Trust breaks easily",
+        "nothingLasts": "Nothing lasts forever",
+        "memoriesLie": "Memories lie sometimes",
+        "wordsScars": "Words leave scars",
+        "choicesConsequences": "Choices have consequences",
+        "loveRisky": "Love feels risky",
+        "regretLate": "Regret comes late",
+        "painTeaches": "Pain teaches lessons",
+        "comfortKills": "Comfort kills growth",
+        "fearLimits": "Fear limits dreams",
+        "happinessTemporary": "Happiness feels temporary",
+        "lonelinessFamiliar": "Loneliness feels familiar",
+        "attentionAddictive": "Attention feels addictive",
+        "controlIllusion": "Control is illusion",
+        "meaningPersonal": "Meaning is personal"
+      }
+    },
+    "house": {
+      "welcome": "Welcome to the House! Get ready to play Pong!",
+      "iaOpponent": "AI Opponent",
+      "localMultiplayer": "Two Players",
+      "chooseDifficulty": "Choose your difficulty:",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "gameOverPlayer": "Game Over! {{player}} wins!",
+      "player1": "Player 1",
+      "player2": "Player 2",
+      "youWin": "Game Over! You win!",
+      "iaWins": "Game Over! AI wins!"
+    },
+    "parking": {
+      "welcome": "You have parked your car. Now, breathe. Press ESC to go back.",
+      "gotIt": "Got it",
+      "inspire": "Breathe in",
+      "hold": "Hold",
+      "expire": "Breathe out"
+    },
+    "hospital": {
+      "welcome": "Due to limited resources, only one patient can be reviewed first.",
+      "gotIt": "Got it",
+      "folder1": "Folder 1",
+      "folder2": "Folder 2",
+      "folder3": "Folder 3",
+      "confirmReview": "You have selected {{name}}'s medical records for review. Proceed?",
+      "thankYou": "Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients."
+    }
+  }
+}

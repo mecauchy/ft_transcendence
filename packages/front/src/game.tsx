@@ -7,10 +7,12 @@ import HouseScene from "./phaser/HouseScene";
 import ParkingScene from "./phaser/ParkingScene";
 import HospitalScene from "./phaser/HospitalScene";
 import "./styles/game.css";
+import {useTranslation} from "react-i18next";
 
 export default function Game() {
 	const gameContainerRef = useRef<HTMLDivElement | null>(null);
 	const phaserRef = useRef<Phaser.Game | null>(null);
+	const {t} = useTranslation();
 
 	const [gameInPlay, setGameInPlay] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
@@ -112,7 +114,7 @@ export default function Game() {
 					className="start_game_btn"
 					onClick={() => setGameInPlay(true)}
 				>
-					LANCER LE JEU
+					{t('game.launchGame')}
 				</button>
 			)}
 

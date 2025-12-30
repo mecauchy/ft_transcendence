@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 export default class HospitalScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -57,10 +58,10 @@ export default class HospitalScene extends Phaser.Scene {
 
 		if (!this.game_started) {
 			this.popup.show(
-				"Due to limited resources, only one patient can be reviewed first.",
+				t("scenes.hospital.welcome"),
 				[
 					{
-						label: "Got it",
+						label: t("scenes.hospital.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -71,9 +72,9 @@ export default class HospitalScene extends Phaser.Scene {
 			);
 		}
 		this.centerScene();
-		this.makeFolderInteractive(this.folders.folder1, "Folder 1");
-		this.makeFolderInteractive(this.folders.folder2, "Folder 2");
-		this.makeFolderInteractive(this.folders.folder3, "Folder 3");
+		this.makeFolderInteractive(this.folders.folder1, t("scenes.hospital.folder1"));
+		this.makeFolderInteractive(this.folders.folder2, t("scenes.hospital.folder2"));
+		this.makeFolderInteractive(this.folders.folder3, t("scenes.hospital.folder3"));
 		this.makeDocumentInteractive(this.documents.document1);
 		this.makeDocumentInteractive(this.documents.document2);
 		this.makeDocumentInteractive(this.documents.document3);
@@ -186,16 +187,16 @@ export default class HospitalScene extends Phaser.Scene {
 
 	private confirmFolderDrop(folder: Phaser.GameObjects.Sprite, folderName: string) {
 		let name;
-		if (folderName === "Folder 1") name = "Alex";
-		else if (folderName === "Folder 2") name = "Maya";
+		if (folderName === t("scenes.hospital.folder1")) name = "Alex";
+		else if (folderName === t("scenes.hospital.folder2")) name = "Maya";
 		else name = "Daniel";
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			`You have selected ${name}'s medical records for review. Proceed?`,
+			t("scenes.hospital.confirmReview", { name }),
 			[
 				{
-					label: "Yes",
+					label: t("common.yes"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -203,7 +204,7 @@ export default class HospitalScene extends Phaser.Scene {
 					},
 				},
 				{
-					label: "No",
+					label: t("common.no"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -225,10 +226,10 @@ export default class HospitalScene extends Phaser.Scene {
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			"Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients.",
+			t("scenes.hospital.thankYou"),
 			[
 				{
-					label: "Finish",
+					label: t("common.finish"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;

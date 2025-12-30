@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
 
 export default class ShopScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -78,10 +79,10 @@ export default class ShopScene extends Phaser.Scene {
 
 		if (!this.game_started) {
 			this.popup.show(
-				"You have entered the shop. Browse 3 items and make your purchases.",
+				t("scenes.shop.welcome"),
 				[
 					{
-						label: "Got it",
+						label: t("scenes.shop.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -125,10 +126,10 @@ export default class ShopScene extends Phaser.Scene {
 			if (this.popup_active) return;
 			this.popup_active = true;
 			this.popup.show(
-				`You selected the ${itemName}. Would you like to purchase it?`,
+				t("scenes.shop.selectedItem", { item: itemName }),
 				[
 					{
-						label: "Buy",
+						label: t("common.buy"),
 						onClick: () => {
 							this.popup.hide();
 							item.setData("picked", true);
@@ -152,7 +153,7 @@ export default class ShopScene extends Phaser.Scene {
 						},
 					},
 					{
-						label: "Cancel",
+						label: t("common.cancel"),
 						onClick: () => {
 							this.popup.hide();
 							this.popup_active = false;
@@ -168,10 +169,10 @@ export default class ShopScene extends Phaser.Scene {
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			`You have purchased: ${items_list}.`,
+			t("scenes.shop.purchased", { items: items_list }),
 			[
 				{
-					label: "OK",
+					label: t("common.ok"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -186,10 +187,10 @@ export default class ShopScene extends Phaser.Scene {
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			"Returning to the world map.",
+			t("common.returningToMap"),
 			[
 				{
-					label: "OK",
+					label: t("common.ok"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;

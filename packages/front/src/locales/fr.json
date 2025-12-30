@@ -1,0 +1,176 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "gotIt": "Compris",
+    "yes": "Oui",
+    "no": "Non",
+    "error": "Erreur",
+    "success": "Succès",
+    "ok": "OK",
+    "buy": "Acheter",
+    "finish": "Terminer",
+    "returningToMap": "Retour à la carte du monde.",
+    "enter": "Entrer",
+    "leave": "Partir"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "register": "S'inscrire",
+    "password": "Mot de passe",
+    "email": "Email",
+    "username": "Nom d'utilisateur",
+    "birthdate": "Date de naissance",
+    "enterUsername": "Entrez votre nom d'utilisateur",
+    "enterEmail": "Entrez votre adresse email",
+    "enterUsernameOrEmail": "Entrez votre nom d'utilisateur ou votre adresse email",
+    "enterPassword": "Entrez votre mot de passe",
+    "confirmPassword": "Confirmez votre mot de passe",
+    "choosePassword": "Choisissez un mot de passe",
+    "chooseUsername": "Choisissez un nom d'utilisateur",
+    "connecting": "Connexion...",
+    "connect": "Se connecter",
+    "registering": "Inscription...",
+    "signUp": "S'inscrire",
+    "loginWith": "Se connecter avec :",
+    "continueWithGithub": "Continuer avec GitHub",
+    "continueWith42": "Continuer avec 42",
+    "noAccount": "Pas de compte ?",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "createAccountHere": "Pas encore de compte ? Créez-en un ici",
+    "loginHere": "Déjà un compte ? Connectez-vous ici",
+    "startSession": "Lancez une session et faites vos premiers choix.",
+    "fillAllFields": "Veuillez remplir tous les champs",
+    "loginFailed": "Échec de la connexion",
+    "registerFailed": "Échec de l'inscription",
+    "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+    "passwordRequirements": "Le mot de passe ne respecte pas les exigences"
+  },
+  "passwordRequirements": {
+    "minChars": "Au moins 8 caractères",
+    "uppercase": "Une lettre majuscule",
+    "lowercase": "Une lettre minuscule",
+    "number": "Un chiffre",
+    "specialChar": "Un caractère spécial (@$!%*?&)",
+    "characters": "8+ caractères"
+  },
+  "nav": {
+    "play": "Jouer",
+    "network": "Réseau",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
+  "home": {
+    "title": "ft_transcendance",
+    "subtitle": "Quand parler devient une mécanique de jeu."
+  },
+  "game": {
+    "launchGame": "LANCER LE JEU",
+    "startGame": "Démarrer le jeu"
+  },
+  "network": {
+    "title": "Réseau",
+    "addFriend": "Ajouter un ami",
+    "enterFriendUsername": "Entrez le nom d'utilisateur de l'ami",
+    "friends": "Amis",
+    "noFriends": "Aucun ami pour le moment",
+    "friendRequests": "Demandes d'amis",
+    "noPendingRequests": "Aucune demande en attente",
+    "accept": "Accepter",
+    "decline": "Refuser"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "username": "Nom d'utilisateur",
+    "email": "Email",
+    "language": "Langue",
+    "twoFactor": "Authentification à deux facteurs (2FA)",
+    "enable2FA": "Activer 2FA",
+    "saving": "Enregistrement...",
+    "saveChanges": "Sauvegarder les modifications",
+    "profileUpdated": "Profil mis à jour avec succès !",
+    "updateFailed": "Échec de la mise à jour du profil",
+    "enterUsername": "Entrez votre nom d'utilisateur",
+    "enterEmail": "Entrez votre email"
+  },
+  "languages": {
+    "en": "Anglais",
+    "fr": "Français",
+    "es": "Espagnol"
+  },
+  "scenes": {
+    "worldMap": {
+      "shop": "Boutique",
+      "hospital": "Hôpital",
+      "house": "Maison",
+      "parking": "Parking",
+      "coffee": "Café",
+      "arrivedAt": "Vous êtes arrivé à la {{location}}. Que souhaitez-vous faire ?"
+    },
+    "shop": {
+      "welcome": "Vous êtes entré dans la boutique. Parcourez 3 articles et effectuez vos achats.",
+      "gotIt": "Compris",
+      "selectedItem": "Vous avez sélectionné {{item}}. Voulez-vous l'acheter ?",
+      "purchased": "Vous avez acheté : {{items}}."
+    },
+    "coffee": {
+      "welcome": "Faites glisser vos pensées pour les catégoriser si vous le souhaitez. Cliquez sur 'STOP' pour accepter.",
+      "gotIt": "Compris !",
+      "thoughts": {
+        "timeChanges": "Le temps change tout",
+        "peopleDisappoint": "Les gens déçoivent souvent",
+        "effortMatters": "L'effort compte plus",
+        "feelingsFade": "Les sentiments s'estompent",
+        "silenceHeavy": "Le silence pèse lourd",
+        "trustBreaks": "La confiance se brise facilement",
+        "nothingLasts": "Rien ne dure éternellement",
+        "memoriesLie": "Les souvenirs mentent parfois",
+        "wordsScars": "Les mots laissent des cicatrices",
+        "choicesConsequences": "Les choix ont des conséquences",
+        "loveRisky": "L'amour semble risqué",
+        "regretLate": "Le regret arrive tard",
+        "painTeaches": "La douleur enseigne des leçons",
+        "comfortKills": "Le confort tue la croissance",
+        "fearLimits": "La peur limite les rêves",
+        "happinessTemporary": "Le bonheur semble temporaire",
+        "lonelinessFamiliar": "La solitude semble familière",
+        "attentionAddictive": "L'attention semble addictive",
+        "controlIllusion": "Le contrôle est une illusion",
+        "meaningPersonal": "Le sens est personnel"
+      }
+    },
+    "house": {
+      "welcome": "Bienvenue dans la Maison ! Préparez-vous à jouer à Pong !",
+      "iaOpponent": "Adversaire IA",
+      "localMultiplayer": "Deux joueurs",
+      "chooseDifficulty": "Choisissez votre difficulté :",
+      "easy": "Facile",
+      "medium": "Moyen",
+      "hard": "Difficile",
+      "gameOverPlayer": "Fin de partie ! {{player}} gagne !",
+      "player1": "Joueur 1",
+      "player2": "Joueur 2",
+      "youWin": "Fin de partie ! Vous gagnez !",
+      "iaWins": "Fin de partie ! L'IA gagne !"
+    },
+    "parking": {
+      "welcome": "Vous avez garé votre voiture. Maintenant, respirez. Appuyez sur ÉCHAP pour revenir.",
+      "gotIt": "Compris",
+      "inspire": "Inspirez",
+      "hold": "Retenez",
+      "expire": "Expirez"
+    },
+    "hospital": {
+      "welcome": "En raison de ressources limitées, un seul patient peut être examiné en premier.",
+      "gotIt": "Compris",
+      "folder1": "Dossier 1",
+      "folder2": "Dossier 2",
+      "folder3": "Dossier 3",
+      "confirmReview": "Vous avez sélectionné le dossier médical de {{name}}. Continuer ?",
+      "thankYou": "Merci d'avoir examiné les dossiers médicaux. Votre expertise est précieuse pour offrir les meilleurs soins à nos patients."
+    }
+  }
+}
