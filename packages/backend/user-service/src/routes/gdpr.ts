@@ -199,12 +199,12 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 
 				// delete pong stats
 				await tx.gamePong.deleteMany({
-					where: {userId},
+					where: {playerId: userId},
 				});
 
 				// delete breathe stats
 				await tx.gameBreathe.deleteMany({
-					where: {userId},
+					where: {playerId: userId},
 				});
 
 				// final -> delete the user

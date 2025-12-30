@@ -1,5 +1,3 @@
-// packages/shared/types/game.ts
-
 export interface IPongGame {
 	playerid: string;
 	mode: "AI" | "LOCAL";

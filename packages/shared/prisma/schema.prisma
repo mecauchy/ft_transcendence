@@ -211,7 +211,7 @@ model GamePong {
 	startedAt	DateTime?	@map("game_pong_started_at") @db.Timestamptz
 	endedAt		DateTime?	@map("game_pong_ended_at") @db.Timestamptz
 
-	@@index([userId], map: "game_pong_player_id")
+	@@index([playerId], map: "game_pong_player_id")
 }
 
 model GameBreathe {
@@ -220,7 +220,7 @@ model GameBreathe {
 	startedAt	DateTime?	@map("game_breathe_started_at") @db.Timestamptz
 	endedAt		DateTime?	@map("game_breathe_ended_at") @db.Timestamptz
 
-	@@index([userId], map: "game_breathe_player_id")
+	@@index([playerId], map: "game_breathe_player_id")
 }
 
 model Scenario {
