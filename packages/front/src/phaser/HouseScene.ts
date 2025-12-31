@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { api } from "../api/client";
 import { t } from "./i18nHelper";
+
+type PongMode = "AI" | "LOCAL";
+type PongDifficulty = "EASY" | "MEDIUM" | "HARD" | "LOCAL";
+type PongWinner = "PLAYER" | "AI" | "PLAYER1" | "PLAYER2";
 
 export default class HouseScene extends Phaser.Scene {
 
@@ -43,7 +48,8 @@ export default class HouseScene extends Phaser.Scene {
 	private score1 = 0;
 	private score2 = 0;
 
-	private startTimeStamp = null;
+	private startTimeStamp: string | null = null;
+	private matchSent = false;
 
 	private keyW!: Phaser.Input.Keyboard.Key;
 	private keyS!: Phaser.Input.Keyboard.Key;
@@ -90,6 +96,7 @@ export default class HouseScene extends Phaser.Scene {
 		this.score1 = 0;
 		this.score2 = 0;
 		this.startTimeStamp = new Date().toISOString();
+		this.matchSent = false;
 	}
 
 	private showWelcomePopup() {
@@ -262,11 +269,14 @@ export default class HouseScene extends Phaser.Scene {
 		}
 		if (this.ia_mode) this.ia_actions();
 		this.checkMovement();
+
 		this.ballx_n += this.ballSpeedX_n;
 		this.bally_n += this.ballSpeedY_n;
+
 		if (this.bally_n <= 0 || this.bally_n >= 1) {
 			this.ballSpeedY_n = -this.ballSpeedY_n;
 		}
+
 		this.checkCollision();
 		this.ball.x = this.offsetX + this.gameSize * this.ballx_n;
 		this.ball.y = this.offsetY + this.gameSize * this.bally_n;
@@ -366,10 +376,87 @@ export default class HouseScene extends Phaser.Scene {
 		this.ballSpeedY_n = Phaser.Math.Between(-0.005, 0.005);
 	}
 
+	private difficultyLabel(): PongDifficulty {
+		if (!this.ia_mode)
+			return "LOCAL";
+		if (this.ia_difficulty >= 0.6)
+			return "EASY";
+		if (this.ia_difficulty >= 0.2)
+			return "MEDIUM";
+		return "HARD";
+	}
+
+	private winnerValue(): PongWinner {
+		if (this.ia_mode)
+		{
+			if (this.score2 >= 5)
+				return "PLAYER";
+			return "AI";
+		}
+		if (this.score2 >= 5)
+			return "PLAYER1";
+		return "PLAYER2";
+	}
+
+	private modeValue(): PongMode {
+		if (this.ia_mode)
+			return "AI";
+		return "LOCAL";
+	}
+
+	private async sendPongStats(): Promise<void> {
+		if (this.matchSent)
+			return ;
+		this.matchSent = true;
+
+		const startedAt = this.startTimeStamp ?? new Date().toISOString();
+		const endedAt = new Date().toISOString();
+
+		const payload = {
+			playerid:	"",
+			mode:		this.modeValue(),
+			difficulty:	this.difficultyLabel(),
+			score1:		String(this.score1),
+			score2:		String(this.score2),
+			winner:		this.winnerValue(),
+			timestamp1:	startedAt,
+			timestamp2: endedAt,
+		};
+
+		try {
+			await api.sendPong(payload);
+			console.log("Successfully sent pong stats");
+			
+			// const res = await fetch("/api/game/pong", {
+			// 	method: "POST",
+			// 	headers: { "Content-Type": "application/json" },
+			// 	credentials: "include",
+			// 	keepalive: true,
+			// 	body: JSON.stringify(payload),
+			// });
+			// if (!res.ok) {
+			// 	const text = await res.text().catch(() => "");
+			// 	console.error("Failed to send pong stats:", res.status, res.statusText, text)
+			// 	this.matchSent = false;
+			// 	return;
+			// }
+			
+		} catch (e) {
+			console.error("Failed to send pong stats [network error]", e);
+		}
+	}
+
 	private updateScore() {
 		this.scoreText1.setText(this.score1.toString());
 		this.scoreText2.setText(this.score2.toString());
 		if (this.score1 >= 5 || this.score2 >= 5) {
+			// sends game stat to backend
+			console.log("sending pong stats...");
+			try {
+				this.sendPongStats();
+			} catch (e) {
+				console.error("Failed to send pong stats", e);
+			}
 			this.game_started = false;
 			if (!this.ia_mode) {
 				const winner = this.score1 >= 5 ? t("scenes.house.player1") : t("scenes.house.player2");
@@ -378,27 +465,7 @@ export default class HouseScene extends Phaser.Scene {
 					[
 						{
 							label: t("common.ok"),
-							onClick: () => {
-								// sends game stat to backend
-								const gameData = {
-									playerid: "",
-									mode: this.ia_mode ? "ia" : "local",
-									difficulty: this.ia_mode ? this.ia_difficulty : null,
-									score1: this.score1,
-									score2: this.score2,
-									winner: this.score1 >= 5 ? (this.ia_mode ? "player" : "player1") : (this.ia_mode ? "ia" : "player2"),
-									timestamp1:	this.startTimeStamp,
-									timestamp2: new Date().toISOString()
-								};
-								try {
-									fetch("/api/game-stats", {
-										method: "POST",
-										headers: { "Content-Type": "application/json" },
-										body: JSON.stringify(gameData)
-									});
-								} catch (e) {
-									console.error("Failed to send game stats", e);
-								}
+							onClick: async () => {
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();
@@ -415,8 +482,7 @@ export default class HouseScene extends Phaser.Scene {
 					[
 						{
 							label: t("common.ok"),
-							onClick: () => {
-								
+							onClick: async () => {
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();

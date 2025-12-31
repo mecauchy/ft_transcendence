@@ -6,6 +6,7 @@ import {config} from './config';
 import {sessionRoutes, setWebSocketManager} from './routes/session';
 import {scenarioRoutes} from './routes/scenarios';
 import {WebSocketManager} from './websocket/manager';
+import { gameRoutes } from './routes/game';
 
 const fastify = Fastify({
 	logger: {
@@ -55,6 +56,7 @@ async function start() {
 		// REST routes
 		await fastify.register(sessionRoutes, {prefix: '/api/game/session'});
 		await fastify.register(scenarioRoutes, {prefix: '/api/game/scenarios'});
+		await fastify.register(gameRoutes, {prefix: '/api/game'})
 
 		// webscoket route for game connections
 		fastify.get('/ws/game', {websocket: true}, (socket, request) => {

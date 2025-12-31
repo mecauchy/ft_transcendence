@@ -9,6 +9,17 @@ interface ApiError {
 	message:	string;
 }
 
+interface IPongGame {
+	playerid: string;
+	mode: "AI" | "LOCAL";
+	difficulty: "EASY" | "MEDIUM" | "HARD" | "LOCAL";
+	score1: string;
+	score2: string;
+	winner: "PLAYER" | "AI" | "PLAYER1" | "PLAYER2";
+	timestamp1: string;
+	timestamp2: string;
+}
+
 class ApiClient {
 	private token: string | null = null;
 
@@ -203,6 +214,13 @@ class ApiClient {
 	}
 
 	// Game endpoints
+	async sendPong(payload: IPongGame) {
+		return this.request<{success: boolean; gameId: string}>('/game/pong', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+		});
+	}
+
 	async getScenarios() {
 		return this.request<{
 			scenarios: Array<{
