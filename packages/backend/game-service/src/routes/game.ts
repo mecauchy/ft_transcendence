@@ -16,7 +16,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	fastify.addHook('preHandler', authMiddleware);
 
 	// receive data from pong game
-	fastify.post<{Body: IPongGame}>('/pong', async (request, reply) => {
+	fastify.post<{Body: IPongGame}>('/pong/match', async (request, reply) => {
 		const userId = request.user!.userId;
 
 		// validate request
@@ -68,6 +68,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			});
 		}
 	});
+
 
 	fastify.post<{Body: IBreatheGame}>('/breathe', async (request, reply) => {
 		const userId = request.user!.userId;

@@ -215,7 +215,7 @@ class ApiClient {
 
 	// Game endpoints
 	async sendPong(payload: IPongGame) {
-		return this.request<{success: boolean; gameId: string}>('/game/pong', {
+		return this.request<{success: boolean; gameId: string}>('/game/pong/match', {
 			method: 'POST',
 			body: JSON.stringify(payload),
 		});

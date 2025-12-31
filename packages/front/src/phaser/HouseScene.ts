@@ -426,7 +426,7 @@ export default class HouseScene extends Phaser.Scene {
 		try {
 			await api.sendPong(payload);
 			console.log("Successfully sent pong stats");
-			
+
 			// const res = await fetch("/api/game/pong", {
 			// 	method: "POST",
 			// 	headers: { "Content-Type": "application/json" },
