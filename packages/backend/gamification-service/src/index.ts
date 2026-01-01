@@ -5,6 +5,7 @@ import {config} from './config';
 import {xpRoutes} from './routes/xp';
 import {achievementRoutes} from './routes/achievements';
 import {leaderboardRoutes} from './routes/leaderboard';
+import {internalRoutes} from './routes/internal';
 
 const fastify = Fastify({
 	logger: {
@@ -41,6 +42,7 @@ async function start() {
 		await fastify.register(xpRoutes, {prefix: '/api/gamification/xp'});
 		await fastify.register(achievementRoutes, {prefix: '/api/gamification/achievements'});
 		await fastify.register(leaderboardRoutes, {prefix: '/api/gamification/leaderboard'});
+		await fastify.register(internalRoutes, {prefix: '/internal'});
 
 		// handle errors
 		fastify.setErrorHandler((error:		Error & {statusCode?: number}, request, reply) => {

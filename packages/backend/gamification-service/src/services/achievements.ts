@@ -28,6 +28,41 @@ export interface UserAchievement {
 	progress: number; // 0-100
 }
 
+async function notifyAchievementUnlocked(userId: string, achievement: Achievement): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const userServiceInternal =
+		process.env.USER_SERVICE_INTERNAL_URL ||
+		// fallback link
+		'http://user-service:3002';
+
+	if (!internalKey) {
+		// doesnt crash here
+		return;
+	}
+
+	try {
+		await fetch(`${userServiceInternal}/internal/notifications/achievement`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				achievement: {
+					code: achievement.code,
+					name: achievement.name,
+					description: achievement.description,
+					xpReward: achievement.xpReward,
+					rarity: achievement.rarity,
+				},
+			}),
+		});
+	} catch {
+		// ignore
+	}
+}
+
 // get all avail achievements
 export async function getAllAchievements(): Promise<Achievement[]> {
 	const cached = await redis.get('achievements:all');
@@ -126,6 +161,8 @@ async function unlockAchievement(userId: string, achievement: Achievement): Prom
 	if (achievement.xpReward > 0) {
 		await awardXP(userId, achievement.xpReward, `Achievement: ${achievement.name}`);
 	}
+
+	await notifyAchievementUnlocked(userId, achievement);
 }
 
 // eval achieve condition
@@ -138,6 +175,51 @@ async function evaluateCondition(
 	const userIdBigInt = BigInt(userId);
 
 	switch (conditionType) {
+		case 'PONG_MATCH_COUNT': {
+			const requiredCount = condition.count as number;
+			const count = await prisma.gamePong.count({
+				where: { playerId: userIdBigInt },
+			});
+			return count >= requiredCount;
+		}
+
+		case 'PONG_LOCAL_MATCH_COUNT': {
+			const requiredCount = condition.count as number;
+			const count = await prisma.gamePong.count({
+				where: {
+					playerId: userIdBigInt,
+					mode: 'LOCAL',
+				},
+			});
+			return count >= requiredCount;
+		}
+
+		case 'PONG_WIN_HARD_AI': {
+			const count = await prisma.gamePong.count({
+				where: {
+					playerId: userIdBigInt,
+					mode: 'AI',
+					difficulty: 'HARD',
+					winner: 'PLAYER',
+				},
+			});
+			return count >= 1;
+		}
+
+		case 'PONG_PERFECT_WIN_HARD_AI': {
+			const count = await prisma.gamePong.count({
+				where: {
+					playerId: userIdBigInt,
+					mode: 'AI',
+					difficulty: 'HARD',
+					winner: 'PLAYER',
+					score1: 5,
+					score2: 0,
+				},
+			});
+			return count >= 1;
+		}
+		
 		case 'SESSION_COUNT': {
 			const requiredCount = condition.count as number;
 			const count = await prisma.session.count({
@@ -147,6 +229,23 @@ async function evaluateCondition(
 				},
 			});
 			return count >= requiredCount;
+		}
+
+		case 'BREATHE_TOTAL_SECONDS': {
+			const requiredSeconds = condition.seconds as number;
+
+			const sessions = await prisma.gameBreathe.findMany({
+				where: { playerId: userIdBigInt },
+				select: { startedAt: true, endedAt: true },
+			});
+
+			const totalSeconds = sessions.reduce((sum, s) => {
+				if (!s.startedAt || !s.endedAt) return sum;
+				const diffMs = s.endedAt.getTime() - s.startedAt.getTime();
+				return sum + Math.max(0, Math.floor(diffMs / 1000));
+			}, 0);
+
+			return totalSeconds >= requiredSeconds;
 		}
 
 		case 'PERFECT_SESSION': {
@@ -220,6 +319,31 @@ async function evaluateCondition(
 			return count >= requiredFriends;
 		}
 
+		case 'BLOCK_COUNT': {
+			const requiredBlocks = condition.count as number;
+			const count = await prisma.friend.count({
+				where: {
+					initiatorId: userIdBigInt,
+					status: 'BLOCKED',
+				},
+			});
+			return count >= requiredBlocks;
+		}
+
+		case 'CHAT_MESSAGE_COUNT': {
+			const requiredCount = condition.count as number;
+
+			// TODO: Replace prisma.message with my message model when chatting implemented
+			const anyPrisma = prisma as any;
+			if (!anyPrisma.message) return false;
+
+			const count = await anyPrisma.message.count({
+				where: {senderId: userIdBigInt},
+			});
+
+			return count >= requiredCount;
+		}
+
 		default:
 			return false;
 	}
@@ -272,6 +396,83 @@ export async function getAchievementProgress(
 	let total = 1;
 
 	switch (conditionType) {
+		case 'PONG_MATCH_COUNT': {
+			total = condition.count as number;
+			const count = await prisma.gamePong.count({
+				where: { playerId: userIdBigInt },
+			});
+			progress = Math.min(count, total);
+			break;
+		}
+
+		case 'PONG_LOCAL_MATCH_COUNT': {
+			total = condition.count as number;
+			const count = await prisma.gamePong.count({
+				where: { playerId: userIdBigInt, mode: 'LOCAL' },
+			});
+			progress = Math.min(count, total);
+			break;
+		}
+
+		case 'BREATHE_TOTAL_SECONDS': {
+			total = condition.seconds as number;
+
+			const sessions = await prisma.gameBreathe.findMany({
+				where: { playerId: userIdBigInt },
+				select: { startedAt: true, endedAt: true },
+			});
+
+			const totalSeconds = sessions.reduce((sum, s) => {
+				if (!s.startedAt || !s.endedAt) return sum;
+				const diffMs = s.endedAt.getTime() - s.startedAt.getTime();
+				return sum + Math.max(0, Math.floor(diffMs / 1000));
+			}, 0);
+
+			progress = Math.min(totalSeconds, total);
+			break;
+		}
+
+		case 'FRIEND_COUNT': {
+			total = condition.count as number;
+			const count = await prisma.friend.count({
+				where: {
+					OR: [{ initiatorId: userIdBigInt }, { receiverId: userIdBigInt }],
+					status: 'ACCEPTED',
+				},
+			});
+			progress = Math.min(count, total);
+			break;
+		}
+
+		case 'BLOCK_COUNT': {
+			total = condition.count as number;
+			const count = await prisma.friend.count({
+				where: {
+					initiatorId: userIdBigInt,
+					status: 'BLOCKED',
+				},
+			});
+			progress = Math.min(count, total);
+			break;
+		}
+
+		case 'CHAT_MESSAGE_COUNT': {
+			total = condition.count as number;
+
+			const anyPrisma = prisma as any;
+			if (!anyPrisma.message) {
+				progress = 0;
+				break;
+			}
+
+			const count = await anyPrisma.message.count({
+				where: { senderId: userIdBigInt },
+			});
+
+			progress = Math.min(count, total);
+			break;
+		}
+
 		case 'SESSION_COUNT': {
 			total = condition.count as number;
 			const count = await prisma.session.count({
@@ -287,8 +488,8 @@ export async function getAchievementProgress(
 		case 'TOTAL_XP': {
 			total = condition.xp as number;
 			const result = await prisma.xpLog.aggregate({
-				where: {userId: userIdBigInt},
-				_sum: {amount: true},
+				where: { userId: userIdBigInt },
+				_sum: { amount: true },
 			});
 			progress = Math.min(result._sum.amount || 0, total);
 			break;
@@ -297,25 +498,10 @@ export async function getAchievementProgress(
 		case 'LEVEL_REACHED': {
 			total = condition.level as number;
 			const user = await prisma.user.findUnique({
-				where: {id: userIdBigInt},
-				select: {currentLevel: true},
+				where: { id: userIdBigInt },
+				select: { currentLevel: true },
 			});
 			progress = Math.min(user?.currentLevel || 0, total);
-			break;
-		}
-
-		case 'FRIEND_COUNT': {
-			total = condition.count as number;
-			const count = await prisma.friend.count({
-				where: {
-					OR: [
-						{initiatorId: userIdBigInt},
-						{receiverId: userIdBigInt},
-					],
-					status: 'ACCEPTED',
-				},
-			});
-			progress = Math.min(count, total);
 			break;
 		}
 
@@ -328,14 +514,12 @@ export async function getAchievementProgress(
 				where: {
 					patientId: userIdBigInt,
 					status: 'COMPLETED',
-					createdAt: {gte: startDate},
+					createdAt: { gte: startDate },
 				},
-				select: {createdAt: true},
+				select: { createdAt: true },
 			});
 
-			const uniqueDays = new Set(
-				sessions.map((s) => s.createdAt.toISOString().split('T')[0])
-			);
+			const uniqueDays = new Set(sessions.map((s) => s.createdAt.toISOString().split('T')[0]));
 			progress = Math.min(uniqueDays.size, total);
 			break;
 		}

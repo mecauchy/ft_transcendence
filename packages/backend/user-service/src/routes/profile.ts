@@ -8,6 +8,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import {v4 as uuidv4} from 'uuid';
 
+function isValidBigIntId(id: string): boolean {
+	return /^\d+$/.test(id);
+}
+
 export async function profileRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
@@ -88,6 +92,104 @@ export async function profileRoutes(fastify: FastifyInstance) {
 			};
 
 			return profile;
+		} catch (error) {
+			request.log.error({error}, 'Failed to fetch user profile');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch profile',
+			});
+		}
+	});
+
+	// get other person profile
+	fastify.get<{ Params: {id: string} }>('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+		const {id} = BigInt(request.params);
+
+		if (!isValidBigIntId(id)) {
+		return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid user id',
+			});
+		}
+
+		try {
+			const user = await prisma.user.findUnique({
+				where: {id: id},
+				select: {
+					id: true,
+					username: true,
+					email: true,
+					role: true,
+					twofaEnabled: false,
+					createdAt: true,
+					settings: {
+						select: {
+							avatar: true,
+							locale: false,
+							colour: true,
+						},
+					},
+				},
+			});
+
+			if (!user) {
+				return reply.status(404).send({
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User not found',
+				});
+			}
+
+			// fetching user stats
+			const sessions = await prisma.session.findMany({
+				where: {
+					patientId: id,
+					status: 'COMPLETED',
+				},
+				select: {
+					finalMetrics: true,
+				},
+			});
+
+			const sessionsCompleted = sessions.length;
+			let avgTrust = 0;
+			if (sessionsCompleted > 0) {
+				const totalTrust = sessions.reduce((sum, s) => {
+					const metrics = s.finalMetrics as {trust?: number} | null;
+					return sum + (metrics?.trust || 0);
+				}, 0);
+				avgTrust = totalTrust / sessionsCompleted;
+			}
+
+			const profile: IUserProfile = {
+				id: user.id.toString(),
+				alias: user.username,
+				username: user.username,
+				email: user.email,
+				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
+				role: user.role as UserRole,
+				preferences: {
+					language: (user.settings?.locale || 'en') as 'en' | 'fr',
+					theme: (user.settings?.colour || 'light') as 'light' | 'dark',
+					accessibility: {
+						highContrast: false,
+						textToSpeech: false,
+						fontSize: 'medium',
+					},
+				},
+				stats: {
+					sessionsCompleted,
+					averageTrustScore: avgTrust,
+				},
+			};
+
+			return {
+				id: user.id.toString(),
+				username: user.username,
+				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
+			};
 		} catch (error) {
 			request.log.error({error}, 'Failed to fetch user profile');
 			return reply.status(500).send({

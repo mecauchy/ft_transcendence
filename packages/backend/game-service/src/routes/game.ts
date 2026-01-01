@@ -11,12 +11,58 @@ export function setWebSocketManager(manager: WebSocketManager) {
 	wsManager = manager;
 }
 
+function isValidBigIntId(id: string): boolean {
+	return /^\d+$/.test(id);
+}
+
+function isValidCursor(v: unknown): v is string {
+	return typeof v === 'string' && /^\d+$/.test(v);
+}
+
+function toJsonPong(row : {
+	id:			bigint;
+	playerId:	bigint | null;
+	mode:		any;
+	difficulty:	any;
+	score1:		number;
+	score2:		number;
+	winner:		any;
+	startedAt:	Date | null;
+	endedAt:	Date | null;
+}) {
+	return {
+		id:			row.id.toString(),
+		playerId:	row.playerId ? row.playerId.toString() : null,
+		mode:		row.mode,
+		difficulty:	row.difficulty,
+		score1:		row.score1,
+		score2:		row.score2,
+		winner:		row.winner,
+		startedAt:	row.startedAt ? row.startedAt.toISOString() : null,
+		endedAt:	row.endedAt ? row.endedAt.toISOString() : null,
+	}
+}
+
+function toJsonBreathe(row : {
+	id:			bigint;
+	playerId:	bigint | null;
+	startedAt:	Date | null;
+	endedAt:	Date | null;
+}) {
+	return {
+		id:			row.id.toString(),
+		playerId:	row.playerId ? row.playerId.toString() : null,
+		startedAt:	row.startedAt ? row.startedAt.toISOString() : null,
+		endedAt:	row.endedAt ? row.endedAt.toISOString() : null,
+	}
+}
+
 export async function gameRoutes(fastify: FastifyInstance) {
 	// auth middleware
 	fastify.addHook('preHandler', authMiddleware);
 
-	// receive data from pong game
-	fastify.post<{Body: IPongGame}>('/pong/match', async (request, reply) => {
+	// save pong game
+	fastify.post<{Body: IPongGame}>('/pong/match', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = request.user!.userId;
 
 		// validate request
@@ -42,7 +88,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 			const gameLog = await prisma.gamePong.create({
 				data: {
-					playerId: Number(userId),
+					playerId: BigInt(userId),
 					mode,
 					difficulty,
 					score1: Number(score1),
@@ -69,8 +115,138 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// get pong stats for curr user
+	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+		const limitRaw = request.query.limit;
+		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
 
-	fastify.post<{Body: IBreatheGame}>('/breathe', async (request, reply) => {
+		const cursor = request.query.cursor;
+		if (cursor !== undefined && isValidCursor(cursor)) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid cursor',
+			});
+		}
+
+		try {
+			const rows = await prisma.gamePong.findMany({
+				where: {playerId: userId},
+				orderBy: [{endedAt: 'desc'}, {id: 'desc'}],
+				take: limit + 1,
+				...(cursor ? {
+						cursor: {id: BigInt(cursor)},
+						skip: 1,
+					} : {}
+				),
+				select: {
+					id: true,
+					playerId: true,
+					mode: true,
+					difficulty: true,
+					score1: true,
+					score2: true,
+					winner: true,
+					startedAt: true,
+					endedAt: true,
+				},
+			});
+
+			let nextCursor: string | null = null;
+			let page = rows;
+
+			if (rows.length > limit) {
+				const extra = page.pop();
+				if (extra)
+					nextCursor = extra.id.toString();
+			}
+
+			return reply.send({
+				matches: page.map(toJsonPong),
+				nextCursor,
+			});
+		} catch (e) {
+			request.log.error({e}, 'Failed to fetch pong history');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch pong history',
+			});
+		}
+	});
+
+	// get pong stats for a user
+	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('pong/history/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+		const {id} = BigInt(request.params);
+		if (!isValidBigIntId(id)) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid user id',
+			});
+		}
+
+		const limitRaw = request.query.limit;
+		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
+
+		const cursor = request.query.cursor;
+		if (cursor !== undefined && isValidCursor(cursor)) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid cursor',
+			});
+		}
+
+		try {
+			const rows = await prisma.gamePong.findMany({
+				where: {playerId: id},
+				orderBy: [{endedAt: 'desc'}, {id: 'desc'}],
+				take: limit + 1,
+				...(cursor ? {
+						cursor: {id: BigInt(cursor)},
+						skip: 1,
+					} : {}
+				),
+				select: {
+					id: true,
+					playerId: true,
+					mode: true,
+					difficulty: true,
+					score1: true,
+					score2: true,
+					winner: true,
+					startedAt: true,
+					endedAt: true,
+				},
+			});
+
+			let nextCursor: string | null = null;
+			let page = rows;
+
+			if (rows.length > limit) {
+				const extra = page.pop();
+				if (extra)
+					nextCursor = extra.id.toString();
+			}
+
+			return reply.send({
+				matches: page.map(toJsonPong),
+				nextCursor,
+			});
+		} catch (e) {
+			request.log.error({e}, 'Failed to fetch pong history');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch pong history',
+			});
+		}
+	});
+
+	// send breathe game stats
+	fastify.post<{Body: IBreatheGame}>('/breathe', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = request.user!.userId;
 
 		// validate request
@@ -91,7 +267,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 			const gameLog = await prisma.gameBreathe.create({
 				data: {
-					playerId: Number(userId),
+					playerId: BigInt(userId),
 					startedAt: new Date(timestamp1),
 					endedAt: new Date(timestamp2)
 				}
@@ -113,88 +289,117 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
-	/*
-	// get pong stats
-	fastify.get<{Params: {id: string}}>('/:id', async (request, reply) => {
-		const {id: sessionId} = request.params;
-		const userId = request.user!.userId;
+	// get breathe stats for curr user
+	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('breathe/history', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+		const limitRaw = request.query.limit;
+		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
+
+		const cursor = request.query.cursor;
+		if (cursor !== undefined && isValidCursor(cursor)) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid cursor',
+			});
+		}
 
 		try {
-				// verify if user participant of session or admin
-				try {
-					// Store game stats in DB
-					const {
-						mode,
-						difficulty,
-						score1,
-						score2,
-						winner,
-						timestamp
-					} = request.body;
-
-					const gameLog = await prisma.pongGame.create({
-						data: {
-							playerId: userId,
-							mode,
-							difficulty,
-							score1,
-							score2,
-							winner,
-							timestamp: new Date(timestamp)
-						}
-					});
-
-					return reply.send({
-						success: true,
-						gameId: gameLog.id
-					});
-				} catch (error) {
-					request.log.error({error}, 'Failed to log game');
-					return reply.status(500).send({
-						statusCode: 500,
-						error: 'Internal Server Error',
-						message: 'Failed to log game',
-					});
-				}
-				return {state};
-			}
-
-			// load from db if not in memory
-			const dbSession = await prisma.session.findUnique({
-				where: {id: sessionId},
+			const rows = await prisma.gameBreathe.findMany({
+				where: {playerId: userId},
+				orderBy: [{endedAt: 'desc'}, {id: 'desc'}],
+				take: limit + 1,
+				...(cursor ? {
+						cursor: {id: BigInt(cursor)},
+						skip: 1,
+					} : {}
+				),
+				select: {
+					id: true,
+					playerId: true,
+					startedAt: true,
+					endedAt: true,
+				},
 			});
 
-			if (!dbSession) {
-				return reply.status(404).send({
-					statusCode:	404,
-					error:		'Not Found',
-					message:	'Session not found',
-				});
+			let nextCursor: string | null = null;
+			let page = rows;
+
+			if (rows.length > limit) {
+				const extra = page.pop();
+				if (extra)
+					nextCursor = extra.id.toString();
 			}
 
-			// verify access
-			if (
-				dbSession.patientId?.toString() !== userId &&
-				dbSession.doctorId?.toString() !== userId &&
-				request.user!.role !== 'ADMIN'
-			) {
-				return reply.status(403).send({
-					statusCode:	403,
-					error:		'Forbidden',
-					message:	'Not authorized to view this session',
-				});
-			}
-
-			return {
-				sessionId: dbSession.id.toString(),
-				status: dbSession.status,
-				mode: dbSession.mode,
-				createdAt: dbSession.createdAt,
-				endedAt: dbSession.endedAt,
-				finalMetrics: dbSession.finalMetrics,
-			};
+			return reply.send({
+				matches: page.map(toJsonBreathe),
+				nextCursor,
+			});
+		} catch (e) {
+			request.log.error({e}, 'Failed to fetch pong history');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch pong history',
+			});
+		}
 	});
-	*/
+
+	// get breathe stats for a user
+	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('breathe/history/id', async (request: FastifyRequest, reply: FastifyReply) => {
+		const id = BigInt(request.params);
+		const limitRaw = request.query.limit;
+		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
+
+		const cursor = request.query.cursor;
+		if (cursor !== undefined && isValidCursor(cursor)) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Invalid cursor',
+			});
+		}
+
+		try {
+			const rows = await prisma.gameBreathe.findMany({
+				where: {playerId: id},
+				orderBy: [{endedAt: 'desc'}, {id: 'desc'}],
+				take: limit + 1,
+				...(cursor ? {
+						cursor: {id: BigInt(cursor)},
+						skip: 1,
+					} : {}
+				),
+				select: {
+					id: true,
+					playerId: true,
+					startedAt: true,
+					endedAt: true,
+				},
+			});
+
+			let nextCursor: string | null = null;
+			let page = rows;
+
+			if (rows.length > limit) {
+				const extra = page.pop();
+				if (extra)
+					nextCursor = extra.id.toString();
+			}
+
+			return reply.send({
+				matches: page.map(toJsonBreathe),
+				nextCursor,
+			});
+		} catch (e) {
+			request.log.error({e}, 'Failed to fetch pong history');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to fetch pong history',
+			});
+		}
+	});
 
 }
 

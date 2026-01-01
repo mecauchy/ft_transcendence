@@ -212,3 +212,161 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('XP_10000', 'Ten Thousand Strong', 'Earn 10,000 total XP', 0, 'UNCOMMON', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 10000}'),
 	('XP_100000', 'XP Legend', 'Earn 100,000 total XP', 0, 'LEGENDARY', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 100000}')
 ON CONFLICT (code) DO NOTHING;
+
+/*
+import { prisma } from '../src/db';
+
+type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+
+const achievements = [
+	// Pong
+	{
+		code: 'PONG_FIRST_MATCH',
+		name: 'First Match!',
+		description: 'Play your first Pong match.',
+		iconUrl: null,
+		xpReward: 50,
+		rarity: 'COMMON' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 1 },
+	},
+	{
+		code: 'PONG_5_MATCHES',
+		name: 'Getting Warm',
+		description: 'Play 5 Pong matches.',
+		iconUrl: null,
+		xpReward: 100,
+		rarity: 'COMMON' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 5 },
+	},
+	{
+		code: 'PONG_25_MATCHES',
+		name: 'Pong Regular',
+		description: 'Play 25 Pong matches.',
+		iconUrl: null,
+		xpReward: 250,
+		rarity: 'UNCOMMON' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 25 },
+	},
+	{
+		code: 'PONG_LOCAL_MATCH',
+		name: 'Couch Rivalry',
+		description: 'Play a local Pong match.',
+		iconUrl: null,
+		xpReward: 50,
+		rarity: 'COMMON' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_LOCAL_MATCH_COUNT', count: 1 },
+	},
+	{
+		code: 'PONG_HARD_AI_WIN',
+		name: 'AI Challenger',
+		description: 'Win a Pong match against HARD AI.',
+		iconUrl: null,
+		xpReward: 200,
+		rarity: 'RARE' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_WIN_HARD_AI' },
+	},
+	{
+		code: 'PONG_HARD_AI_PERFECT',
+		name: 'Perfect Machine',
+		description: 'Win 5-0 against HARD AI.',
+		iconUrl: null,
+		xpReward: 400,
+		rarity: 'EPIC' as Rarity,
+		category: 'PONG',
+		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_PERFECT_WIN_HARD_AI' },
+	},
+
+	// Breathe
+	{
+		code: 'BREATHE_1_MIN',
+		name: 'One Minute Calm',
+		description: 'Accumulate 1 minute of breathing sessions.',
+		iconUrl: null,
+		xpReward: 50,
+		rarity: 'COMMON' as Rarity,
+		category: 'BREATHE',
+		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 60 },
+	},
+	{
+		code: 'BREATHE_10_MIN',
+		name: 'Ten Minutes Calm',
+		description: 'Accumulate 10 minutes of breathing sessions.',
+		iconUrl: null,
+		xpReward: 150,
+		rarity: 'UNCOMMON' as Rarity,
+		category: 'BREATHE',
+		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 600 },
+	},
+	{
+		code: 'BREATHE_1_HOUR',
+		name: 'Hour of Peace',
+		description: 'Accumulate 1 hour of breathing sessions.',
+		iconUrl: null,
+		xpReward: 500,
+		rarity: 'EPIC' as Rarity,
+		category: 'BREATHE',
+		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 3600 },
+	},
+
+	// Friends
+	{
+		code: 'FRIEND_FIRST',
+		name: 'Hello Friend',
+		description: 'Make your first friend.',
+		iconUrl: null,
+		xpReward: 50,
+		rarity: 'COMMON' as Rarity,
+		category: 'SOCIAL',
+		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 1 },
+	},
+	{
+		code: 'FRIEND_5',
+		name: 'Friendly',
+		description: 'Make 5 friends.',
+		iconUrl: null,
+		xpReward: 150,
+		rarity: 'UNCOMMON' as Rarity,
+		category: 'SOCIAL',
+		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 5 },
+	},
+	{
+		code: 'FRIEND_15',
+		name: 'Social Circle',
+		description: 'Make 15 friends.',
+		iconUrl: null,
+		xpReward: 400,
+		rarity: 'RARE' as Rarity,
+		category: 'SOCIAL',
+		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 15 },
+	},
+
+	// Block
+	{
+		code: 'BLOCK_FIRST',
+		name: 'Boundaries',
+		description: 'Block 1 person.',
+		iconUrl: null,
+		xpReward: 25,
+		rarity: 'COMMON' as Rarity,
+		category: 'SOCIAL',
+		conditionJson: { eventType: 'USER_BLOCKED', type: 'BLOCK_COUNT', count: 1 },
+	},
+
+	// Chat
+	{
+		code: 'CHAT_FIRST_MESSAGE',
+		name: 'First Words',
+		description: 'Send your first chat message.',
+		iconUrl: null,
+		xpReward: 25,
+		rarity: 'COMMON' as Rarity,
+		category: 'CHAT',
+		conditionJson: { eventType: 'CHAT_MESSAGE_SENT', type: 'CHAT_MESSAGE_COUNT', count: 1 },
+	},
+];
+*/

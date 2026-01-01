@@ -84,6 +84,7 @@ async function start() {
 
 	Endpoints:
 		GET		/api/users/me			- Get current user profile
+		GET		/api/users/:id			- Get a user's profile
 		PUT		/api/users/me			- Update profile
 		PUT		/api/users/me/avatar	- Upload avatar
 		GET		/api/users/friends		- List friends
