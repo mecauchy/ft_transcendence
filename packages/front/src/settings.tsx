@@ -1,16 +1,61 @@
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import {useAuth} from './contexts/AuthContext'
 import { api } from './api/client';
 import { useTranslation } from 'react-i18next';
 
 function Settings() {
-	const { user, refreshUser } = useAuth();
+	const { user, refreshUser, logout } = useAuth();
 	const { t, i18n } = useTranslation();
 	const [username, setUsername] = useState(user?.username || '');
 	const [email, setEmail] = useState(user?.email || '');
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 	const [language, setLanguage] = useState<'en' | 'fr' | 'es'>((i18n.language as 'en' | 'fr' | 'es') || 'en');
+
+	// avatar upload
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [avatarUploading, setAvatarUploading] = useState(false);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
+
+	const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		// file type validation
+		if (!file.type.startsWith('image/')) {
+			setMessage({type: 'error', text: t('settings.avatar.invalidType')});
+			return;
+		}
+
+		// set maxsize
+		if (file.size > 5 * 1024 * 1024) {
+			setMessage({type: 'error', text: t('settings.avatar.tooLarge')});
+			return;
+		}
+
+		// show preview
+		const reader = new FileReader();
+		reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+		reader.readAsDataURL(file);
+
+		// upload
+		setAvatarUploading(true);
+		setMessage(null);
+
+		try {
+			const res = await api.uploadAvatar(file);
+			setAvatarPreview(res.avatar);
+			setMessage({type: 'success', text: t('settings.avatar.uploadSuccess')});
+			await refreshUser();
+		} catch (error: unknown) {
+			const err = error as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.avatar.uploadFailed')});
+			// on error revert
+			setAvatarPreview(user?.avatar || null);
+		} finally {
+			setAvatarUploading(false);
+		}
+	};
 	
 	// 2FA
 	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -21,12 +66,14 @@ function Settings() {
 
 	// GDPR / export / import
 	const [gdprBusy, setGdprBusy] = useState(false);
+	const [exportingFormat, setExportingFormat] = useState<'json' | 'csv' | 'xml' | null>(null);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteConfirmText, setDeleteConfirmText] = useState('');
 	const [deleteAcknowledge, setDeleteAcknowledge] = useState(false);
 
 	const [importFile, setImportFile] = useState<File | null>(null);
 	const [importBusy, setImportBusy] = useState(false);
+	const [importProgress, setImportProgress] = useState(0);
 	const [importSummary, setImportSummary] = useState<{
 		processed?: number;
 		updated?: number;
@@ -34,13 +81,23 @@ function Settings() {
 		errors?: Array<{row?: number; message: string} | string>;
 	} | null> (null);
 
-	const downloadFromEndpoint = async (endpoint: string, filename: string) => {
+	const downloadFromEndpoint = async (endpoint: string, filename: string, format: 'json' | 'csv' | 'xml') => {
 		setGdprBusy(true);
+		setExportingFormat(format);
 		setMessage(null);
 
 		try {
-			const res = await fetch(`api/user${endpoint}`, {
+			const token = localStorage.getItem('accessToken');
+			const headers: HeadersInit = {
+				'Content-Type': 'application/json',
+			};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
+			const res = await fetch(`api/users${endpoint}`, {
 				method: 'GET',
+				headers,
 				credentials: 'include',
 			});
 
@@ -65,6 +122,7 @@ function Settings() {
 			setMessage({type: 'error', text: err.message || t('settings.gdpr.exportFailed')});
 		} finally {
 			setGdprBusy(false);
+			setExportingFormat(null);
 		}
 	};
 
@@ -78,8 +136,17 @@ function Settings() {
 		setMessage(null);
 
 		try {
-			const res = await fetch('api/user/gdpr/delete', {
+			const token = localStorage.getItem('accessToken');
+			const headers: HeadersInit = {
+				'Content-Type': 'application/json',
+			};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
+			const res = await fetch('api/users/gdpr/delete', {
 				method: 'DELETE',
+				headers,
 				credentials: 'include',
 			});
 
@@ -88,14 +155,15 @@ function Settings() {
 				throw new Error(err?.message || `HTTP ${res.status}`);
 			}
 
-			try {
-				await api.logout();
-			} catch {}
-
+			// show success message
 			setShowDeleteModal(false);
 			setMessage({type: 'success', text: t('settings.gdpr.deleteSuccess')});
 
-			window.location.href = '/';
+			// logout and redirect
+			setTimeout(async () => {
+				await logout();
+				window.location.href = '/';
+			}, 1500);
 		} catch (e: unknown) {
 			const err = e as {message?: string};
 			setMessage({type: 'error', text: err.message || t('settings.gdpr.deleteFailed')});
@@ -114,14 +182,27 @@ function Settings() {
 
 		setImportBusy(true);
 		setImportSummary(null);
+		setImportProgress(0);
 		setMessage(null);
+
+		// progress bar
+		const progressInterval = setInterval(() => {
+			setImportProgress((prev) => Math.min(prev + 10, 90));
+		}, 200);
 
 		try {
 			const form = new FormData();
 			form.append('file', importFile);
 
-			const res = await fetch('api/user/import', {
+			const token = localStorage.getItem('accessToken');
+			const headers: HeadersInit = {};
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
+			const res = await fetch('api/users/import', {
 				method: 'POST',
+				headers,
 				body: form,
 				credentials: 'include',
 			});
@@ -131,6 +212,9 @@ function Settings() {
 			if (!res.ok) {
 				throw new Error(data?.message || `HTTP ${res.status}`);
 			}
+
+			clearInterval(progressInterval);
+			setImportProgress(100);
 
 			setImportSummary({
 				processed: data?.processed,
@@ -142,10 +226,14 @@ function Settings() {
 			setMessage({type: 'success', text: t('settings.import.success')});
 
 		} catch (e: unknown) {
+			clearInterval(progressInterval);
+			setImportProgress(0);
 			const err = e as {message?: string};
 			setMessage({type: 'error', text: err.message || t('settings.import.failed')});
 		} finally {
+			clearInterval(progressInterval);
 			setImportBusy(false);
+			setTimeout(() => setImportProgress(0), 2000);
 		}
 	};
 
@@ -198,6 +286,9 @@ function Settings() {
 				setQrCode(null);
 				setTwoFACode('');
 				setMessage({type: 'success', text: t('settings.2faEnabled')});
+				// refresh userdata and reload page to show 2FA is enabled
+				await refreshUser();
+				setTimeout(() => window.location.reload(), 1500);
 			}
 		} catch (error: unknown) {
 			const err = error as {message?: string};
@@ -249,6 +340,43 @@ function Settings() {
 			)}
 
 			<form onSubmit={handleUpdateProfile} className="space-y-4">
+				{/* Avatar Upload Section */}
+				<div className="flex flex-col items-center mb-4">
+					<div className="relative group">
+						{avatarPreview ? (
+							<img
+								src={avatarPreview}
+								alt="Avatar"
+								className="w-24 h-24 rounded-full object-cover border-2 border-white/20"
+							/>
+						) : (
+							<div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold border-2 border-white/20">
+								{user?.username?.[0]?.toUpperCase() || '?'}
+							</div>
+						)}
+						<button
+							type="button"
+							onClick={() => fileInputRef.current?.click()}
+							disabled={avatarUploading}
+							className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer disabled:cursor-wait"
+						>
+							{avatarUploading ? (
+								<span className="animate-spin text-2xl">⏳</span>
+							) : (
+								<span className="text-white text-sm font-medium">{t('settings.avatar.change')}</span>
+							)}
+						</button>
+					</div>
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept="image/*"
+						onChange={handleAvatarChange}
+						className="hidden"
+					/>
+					<p className="text-xs text-gray-400 mt-2">{t('settings.avatar.hint')}</p>
+				</div>
+
 				<div>
 					<label htmlFor="username" className="block text-sm font-medium mb-1">
 						{t('settings.username')}
@@ -324,38 +452,65 @@ function Settings() {
 				<button
 					type="button"
 					disabled={gdprBusy}
-					onClick={() => downloadFromEndpoint('/gdpr/export', 'user-export.json')}
-					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+					onClick={() => downloadFromEndpoint('/gdpr/export', 'user-export.json', 'json')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 flex items-center justify-center gap-2"
 				>
-					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportJson')}
+					{exportingFormat === 'json' ? (
+						<>
+							<span className="animate-spin">⏳</span>
+							<span>{t('common.loading')}</span>
+						</>
+					) : (
+						<>
+							<span>{t('settings.gdpr.exportJson')}</span>
+						</>
+					)}
 				</button>
 
 				<button
 					type="button"
 					disabled={gdprBusy}
-					onClick={() => downloadFromEndpoint('/gdpr/export/csv', 'sessions-export.csv')}
-					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+					onClick={() => downloadFromEndpoint('/gdpr/export/csv', 'sessions-export.csv', 'csv')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 flex items-center justify-center gap-2"
 				>
-					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportCsv')}
+					{exportingFormat === 'csv' ? (
+						<>
+							<span className="animate-spin">⏳</span>
+							<span>{t('common.loading')}</span>
+						</>
+					) : (
+						<>
+							<span>{t('settings.gdpr.exportCsv')}</span>
+						</>
+					)}
 				</button>
 
 				{/* Only keep this if you added the backend XML route */}
 				<button
 					type="button"
 					disabled={gdprBusy}
-					onClick={() => downloadFromEndpoint('/gdpr/export/xml', 'user-export.xml')}
-					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+					onClick={() => downloadFromEndpoint('/gdpr/export/xml', 'user-export.xml', 'xml')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 flex items-center justify-center gap-2"
 				>
-					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportXml')}
+					{exportingFormat === 'xml' ? (
+						<>
+							<span className="animate-spin">⏳</span>
+							<span>{t('common.loading')}</span>
+						</>
+					) : (
+						<>
+							<span>{t('settings.gdpr.exportXml')}</span>
+						</>
+					)}
 				</button>
 
 				<button
 					type="button"
 					disabled={gdprBusy}
 					onClick={() => setShowDeleteModal(true)}
-					className="w-full px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+					className="w-full px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
 				>
-					{t('settings.gdpr.deleteAccount')}
+					<span>{t('settings.gdpr.deleteAccount')}</span>
 				</button>
 				</div>
 			</div>
@@ -366,34 +521,85 @@ function Settings() {
 				<input
 				type="file"
 				accept=".json,.csv,.xml"
-				onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-				className="block w-full text-sm mb-3"
+				onChange={(e) => {
+					setImportFile(e.target.files?.[0] || null);
+					setImportSummary(null);
+				}}
+				disabled={importBusy}
+				className="block w-full text-sm mb-3 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
 				/>
+
+				{importFile && (
+					<div className="mb-3 text-sm text-gray-300">
+						Selected: <span className="font-semibold">{importFile.name}</span> ({(importFile.size / 1024).toFixed(1)} KB)
+					</div>
+				)}
+
+				{importProgress > 0 && importProgress < 100 && (
+					<div className="mb-3">
+						<div className="flex justify-between text-xs mb-1">
+							<span>Importing...</span>
+							<span>{importProgress}%</span>
+						</div>
+						<div className="w-full bg-gray-700 rounded-full h-2">
+							<div 
+								className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+								style={{width: `${importProgress}%`}}
+							/>
+						</div>
+					</div>
+				)}
 
 				<button
 				type="button"
 				disabled={importBusy || !importFile}
 				onClick={handleImport}
-				className="w-full px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+				className="w-full px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
 				>
-				{importBusy ? t('common.loading') : t('settings.import.upload')}
+				{importBusy ? (
+					<>
+						<span className="animate-spin">⏳</span>
+						<span>{t('common.loading')}</span>
+					</>
+				) : (
+					<>
+						<span>{t('settings.import.upload')}</span>
+					</>
+				)}
 				</button>
 
 				{importSummary && (
-				<div className="mt-3 text-sm">
-					<div>{t('settings.import.processed')}: {importSummary.processed ?? 0}</div>
-					<div>{t('settings.import.updated')}: {importSummary.updated ?? 0}</div>
-					<div>{t('settings.import.skipped')}: {importSummary.skipped ?? 0}</div>
+				<div className="mt-4 p-3 rounded-md bg-white/5 border border-green-500/30">
+					<div className="text-sm space-y-1">
+						<div className="flex justify-between">
+							<span className="text-gray-300">{t('settings.import.processed')}:</span>
+							<span className="font-semibold text-white">{importSummary.processed ?? 0}</span>
+						</div>
+						<div className="flex justify-between">
+							<span className="text-gray-300">{t('settings.import.updated')}:</span>
+							<span className="font-semibold text-green-400">{importSummary.updated ?? 0}</span>
+						</div>
+						<div className="flex justify-between">
+							<span className="text-gray-300">{t('settings.import.skipped')}:</span>
+							<span className="font-semibold text-yellow-400">{importSummary.skipped ?? 0}</span>
+						</div>
+					</div>
 
 					{!!(importSummary.errors && importSummary.errors.length) && (
-					<div className="mt-2">
-						<div className="font-semibold">{t('settings.import.errors')}:</div>
-						<ul className="list-disc pl-5">
+					<div className="mt-3 pt-3 border-t border-red-500/30">
+						<div className="font-semibold text-red-400 mb-2">{t('settings.import.errors')}:</div>
+						<ul className="list-none space-y-1 text-xs">
 						{importSummary.errors.slice(0, 10).map((er, idx) => (
-							<li key={idx}>
-							{typeof er === 'string' ? er : (er.row ? `Row ${er.row}: ${er.message}` : er.message)}
+							<li key={idx} className="text-red-300 pl-4 relative">
+								<span className="absolute left-0"></span>
+								{typeof er === 'string' ? er : (er.row ? `Row ${er.row}: ${er.message}` : er.message)}
 							</li>
 						))}
+						{importSummary.errors.length > 10 && (
+							<li className="text-gray-400 italic">
+								...and {importSummary.errors.length - 10} more errors
+							</li>
+						)}
 						</ul>
 					</div>
 					)}

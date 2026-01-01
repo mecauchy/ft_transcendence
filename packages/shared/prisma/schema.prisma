@@ -96,9 +96,12 @@ model User {
 	// gamification fields
 	totalXp			Int		@default(0) @map("total_xp")
 	currentLevel	Int		@default(1) @map("current_level")
+	stressLevel		Int		@default(50) @map("stress_level")     // 0-100 scale
+	confidenceLevel	Int		@default(50) @map("confidence_level") // 0-100 scale
 	displayName		String?	@map("display_name") @db.VarChar(64)
 	avatarUrl		String?	@map("avatar_url")
 	isActive		Boolean	@default(true) @map("is_active")
+	lastActiveAt	DateTime?	@map("last_active_at") @db.Timestamptz
 
 	// relations
 	oauth		OAuth?

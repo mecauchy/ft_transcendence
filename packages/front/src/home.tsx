@@ -3,12 +3,14 @@ import Navbar from "./components/navbar.tsx";
 import Game from "./game.tsx";
 import Network from "./network.tsx";
 import Settings from "./settings.tsx";
+import Profile from "./profile.tsx";
+import MatchHistory from "./history.tsx";
 
 function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
 		const current = window.location.pathname.replace("/", "");
-		if (["tournament", "game", "network", "settings"].includes(current)) {
+		if (["tournament", "game", "network", "settings", "profile", "history"].includes(current)) {
 			return current;
 		}
 		return "game";
@@ -48,6 +50,8 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		{page === 'game' && <Game />}
 		{page === 'network' && <Network />}
 		{page === 'settings' && <Settings />}
+		{page === 'profile' && <Profile />}
+		{page === 'history' && <MatchHistory />}
 	</div>
   	)
 }

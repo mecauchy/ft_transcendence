@@ -47,7 +47,13 @@
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed",
     "passwordsDontMatch": "Passwords do not match",
-    "passwordRequirements": "Password does not meet requirements"
+    "passwordRequirements": "Password does not meet requirements",
+    "enter2FACode": "Enter Two-Factor Authentication Code",
+    "2faCodePlaceholder": "Enter 6-digit code",
+    "invalid2FACode": "Invalid 2FA code. Must be 6 digits.",
+    "verifying": "Verifying...",
+    "verify": "Verify",
+    "2faVerificationFailed": "2FA verification failed. Please try again."
   },
   "passwordRequirements": {
     "minChars": "At least 8 characters",
@@ -59,17 +65,77 @@
   },
   "nav": {
     "play": "Play",
+    "profile": "Profile",
+    "history": "History",
     "network": "Network",
     "settings": "Settings",
+	"leaderboard": "Leaderboard",
     "logout": "Logout"
   },
+	"notifications": {
+		"title": "Notifications",
+		"empty": "No notifications",
+		"markAllRead": "Mark all read",
+  "profile": {
+    "title": "Profile",
+    "username": "Player",
+    "matches": "Games",
+    "wins": "Wins",
+    "losses": "Losses",
+    "pointsFor": "Points For",
+    "pointsAgainst": "Points Against",
+    "timeSpent": "Time Spent",
+    "minutes": "min",
+    "winRate": "Win Rate",
+    "stress": "Stress Level",
+    "confidence": "Confidence",
+    "stressDescription": "Lower is better - indicates calmness",
+    "confidenceDescription": "Higher is better - indicates self-assurance",
+    "achievements": "Achievements",
+    "pongStats": "Pong Statistics",
+    "breatheStats": "Breathe Statistics",
+    "sessions": "Sessions",
+    "totalTime": "Total Time",
+    "avgSessionTime": "Avg Session",
+    "noAchievements": "No achievements yet"
+  },
+  "history": {
+    "title": "Match History",
+    "game": "Game",
+    "result": "Result",
+    "all": "All",
+    "loadMore": "Load more...",
+    "noPong": "No Pong matches yet",
+    "noBreathe": "No Breathe sessions yet"
+  },
+  "chat": {
+    "title": "Messages",
+    "yesterday": "Yesterday",
+    "noConversations": "No conversations yet. Start chatting with friends!",
+    "selectConversation": "Select a conversation",
+    "selectPrompt": "Select a conversation to start chatting",
+    "loadMore": "Load earlier messages...",
+    "placeholder": "Type a message..."
+  },
+		"clearAll": "Clear",
+		"read": "Read"
+	},
+	"stats": {
+		"level": "Level",
+		"xp": "XP",
+		"sessions": "Sessions Completed"
+	},
   "home": {
     "title": "ft_transcendance",
     "subtitle": "When talking becomes a game mechanic."
   },
   "game": {
     "launchGame": "LAUNCH GAME",
-    "startGame": "Start Game"
+    "startGame": "Start Game",
+	"mode": "Mode",
+	"score": "Score",
+	"result": "Result",
+	"date": "Date"
   },
   "network": {
     "title": "Network",
@@ -132,6 +198,14 @@
       "updated": "Records updated",
       "skipped": "Records skipped",
       "errors": "Import errors"
+    },
+    "avatar": {
+      "change": "Change",
+      "hint": "Click to upload a new avatar (max 5MB)",
+      "invalidType": "Please select an image file",
+      "tooLarge": "Image must be less than 5MB",
+      "uploadSuccess": "Avatar updated successfully!",
+      "uploadFailed": "Failed to upload avatar"
     }
   },
   "languages": {

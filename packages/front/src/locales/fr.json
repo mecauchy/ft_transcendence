@@ -47,7 +47,13 @@
     "loginFailed": "Échec de la connexion",
     "registerFailed": "Échec de l'inscription",
     "passwordsDontMatch": "Les mots de passe ne correspondent pas",
-    "passwordRequirements": "Le mot de passe ne respecte pas les exigences"
+    "passwordRequirements": "Le mot de passe ne respecte pas les exigences",
+    "enter2FACode": "Entrez le code d'authentification à deux facteurs",
+    "2faCodePlaceholder": "Entrez le code à 6 chiffres",
+    "invalid2FACode": "Code 2FA invalide. Doit être composé de 6 chiffres.",
+    "verifying": "Vérification...",
+    "verify": "Vérifier",
+    "2faVerificationFailed": "Échec de la vérification 2FA. Veuillez réessayer."
   },
   "passwordRequirements": {
     "minChars": "Au moins 8 caractères",
@@ -59,10 +65,61 @@
   },
   "nav": {
     "play": "Jouer",
+    "profile": "Profil",
+    "history": "Historique",
     "network": "Réseau",
     "settings": "Paramètres",
+	"leaderboard": "Classement",
     "logout": "Déconnexion"
   },
+    "notifications": {
+    "title": "Notifications",
+    "empty": "Pas de notifications",
+    "markAllRead": "Marquer comme lu",
+  "profile": {
+    "title": "Profil",
+    "username": "Joueur",
+    "matches": "Parties",
+    "wins": "Victoires",
+    "losses": "Défaites",
+    "pointsFor": "Points pour",
+    "pointsAgainst": "Points contre",
+    "timeSpent": "Temps joué",
+    "minutes": "min",
+    "winRate": "Taux de victoire",
+    "stress": "Niveau de stress",
+    "confidence": "Confiance",
+    "stressDescription": "Plus bas est mieux - indique le calme",
+    "confidenceDescription": "Plus haut est mieux - indique l'assurance",
+    "achievements": "Succès",
+    "pongStats": "Statistiques Pong",
+    "breatheStats": "Statistiques Respiration",
+    "sessions": "Sessions",
+    "totalTime": "Temps total",
+    "avgSessionTime": "Session moy.",
+    "noAchievements": "Pas encore de succès"
+  },
+  "history": {
+    "title": "Historique des parties",
+    "game": "Jeu",
+    "result": "Résultat",
+    "all": "Tous",
+    "loadMore": "Charger plus...",
+    "noPong": "Pas encore de parties Pong",
+    "noBreathe": "Pas encore de sessions Respiration"
+  },
+  "chat": {
+    "title": "Messages",
+    "yesterday": "Hier",
+    "noConversations": "Pas encore de conversations. Commencez à discuter avec vos amis !",
+    "selectConversation": "Sélectionner une conversation",
+    "selectPrompt": "Sélectionnez une conversation pour commencer à discuter",
+    "loadMore": "Charger les messages précédents...",
+    "placeholder": "Écrire un message..."
+  },
+    "clearAll": "Effacer",
+    "read": "Lu"
+    },
   "home": {
     "title": "ft_transcendance",
     "subtitle": "Quand parler devient une mécanique de jeu."
@@ -132,6 +189,14 @@
       "updated": "Enregistrements mis à jour",
       "skipped": "Enregistrements ignorés",
       "errors": "Erreurs d'import"
+    },
+    "avatar": {
+      "change": "Modifier",
+      "hint": "Cliquez pour télécharger un nouvel avatar (max 5Mo)",
+      "invalidType": "Veuillez sélectionner un fichier image",
+      "tooLarge": "L'image doit faire moins de 5Mo",
+      "uploadSuccess": "Avatar mis à jour avec succès !",
+      "uploadFailed": "Échec du téléchargement de l'avatar"
     }
   },
   "languages": {

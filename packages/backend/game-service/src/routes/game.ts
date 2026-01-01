@@ -254,6 +254,107 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// leaderboard summary for pong
+	fastify.get<{Querystring: {limit?: string}}>('/pong/leaderboard', async (request: FastifyRequest, reply: FastifyReply) => {
+		try {
+			const limitRaw = (request.query as {limit?: string}).limit;
+			const limit = Math.min(Math.max(parseInt(limitRaw ?? '50', 10) || 50, 1), 200);
+
+			const games = await prisma.gamePong.findMany({
+				where: {playerId: {not: null}},
+				select: {
+					playerId: true,
+					score1: true,
+					score2: true,
+					winner: true,
+					startedAt: true,
+					endedAt: true,
+				},
+			});
+
+			const stats = new Map<string, {
+				games: number;
+				wins: number;
+				pointsFor: number;
+				pointsAgainst: number;
+				durationSeconds: number;
+			}>();
+
+			for (const g of games) {
+				const playerId = g.playerId!.toString();
+				if (!stats.has(playerId)) {
+					stats.set(playerId, {
+						games: 0,
+						wins: 0,
+						pointsFor: 0,
+						pointsAgainst: 0,
+						durationSeconds: 0,
+					});
+				}
+				const entry = stats.get(playerId)!;
+				entry.games += 1;
+				if (g.winner === 'PLAYER' || g.winner === 'PLAYER1') {
+					entry.wins += 1;
+				}
+				entry.pointsFor += g.score1 || 0;
+				entry.pointsAgainst += g.score2 || 0;
+				if (g.startedAt && g.endedAt) {
+					entry.durationSeconds += Math.max(0, (g.endedAt.getTime() - g.startedAt.getTime()) / 1000);
+				}
+			}
+
+			const playerIds = Array.from(stats.keys()).map((id) => BigInt(id));
+			const users = await prisma.user.findMany({
+				where: {id: {in: playerIds}},
+				select: {
+					id: true,
+					username: true,
+					settings: {select: {avatar: true}},
+				},
+			});
+
+			const userMap = new Map<string, {username: string; avatar: string | null}>();
+			for (const u of users) {
+				userMap.set(u.id.toString(), {username: u.username, avatar: u.settings?.avatar || null});
+			}
+
+			const entries = Array.from(stats.entries()).map(([playerId, s]) => {
+				const info = userMap.get(playerId);
+				return {
+					playerId,
+					username: info?.username || 'Unknown',
+					avatar: info?.avatar || null,
+					games: s.games,
+					wins: s.wins,
+					losses: Math.max(0, s.games - s.wins),
+					pointsFor: s.pointsFor,
+					pointsAgainst: s.pointsAgainst,
+					durationSeconds: Math.round(s.durationSeconds),
+				};
+			});
+
+			entries.sort((a, b) => {
+				if (b.wins !== a.wins) return b.wins - a.wins;
+				if (b.games !== a.games) return b.games - a.games;
+				return b.pointsFor - a.pointsFor;
+			});
+
+			return reply.send({
+				entries: entries.slice(0, limit).map((e, idx) => ({
+					rank: idx + 1,
+					...e,
+				})),
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to build pong leaderboard');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to fetch leaderboard',
+			});
+		}
+	});
+
 	// send breathe game stats
 	fastify.post<{Body: IBreatheGame}>('/breathe', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = request.user!.userId;

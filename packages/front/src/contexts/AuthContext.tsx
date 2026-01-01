@@ -20,6 +20,7 @@ interface AuthContextType {
 	isLoading: boolean;
 	isAuthenticated: boolean;
 	login: (login: string, password: string) => Promise<void>;
+	verify2FALogin: (code: string) => Promise<void>;
 	register: (username: string, email: string, password: string, dob: string) => Promise<void>;
 	logout: () => Promise<void>;
 	loginWithOAuth: (provider: '42' | 'github') => void;
@@ -73,6 +74,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	const login = async (login: string, password: string) => {
 		try {
 			const response = await api.login({login, password});
+			
+			// check if 2FA is required
+			if (response.require2FA) {
+				// store temporary token but dont send
+				localStorage.setItem('tempToken', response.accessToken);
+				throw new Error('2FA_REQUIRED');
+			}
+			
 			localStorage.setItem('accessToken', response.accessToken);
 			setUser({
 				...response.user,
@@ -89,7 +98,46 @@ export function AuthProvider({children}: {children: ReactNode}) {
 			}
 		} catch (error) {
 			const apiError = error as ApiError;
-			throw new Error(apiError.message || 'Login failed');
+			throw error;
+		}
+	};
+
+	const verify2FALogin = async (code: string) => {
+		try {
+			const tempToken = localStorage.getItem('tempToken');
+			if (!tempToken) {
+				throw new Error('No 2FA session found');
+			}
+			
+			const response = await api.verify2FA(code);
+			
+			if (response.verified && response.accessToken) {
+				localStorage.removeItem('tempToken');
+				localStorage.setItem('accessToken', response.accessToken);
+				api.setToken(response.accessToken);
+				
+				// fetch profile after auth
+				const profile = await api.getProfile();
+				setUser({
+					userId: profile.userId || profile.id || '',
+					username: profile.username,
+					email: profile.email,
+					role: 'PATIENT',
+					displayName: profile.displayName || profile.alias,
+					avatarUrl: profile.avatarUrl,
+					level: profile.level,
+					totalXp: profile.totalXp,
+				});
+				
+				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
+					i18n.changeLanguage(profile.preferences.language);
+				}
+			} else {
+				throw new Error('2FA verification failed');
+			}
+		} catch (error) {
+			const apiError = error as ApiError;
+			throw new Error(apiError.message || '2FA verification failed');
 		}
 	};
 
@@ -144,6 +192,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				isLoading,
 				isAuthenticated: !!user,
 				login,
+				verify2FALogin,
 				register,
 				logout,
 				loginWithOAuth,

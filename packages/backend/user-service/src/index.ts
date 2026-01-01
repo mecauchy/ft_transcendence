@@ -5,7 +5,7 @@ import multipart from '@fastify/multipart';
 import {config} from './config';
 import {profileRoutes} from './routes/profile';
 import {friendsRoutes} from './routes/friends';
-import {gdprRoutes} from './routes/gdpr';
+import {gdprRoutes, importRoutes} from './routes/gdpr';
 import {settingsRoutes} from './routes/settings';
 import {chatRoutes} from './routes/chat';
 import {notificationRoutes} from './routes/notifications';
@@ -54,6 +54,7 @@ async function start() {
 		await fastify.register(profileRoutes, {prefix: '/api/users'});
 		await fastify.register(friendsRoutes, {prefix: '/api/users/friends'});
 		await fastify.register(gdprRoutes, {prefix: '/api/users/gdpr'});
+		await fastify.register(importRoutes, {prefix: '/api/users'});
 		await fastify.register(settingsRoutes, {prefix: '/api/users/settings'});
 		await fastify.register(chatRoutes, {prefix: '/api/users/chat'});
 		await fastify.register(notificationRoutes, {prefix: '/api/users/notifications'});

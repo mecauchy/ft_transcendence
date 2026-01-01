@@ -84,12 +84,15 @@ class ApiClient {
 		const response = await this.request<{
 			accessToken: string;
 			refreshToken: string;
-			user: {userId: string; username: string; email: string; role: string};
+			user?: {userId: string; username: string; email: string; role: string};
+			require2FA?: boolean;
 		}>('/auth/login', {
 			method: 'POST',
 			body: JSON.stringify(credentials),
 		});
-		this.setToken(response.accessToken);
+		if (!response.require2FA) {
+			this.setToken(response.accessToken);
+		}
 		return response;
 	}
 
@@ -118,6 +121,7 @@ class ApiClient {
 	async setup2FA() {
 		return this.request<{qrCode: string; secret: string}>('/auth/2fa/setup', {
 			method: 'POST',
+			body: JSON.stringify({}),
 		});
 	}
 
@@ -178,6 +182,12 @@ class ApiClient {
 		});
 	}
 
+	async deleteAllNotifications() {
+		return this.request<{success: boolean}>('/users/notifications/all', {
+			method: 'DELETE',
+		});
+	}
+
 	// gdpr
 	async exportUserData() {
 		return this.request<Record<string, unknown>>('/users/gdpr/export');
@@ -223,6 +233,9 @@ class ApiClient {
 			avatarUrl?: string;
 			level?: number;
 			totalXp?: number;
+			stressLevel?: number;
+			confidenceLevel?: number;
+			lastActiveAt?: string;
 			createdAt?: string;
 			preferences?: {
 				language?: 'en' | 'fr' | 'es';
@@ -234,6 +247,9 @@ class ApiClient {
 	async updateProfile(data: {
 		username?: string;
 		email?: string;
+		displayName?: string;
+		stressLevel?: number;
+		confidenceLevel?: number;
 		preferences?: {
 			language?: 'en' | 'fr' | 'es';
 			theme?: 'light' | 'dark';
@@ -243,6 +259,34 @@ class ApiClient {
 			method: 'PUT',
 			body: JSON.stringify(data),
 		});
+	}
+
+	async uploadAvatar(file: File) {
+		const formData = new FormData();
+		formData.append('avatar', file);
+
+		const headers: HeadersInit = {};
+		if (this.token) {
+			headers['Authorization'] = `Bearer ${this.token}`;
+		}
+
+		const response = await fetch(`${API_BASE}/users/avatar`, {
+			method: 'POST',
+			headers,
+			credentials: 'include',
+			body: formData,
+		});
+
+		if (!response.ok) {
+			const error = await response.json().catch(() => ({
+				statusCode: response.status,
+				error: response.statusText,
+				message: 'Upload failed',
+			}));
+			throw error;
+		}
+
+		return response.json() as Promise<{avatarUrl: string; message: string}>;
 	}
 
 	async getSettings() {
@@ -295,7 +339,84 @@ class ApiClient {
 		});
 	}
 
-	// Game endpoints
+	async removeFriend(friendId: string) {
+		return this.request<{message: string}>(`/users/friends/${friendId}`, {
+			method: 'DELETE',
+		});
+	}
+
+	async blockUser(userId: string) {
+		return this.request<{message: string}>(`/users/block/${userId}`, {
+			method: 'POST',
+		});
+	}
+
+	async unblockUser(userId: string) {
+		return this.request<{message: string}>(`/users/block/${userId}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// chat endpoints
+	async getConversations() {
+		return this.request<{
+			conversations: Array<{
+				id: string;
+				otherUser: {id: string; username: string; avatarUrl?: string};
+				lastMessage?: {content: string; createdAt: string; isRead: boolean};
+				unreadCount: number;
+			}>;
+		}>('/users/chat/conversations');
+	}
+
+	async getConversation(userId: string) {
+		return this.request<{
+			id: string;
+			otherUser: {id: string; username: string; avatarUrl?: string};
+		}>(`/users/chat/conversations/${userId}`);
+	}
+
+	async getMessages(conversationId: string, cursor?: string) {
+		const params = cursor ? `?cursor=${cursor}` : '';
+		return this.request<{
+			messages: Array<{
+				id: string;
+				senderId: string;
+				content: string;
+				isRead: boolean;
+				createdAt: string;
+			}>;
+			nextCursor?: string;
+		}>(`/users/chat/messages/${conversationId}${params}`);
+	}
+
+	async sendMessage(receiverId: string, content: string) {
+		return this.request<{
+			messageId: string;
+			conversationId: string;
+		}>('/users/chat/messages', {
+			method: 'POST',
+			body: JSON.stringify({receiverId, content}),
+		});
+	}
+
+	// breathe game history
+	async getBreatheHistory(options?: {cursor?: string; limit?: number}) {
+		const params = new URLSearchParams();
+		if (options?.cursor) params.append('cursor', options.cursor);
+		if (options?.limit) params.append('limit', options.limit.toString());
+		return this.request<{
+			matches: Array<{
+				id: string;
+				playerId: string;
+				startedAt: string;
+				endedAt: string;
+			}>;
+			nextCursor: string | null;
+		}>(`/game/breathe/history${params.toString() ? '?' + params.toString() : ''}`);
+	}
+
+	// game endpoints
 	async sendPong(payload: IPongGame) {
 		return this.request<{success: boolean; gameId: string}>('/game/pong/match', {
 			method: 'POST',
@@ -350,6 +471,23 @@ class ApiClient {
 				score: number;
 			}>;
 		}>(`/gamification/leaderboard?type=${type}&limit=${limit}`);
+	}
+
+	async getPongLeaderboard(limit = 50) {
+		return this.request<{
+			entries: Array<{
+				rank: number;
+				playerId: string;
+				username: string;
+				avatar: string | null;
+				games: number;
+				wins: number;
+				losses: number;
+				pointsFor: number;
+				pointsAgainst: number;
+				durationSeconds: number;
+			}>;
+		}>(`/game/pong/leaderboard?limit=${limit}`);
 	}
 
 	async getAchievements() {

@@ -47,7 +47,19 @@
     "loginFailed": "Error al iniciar sesión",
     "registerFailed": "Error en el registro",
     "passwordsDontMatch": "Las contraseñas no coinciden",
-    "passwordRequirements": "La contraseña no cumple los requisitos"
+    "passwordRequirements": "La contraseña no cumple los requisitos",
+    "enter2FACode": "Ingrese el código de autenticación de dos factores",
+    "2faCodePlaceholder": "Ingrese el código de 6 dígitos",
+    "invalid2FACode": "Código 2FA inválido. Debe tener 6 dígitos.",
+    "verifying": "Verificando...",
+    "verify": "Verificar",
+    "2faVerificationFailed": "Verificación 2FA fallida. Por favor, inténtelo de nuevo.",
+    "enter2FACode": "Ingrese el código de autenticación de dos factores",
+    "2faCodePlaceholder": "Ingrese el código de 6 dígitos",
+    "invalid2FACode": "Código 2FA inválido. Debe tener 6 dígitos.",
+    "verifying": "Verificando...",
+    "verify": "Verificar",
+    "2faVerificationFailed": "Verificación 2FA fallida. Por favor, inténtelo de nuevo."
   },
   "passwordRequirements": {
     "minChars": "Al menos 8 caracteres",
@@ -61,8 +73,26 @@
     "play": "Jugar",
     "network": "Red",
     "settings": "Configuración",
+	"leaderboard": "Clasificación",
     "logout": "Cerrar sesión"
   },
+    "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "markAllRead": "Marcar todo como leido",
+    "clearAll": "Borrar",
+    "read": "Leido"
+    },
+     "profile": {
+       "username": "Jugador",
+       "matches": "Partidas",
+       "wins": "Victorias",
+       "losses": "Derrotas",
+       "pointsFor": "Puntos a favor",
+       "pointsAgainst": "Puntos en contra",
+       "timeSpent": "Tiempo jugado",
+       "minutes": "min"
+     },
   "home": {
     "title": "ft_transcendance",
     "subtitle": "Cuando hablar se convierte en mecánica de juego."

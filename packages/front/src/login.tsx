@@ -4,7 +4,7 @@ import {useAuth} from './contexts/AuthContext'
 import {useTranslation} from 'react-i18next'
 
 function Login({onLogin}: {onLogin: (username: string) => void}) {
-	const {login, register, loginWithOAuth} = useAuth();
+	const {login, verify2FALogin, register, loginWithOAuth} = useAuth();
 	const {t} = useTranslation();
 
 	//state
@@ -13,6 +13,10 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const [registerMode, setRegisterMode] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [errorMessage, setErrorMessage] = useState<string>('');
+	
+	// 2FA state
+	const [show2FAModal, setShow2FAModal] = useState<boolean>(false);
+	const [twoFACode, setTwoFACode] = useState<string>('');
 
 	const [createUsername, setCreateUsername] = useState<string>('');
 	const [createPassword, setCreatePassword] = useState<string>('');
@@ -100,7 +104,33 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			await login(ulogin, password);
 			// onLogin is handled by AuthContext - the user state change will trigger re-render
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : t('auth.loginFailed'));
+			if (error instanceof Error && error.message === '2FA_REQUIRED') {
+				// show 2FA modal
+				setShow2FAModal(true);
+				setErrorMessage('');
+			} else {
+				setErrorMessage(error instanceof Error ? error.message : t('auth.loginFailed'));
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	}
+
+	const handle2FASubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
+		setErrorMessage('');
+
+		if (!twoFACode || twoFACode.length !== 6) {
+			setErrorMessage(t('auth.invalid2FACode'));
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await verify2FALogin(twoFACode);
+			// success
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : t('auth.2faVerificationFailed'));
 		} finally {
 			setIsLoading(false);
 		}
@@ -291,6 +321,49 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			</button>}
 			<p>{t('auth.startSession')}</p>
 	  </div>
+	  
+	  {/* 2FA Verification Modal */}
+	  {show2FAModal && (
+		<div className="modal-overlay" onClick={() => setShow2FAModal(false)}>
+			<div className="modal-content" onClick={(e) => e.stopPropagation()}>
+				<h2 className="modal-title">{t('auth.enter2FACode')}</h2>
+				<form onSubmit={handle2FASubmit}>
+					<input
+						type="text"
+						className="modal-input"
+						placeholder={t('auth.2faCodePlaceholder')}
+						value={twoFACode}
+						onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+						maxLength={6}
+						autoFocus
+						disabled={isLoading}
+					/>
+					{errorMessage && <p className="error-message">{errorMessage}</p>}
+					<div className="modal-buttons">
+						<button
+							type="button"
+							className="modal-button-cancel"
+							onClick={() => {
+								setShow2FAModal(false);
+								setTwoFACode('');
+								setErrorMessage('');
+							}}
+							disabled={isLoading}
+						>
+							{t('common.cancel')}
+						</button>
+						<button
+							type="submit"
+							className="modal-button-confirm"
+							disabled={isLoading || twoFACode.length !== 6}
+						>
+							{isLoading ? t('auth.verifying') : t('auth.verify')}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	  )}
 	</div>
   )
 }

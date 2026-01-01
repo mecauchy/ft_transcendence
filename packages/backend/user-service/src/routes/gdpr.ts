@@ -1,6 +1,8 @@
 import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {prisma} from '../db';
 import {authMiddleware} from '../middleware/auth';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 export async function gdprRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
@@ -262,4 +264,156 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 			}
 		}
 	);
+}
+
+export async function importRoutes(fastify: FastifyInstance) {
+	// apply auth middleware to all routes
+	fastify.addHook('preHandler', authMiddleware);
+
+	// import user data from file
+	fastify.post<{Body: {file: any}}>('/import', async (request, reply) => {
+		const userId = BigInt(request.user!.userId);
+
+		try {
+			// get the uploaded file
+			const data = await request.file();
+
+			if (!data) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'No file uploaded',
+				});
+			}
+
+			// read file buffer
+			const buffer = await data.toBuffer();
+			const fileContent = buffer.toString('utf-8');
+
+			// detect format and parse
+			let importData: any;
+			try {
+				importData = JSON.parse(fileContent);
+			} catch {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'Invalid JSON file format',
+				});
+			}
+
+			// validate file structure
+			if (!importData.user) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'Invalid data structure - missing user field',
+				});
+			}
+
+			let processed = 0;
+			let updated = 0;
+			let skipped = 0;
+			const errors: string[] = [];
+
+			try {
+				// start transaction for data import
+				await prisma.$transaction(async (tx) => {
+					// update user basic info
+					if (importData.user.username || importData.user.email) {
+						await tx.user.update({
+							where: {id: userId},
+							data: {
+								...(importData.user.username && {username: importData.user.username}),
+								...(importData.user.email && {email: importData.user.email}),
+							},
+						});
+						updated++;
+						processed++;
+					}
+
+					// update settings if provided
+					if (importData.settings) {
+						const settings = importData.settings;
+						await tx.settings.upsert({
+							where: {userId},
+							update: {
+								...(settings.avatar && {avatar: settings.avatar}),
+								...(settings.colour && {colour: settings.colour}),
+								...(settings.locale && {locale: settings.locale}),
+							},
+							create: {
+								userId,
+								avatar: settings.avatar || '',
+								colour: settings.colour || '#000000',
+								locale: settings.locale || 'en',
+							},
+						});
+						updated++;
+						processed++;
+					}
+
+					// import friends if provided
+					if (importData.friends && Array.isArray(importData.friends)) {
+						for (const friend of importData.friends) {
+							try {
+								const friendId = BigInt(friend.userId);
+								// create friend relationship
+								const existing = await tx.friend.findFirst({
+									where: {
+										OR: [
+											{initiatorId: userId, receiverId: friendId},
+											{initiatorId: friendId, receiverId: userId},
+										],
+									},
+								});
+
+								if (!existing) {
+									await tx.friend.create({
+										data: {
+											initiatorId: userId,
+											receiverId: friendId,
+											status: friend.status || 'PENDING',
+										},
+									});
+									processed++;
+									updated++;
+								} else {
+									skipped++;
+								}
+							} catch (err) {
+								errors.push(`Failed to import friend ${friend.userId}`);
+								skipped++;
+							}
+						}
+					}
+				});
+
+				request.log.info({userId: userId.toString(), processed, updated, skipped}, 'User data imported');
+
+				return {
+					success: true,
+					message:	'Data imported successfully',
+					processed,
+					updated,
+					skipped,
+					errors: errors.length > 0 ? errors : undefined,
+				};
+			} catch (error) {
+				request.log.error({error}, 'Failed to import data');
+				return reply.status(500).send({
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to import data',
+				});
+			}
+		} catch (error) {
+			request.log.error({error}, 'Failed to process file upload');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to process file upload',
+			});
+		}
+	});
 }
