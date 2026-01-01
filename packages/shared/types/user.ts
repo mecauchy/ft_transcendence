@@ -13,6 +13,7 @@ export interface IUserProfile {
 	email:		string;
 	avatarUrl:	string;
 	role:		UserRole;
+	twofaEnabled?: boolean;
 	preferences: {
 		language:	'fr' | 'en';
 		theme:		'light' | 'dark';

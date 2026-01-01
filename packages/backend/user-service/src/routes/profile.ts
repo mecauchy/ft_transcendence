@@ -76,6 +76,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				email: user.email,
 				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
 				role: user.role as UserRole,
+				twofaEnabled: user.twofaEnabled || false,
 				preferences: {
 					language: (user.settings?.locale || 'en') as 'en' | 'fr',
 					theme: (user.settings?.colour || 'light') as 'light' | 'dark',

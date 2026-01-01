@@ -82,15 +82,18 @@ class ApiClient {
 
 	async login(credentials: {login: string; password: string}) {
 		const response = await this.request<{
-			accessToken: string;
-			refreshToken: string;
+			accessToken?: string;
+			refreshToken?: string;
 			user?: {userId: string; username: string; email: string; role: string};
 			require2FA?: boolean;
+			requires2FA?: boolean;
+			userId?: string;
+			message?: string;
 		}>('/auth/login', {
 			method: 'POST',
 			body: JSON.stringify(credentials),
 		});
-		if (!response.require2FA) {
+		if (!response.require2FA && !response.requires2FA && response.accessToken) {
 			this.setToken(response.accessToken);
 		}
 		return response;
@@ -129,6 +132,19 @@ class ApiClient {
 		return this.request<{verified: boolean; accessToken?: string}>('/auth/2fa/verify', {
 			method: 'POST',
 			body: JSON.stringify({code}),
+		});
+	}
+
+	// 2FA login verification
+	async verify2FALogin(userId: string, code: string) {
+		return this.request<{
+			verified: boolean;
+			accessToken: string;
+			refreshToken: string;
+			user: {userId: string; username: string; email: string; role: string};
+		}>('/auth/2fa/login', {
+			method: 'POST',
+			body: JSON.stringify({userId, code}),
 		});
 	}
 
@@ -237,6 +253,7 @@ class ApiClient {
 			confidenceLevel?: number;
 			lastActiveAt?: string;
 			createdAt?: string;
+			twofaEnabled?: boolean;
 			preferences?: {
 				language?: 'en' | 'fr' | 'es';
 				theme?: 'light' | 'dark';

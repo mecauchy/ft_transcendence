@@ -76,17 +76,23 @@ export function AuthProvider({children}: {children: ReactNode}) {
 			const response = await api.login({login, password});
 			
 			// check if 2FA is required
-			if (response.require2FA) {
-				// store temporary token but dont send
-				localStorage.setItem('tempToken', response.accessToken);
+			if (response.require2FA || response.requires2FA) {
+				// store userId for 2FA login flow (no token yet)
+				if (response.userId) {
+					localStorage.setItem('pending2FAUserId', response.userId);
+				}
 				throw new Error('2FA_REQUIRED');
 			}
 			
-			localStorage.setItem('accessToken', response.accessToken);
-			setUser({
-				...response.user,
-				displayName: response.user.username,
-			});
+			if (response.accessToken) {
+				localStorage.setItem('accessToken', response.accessToken);
+			}
+			if (response.user) {
+				setUser({
+					...response.user,
+					displayName: response.user.username,
+				});
+			}
 			// Fetch profile to get language preference after login
 			try {
 				const profile = await api.getProfile();
@@ -104,15 +110,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
 	const verify2FALogin = async (code: string) => {
 		try {
-			const tempToken = localStorage.getItem('tempToken');
-			if (!tempToken) {
+			const userId = localStorage.getItem('pending2FAUserId');
+			if (!userId) {
 				throw new Error('No 2FA session found');
 			}
 			
-			const response = await api.verify2FA(code);
+			const response = await api.verify2FALogin(userId, code);
 			
 			if (response.verified && response.accessToken) {
-				localStorage.removeItem('tempToken');
+				localStorage.removeItem('pending2FAUserId');
 				localStorage.setItem('accessToken', response.accessToken);
 				api.setToken(response.accessToken);
 				

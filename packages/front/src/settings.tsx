@@ -64,6 +64,19 @@ function Settings() {
 	const [twoFACode, setTwoFACode] = useState('');
 	const [is2FALoading, setIs2FALoading] = useState(false);
 
+	// load 2FA status on mount
+	useEffect(() => {
+		const load2FAStatus = async () => {
+			try {
+				const profile = await api.getProfile();
+				setIs2FAEnabled(profile.twofaEnabled || false);
+			} catch {
+				// ignore error, default to false
+			}
+		};
+		load2FAStatus();
+	}, []);
+
 	// GDPR / export / import
 	const [gdprBusy, setGdprBusy] = useState(false);
 	const [exportingFormat, setExportingFormat] = useState<'json' | 'csv' | 'xml' | null>(null);
@@ -144,7 +157,7 @@ function Settings() {
 				headers['Authorization'] = `Bearer ${token}`;
 			}
 
-			const res = await fetch('api/users/gdpr/delete', {
+			const res = await fetch('/api/users/gdpr/delete', {
 				method: 'DELETE',
 				headers,
 				credentials: 'include',
@@ -200,7 +213,7 @@ function Settings() {
 				headers['Authorization'] = `Bearer ${token}`;
 			}
 
-			const res = await fetch('api/users/import', {
+			const res = await fetch('/api/users/import', {
 				method: 'POST',
 				headers,
 				body: form,

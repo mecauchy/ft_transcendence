@@ -261,4 +261,111 @@ export async function	twoFactorRoutes(fastify: FastifyInstance) {
 			}
 		}
 	);
+
+	// 2FA login verification
+	fastify.post<{Body: {userId: string; code: string}}>(
+		'/login',
+		{
+			// skip auth middleware
+			preHandler: async () => {},
+		},
+		async (request, reply) => {
+			const {userId, code} = request.body;
+
+			if (!userId || !code) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'userId and code are required',
+				});
+			}
+
+			try {
+				const user = await prisma.user.findUnique({
+					where: {id: BigInt(userId)},
+					select: {
+						id:				true,
+						username:		true,
+						email:			true,
+						role:			true,
+						twofaEnabled:	true,
+						twofaSecret:	true,
+					},
+				});
+
+				if (!user) {
+					return reply.status(404).send({
+						statusCode:	404,
+						error:		'Not Found',
+						message:	'User not found',
+					});
+				}
+
+				if (!user.twofaEnabled || !user.twofaSecret) {
+					return reply.status(400).send({
+						statusCode:	400,
+						error:		'Bad Request',
+						message:	'2FA is not enabled for this user',
+					});
+				}
+
+				// verify TOTP code
+				const isValid = verifyTOTP(user.twofaSecret, code);
+
+				if (!isValid) {
+					return reply.status(401).send({
+						statusCode:	401,
+						error:		'Unauthorized',
+						message:	'Invalid verification code',
+					});
+				}
+
+				// generate full access tokens
+				const tokens = await generateTokens({
+					userId:			user.id.toString(),
+					role:			user.role,
+					requires2FA:	false,
+				});
+
+				// save refresh token
+				await prisma.userKey.upsert({
+					where: {userId: user.id},
+					update: {
+						token:		tokens.refreshToken,
+						status:		'ACTIVE',
+						expiresAt:	new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					},
+					create: {
+						userId:		user.id,
+						token:		tokens.refreshToken,
+						type:		'REFRESH',
+						status:		'ACTIVE',
+						expiresAt:	new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					},
+				});
+
+				request.log.info({userId: user.id.toString()}, '2FA login successful');
+
+				return {
+					verified:		true,
+					accessToken:	tokens.accessToken,
+					refreshToken:	tokens.refreshToken,
+					user: {
+						userId:		user.id.toString(),
+						username:	user.username,
+						email:		user.email,
+						role:		user.role,
+					},
+				};
+
+			} catch (error) {
+				request.log.error({error}, '2FA login verification failed');
+				return reply.status(500).send({
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to verify 2FA code',
+				});
+			}
+		}
+	);
 }

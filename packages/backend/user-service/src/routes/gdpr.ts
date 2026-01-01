@@ -148,6 +148,121 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// export userdata in xml
+	fastify.get('/export/xml', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+
+		try {
+			// fetch user with all related data
+			const user = await prisma.user.findUnique({
+				where: {id: userId},
+				include: {
+					settings: true,
+					oauth: true,
+					patientSessions: {
+						orderBy: {createdAt: 'desc'},
+					},
+					doctorSessions: {
+						orderBy: {createdAt: 'desc'},
+					},
+					friendsInitiated: true,
+					friendsReceived: true,
+				},
+			});
+
+			if (!user) {
+				return reply.status(404).send({
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User not found',
+				});
+			}
+
+			// combine sessions
+			const allSessions = [...(user.patientSessions || []), ...(user.doctorSessions || [])];
+
+			// combine friends
+			const friends = [
+				...(user.friendsInitiated || []).map((f) => ({
+					userId: f.receiverId.toString(),
+					status: f.status,
+					since: f.createdAt,
+				})),
+				...(user.friendsReceived || []).map((f) => ({
+					userId: f.initiatorId.toString(),
+					status: f.status,
+					since: f.createdAt,
+				})),
+			];
+
+			// build XML
+			const escapeXml = (str: string) => str
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&apos;');
+
+			let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+			xml += '<userData>\n';
+			xml += `  <exportedAt>${new Date().toISOString()}</exportedAt>\n`;
+			xml += '  <user>\n';
+			xml += `    <id>${user.id.toString()}</id>\n`;
+			xml += `    <username>${escapeXml(user.username)}</username>\n`;
+			xml += `    <email>${escapeXml(user.email)}</email>\n`;
+			xml += `    <role>${user.role}</role>\n`;
+			xml += `    <dateOfBirth>${user.dob?.toISOString() || ''}</dateOfBirth>\n`;
+			xml += `    <createdAt>${user.createdAt.toISOString()}</createdAt>\n`;
+			xml += `    <lastModified>${user.updatedAt.toISOString()}</lastModified>\n`;
+			xml += '  </user>\n';
+			
+			if (user.settings) {
+				xml += '  <settings>\n';
+				xml += `    <avatar>${escapeXml(user.settings.avatar || '')}</avatar>\n`;
+				xml += `    <colour>${escapeXml(user.settings.colour || '')}</colour>\n`;
+				xml += `    <locale>${escapeXml(user.settings.locale || 'en')}</locale>\n`;
+				xml += '  </settings>\n';
+			}
+			
+			xml += '  <sessions>\n';
+			for (const s of allSessions) {
+				xml += '    <session>\n';
+				xml += `      <id>${s.id.toString()}</id>\n`;
+				xml += `      <scenarioId>${s.scenarioId?.toString() || ''}</scenarioId>\n`;
+				xml += `      <mode>${s.mode}</mode>\n`;
+				xml += `      <status>${s.status}</status>\n`;
+				xml += `      <createdAt>${s.createdAt.toISOString()}</createdAt>\n`;
+				xml += `      <endedAt>${s.endedAt?.toISOString() || ''}</endedAt>\n`;
+				xml += '    </session>\n';
+			}
+			xml += '  </sessions>\n';
+			
+			xml += '  <friends>\n';
+			for (const f of friends) {
+				xml += '    <friend>\n';
+				xml += `      <userId>${f.userId}</userId>\n`;
+				xml += `      <status>${f.status}</status>\n`;
+				xml += `      <since>${f.since.toISOString()}</since>\n`;
+				xml += '    </friend>\n';
+			}
+			xml += '  </friends>\n';
+			
+			xml += '</userData>';
+
+			reply.header('Content-Type', 'application/xml');
+			reply.header('Content-Disposition', `attachment; filename="user_data_${userId}.xml"`);
+
+			return xml;
+		} catch (error) {
+			request.log.error({error}, 'Failed to export XML');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to export data',
+			});
+		}
+	});
+
 	// request account deletion
 	fastify.delete('/delete', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
