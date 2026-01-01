@@ -104,7 +104,35 @@
     "profileUpdated": "Profile updated successfully!",
     "updateFailed": "Failed to update profile",
     "enterUsername": "Enter your username",
-    "enterEmail": "Enter your email"
+    "enterEmail": "Enter your email",
+    "gdpr": {
+      "title": "Data & Privacy (GDPR)",
+      "exportJson": "Export Data (JSON)",
+      "exportCsv": "Export Sessions (CSV)",
+      "exportXml": "Export Data (XML)",
+      "exportSuccess": "Data exported successfully!",
+      "exportFailed": "Failed to export data",
+      "deleteAccount": "Delete My Account",
+      "deleteTitle": "Permanently Delete Account",
+      "deleteWarning": "! WARNING ! This action is permanent and irreversible. All your personal data will be deleted from our servers.",
+      "deleteAcknowledge": "I understand this action is permanent and cannot be undone",
+      "typeDelete": "Type 'DELETE' to confirm",
+      "confirmDelete": "Delete Account",
+      "deleteConfirmInvalid": "Please acknowledge and type 'DELETE' to confirm",
+      "deleteSuccess": "Account deleted successfully",
+      "deleteFailed": "Failed to delete account"
+    },
+    "import": {
+      "title": "Import Data",
+      "upload": "Import File",
+      "noFile": "Please select a file to import",
+      "success": "Data imported successfully!",
+      "failed": "Failed to import data",
+      "processed": "Records processed",
+      "updated": "Records updated",
+      "skipped": "Records skipped",
+      "errors": "Import errors"
+    }
   },
   "languages": {
     "en": "English",

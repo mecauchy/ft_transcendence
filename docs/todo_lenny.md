@@ -36,15 +36,6 @@
 - Client-side validation to match server rules (size/type)
 
 
-# IV.2 Accessibility & i18n
-## Minor — Multiple languages (3+)
-### Requirements: i18n system, 3 translations, switcher, all text translatable.
-- Implement i18n library (react-i18next or similar)
-- Provide full translations for FR/EN/ES
-- Add language switcher
-Replace hardcoded strings in UI with translation keys
-
-
 # IV.3 User Management
 ## Major — Standard user management/authentication
 ### Requirements: profile update, avatar, friends + online status, profile page.

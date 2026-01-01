@@ -104,7 +104,35 @@
     "profileUpdated": "¡Perfil actualizado con éxito!",
     "updateFailed": "Error al actualizar el perfil",
     "enterUsername": "Ingresa tu nombre de usuario",
-    "enterEmail": "Ingresa tu correo electrónico"
+    "enterEmail": "Ingresa tu correo electrónico",
+    "gdpr": {
+      "title": "Datos y Privacidad (GDPR)",
+      "exportJson": "Exportar datos (JSON)",
+      "exportCsv": "Exportar sesiones (CSV)",
+      "exportXml": "Exportar datos (XML)",
+      "exportSuccess": "¡Datos exportados exitosamente!",
+      "exportFailed": "Error al exportar los datos",
+      "deleteAccount": "Eliminar mi cuenta",
+      "deleteTitle": "Eliminar cuenta permanentemente",
+      "deleteWarning": "! ADVERTENCIA ! Esta acción es permanente e irreversible. Todos tus datos personales serán eliminados de nuestros servidores.",
+      "deleteAcknowledge": "Entiendo que esta acción es permanente y no puede ser deshecha",
+      "typeDelete": "Escribe 'DELETE' para confirmar",
+      "confirmDelete": "Eliminar cuenta",
+      "deleteConfirmInvalid": "Por favor confirma y escribe 'DELETE' para validar",
+      "deleteSuccess": "Cuenta eliminada exitosamente",
+      "deleteFailed": "Error al eliminar la cuenta"
+    },
+    "import": {
+      "title": "Importar datos",
+      "upload": "Importar archivo",
+      "noFile": "Por favor selecciona un archivo para importar",
+      "success": "¡Datos importados exitosamente!",
+      "failed": "Error al importar los datos",
+      "processed": "Registros procesados",
+      "updated": "Registros actualizados",
+      "skipped": "Registros omitidos",
+      "errors": "Errores de importación"
+    }
   },
   "languages": {
     "en": "Inglés",

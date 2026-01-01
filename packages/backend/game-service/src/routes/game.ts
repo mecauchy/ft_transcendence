@@ -84,16 +84,24 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				winner,
 				timestamp1,
 				timestamp2
-			} = request.body;
+			} = (request.body as {
+				mode: string;
+				difficulty: string;
+				score1: number;
+				score2: number;
+				winner: string;
+				timestamp1: string | number;
+				timestamp2: string | number;
+			});
 
 			const gameLog = await prisma.gamePong.create({
 				data: {
 					playerId: BigInt(userId),
-					mode,
-					difficulty,
+					mode: mode as any,
+					difficulty: difficulty as any,
 					score1: Number(score1),
 					score2: Number(score2),
-					winner,
+					winner: winner as any,
 					startedAt: new Date(timestamp1),
 					endedAt: new Date(timestamp2)
 				}
@@ -118,10 +126,10 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	// get pong stats for curr user
 	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
-		const limitRaw = request.query.limit;
+		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
 
-		const cursor = request.query.cursor;
+		const cursor = (request.query as {cursor?: string}).cursor;
 		if (cursor !== undefined && isValidCursor(cursor)) {
 			return reply.status(400).send({
 				statusCode:	400,
@@ -178,8 +186,9 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 	// get pong stats for a user
 	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('pong/history/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-		const {id} = BigInt(request.params);
-		if (!isValidBigIntId(id)) {
+		const {id: idStr} = (request.params as {id: string});
+		const id = BigInt(idStr);
+		if (!isValidBigIntId(idStr)) {
 			return reply.status(400).send({
 				statusCode:	400,
 				error:		'Bad Request',
@@ -187,10 +196,10 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		const limitRaw = request.query.limit;
+		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
 
-		const cursor = request.query.cursor;
+		const cursor = (request.query as {cursor?: string}).cursor;
 		if (cursor !== undefined && isValidCursor(cursor)) {
 			return reply.status(400).send({
 				statusCode:	400,
@@ -263,7 +272,10 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			const {
 				timestamp1,
 				timestamp2
-			} = request.body;
+			} = (request.body as {
+				timestamp1: string | number;
+				timestamp2: string | number;
+			});
 
 			const gameLog = await prisma.gameBreathe.create({
 				data: {
@@ -292,10 +304,10 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	// get breathe stats for curr user
 	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('breathe/history', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
-		const limitRaw = request.query.limit;
+		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
 
-		const cursor = request.query.cursor;
+		const cursor = (request.query as {cursor?: string}).cursor;
 		if (cursor !== undefined && isValidCursor(cursor)) {
 			return reply.status(400).send({
 				statusCode:	400,
@@ -347,11 +359,11 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 	// get breathe stats for a user
 	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('breathe/history/id', async (request: FastifyRequest, reply: FastifyReply) => {
-		const id = BigInt(request.params);
-		const limitRaw = request.query.limit;
+		const id = BigInt((request.params as {id: string}).id);
+		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
 
-		const cursor = request.query.cursor;
+		const cursor = (request.query as {cursor?: string}).cursor;
 		if (cursor !== undefined && isValidCursor(cursor)) {
 			return reply.status(400).send({
 				statusCode:	400,

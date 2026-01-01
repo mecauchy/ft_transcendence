@@ -605,7 +605,7 @@ Get session event history (for replay).
 ---
 
 #### `POST /api/game/session/:sessionId/surrender`
-🔐 **Requires Authentication**
+🔐 **Requires Authentication** 
 
 End session early (patient gives up).
 

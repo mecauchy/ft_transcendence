@@ -104,7 +104,35 @@
     "profileUpdated": "Profil mis à jour avec succès !",
     "updateFailed": "Échec de la mise à jour du profil",
     "enterUsername": "Entrez votre nom d'utilisateur",
-    "enterEmail": "Entrez votre email"
+    "enterEmail": "Entrez votre email",
+    "gdpr": {
+      "title": "Données et Confidentialité (RGPD)",
+      "exportJson": "Exporter les données (JSON)",
+      "exportCsv": "Exporter les sessions (CSV)",
+      "exportXml": "Exporter les données (XML)",
+      "exportSuccess": "Données exportées avec succès !",
+      "exportFailed": "Échec de l'export des données",
+      "deleteAccount": "Supprimer mon compte",
+      "deleteTitle": "Supprimer définitivement le compte",
+      "deleteWarning": "! AVERTISSEMENT ! Cette action est permanente et irréversible. Toutes vos données personnelles seront supprimées de nos serveurs.",
+      "deleteAcknowledge": "Je comprends que cette action est permanente et ne peut pas être annulée",
+      "typeDelete": "Tapez 'DELETE' pour confirmer",
+      "confirmDelete": "Supprimer le compte",
+      "deleteConfirmInvalid": "Veuillez confirmer et taper 'DELETE' pour valider",
+      "deleteSuccess": "Compte supprimé avec succès",
+      "deleteFailed": "Échec de la suppression du compte"
+    },
+    "import": {
+      "title": "Importer les données",
+      "upload": "Importer un fichier",
+      "noFile": "Veuillez sélectionner un fichier à importer",
+      "success": "Données importées avec succès !",
+      "failed": "Échec de l'import des données",
+      "processed": "Enregistrements traités",
+      "updated": "Enregistrements mis à jour",
+      "skipped": "Enregistrements ignorés",
+      "errors": "Erreurs d'import"
+    }
   },
   "languages": {
     "en": "Anglais",

@@ -21,7 +21,6 @@
 | **IV.5 Cybersecurity** | WAF/ModSecurity + Vault | ☑️ | Major | WAF and Vault configured |
 | **IV.6 Gaming & UX** | Complete web-based game | ☑️ | Major | Pong game with AI + local multiplayer |
 |  | Advanced chat features | ⬜ | Minor | Block users exists, needs typing indicators/read receipts |
-|  | Game customization | ⬜ | Minor | Not implemented |
 |  | Gamification (achievements, XP, etc.) | ⬜ | Minor | Backend complete, needs frontend display |
 | **IV.7 Devops** | Monitoring (Prometheus, Grafana) | ☑️ | Major | Prometheus, Grafana in infra/monitoring |
 |  | Microservices backend | ☑️ | Major | Multiple backend services |
@@ -37,12 +36,12 @@
 
 #### **Current points (fully complete):**
 
-- Major modules completed: 7 × 2 = **14**
-- Minor modules completed: 8 × 1 = **8**
-- **Total: 22 points**
+- Major modules completed: 6 × 2 = **12**
+- Minor modules completed: 9 × 1 = **9**
+- **Total: 21 points**
 
-#### **With Frontend UI work (close to complete):**
-- Major modules: 9 × 2 = **18** (add User Management, User Interaction)
-- Minor modules: 13 × 1 = **13** (add Notification, Game Stats, Gamification, GDPR, Advanced Chat partial)
-- **Potential Total: 31 points**
+#### **Aimed points:**
+- Major modules: 9 × 2 = **18** (add User Management, User Interaction, Websocket)
+- Minor modules: 16 × 1 = **16**
+- **Potential Total: 34 points**
 

@@ -11,11 +11,143 @@ function Settings() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 	const [language, setLanguage] = useState<'en' | 'fr' | 'es'>((i18n.language as 'en' | 'fr' | 'es') || 'en');
+	
+	// 2FA
 	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 	const [show2FAModal, setShow2FAModal] = useState(false);
 	const [qrCode, setQrCode] = useState<string | null>(null);
 	const [twoFACode, setTwoFACode] = useState('');
 	const [is2FALoading, setIs2FALoading] = useState(false);
+
+	// GDPR / export / import
+	const [gdprBusy, setGdprBusy] = useState(false);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [deleteConfirmText, setDeleteConfirmText] = useState('');
+	const [deleteAcknowledge, setDeleteAcknowledge] = useState(false);
+
+	const [importFile, setImportFile] = useState<File | null>(null);
+	const [importBusy, setImportBusy] = useState(false);
+	const [importSummary, setImportSummary] = useState<{
+		processed?: number;
+		updated?: number;
+		skipped?: number;
+		errors?: Array<{row?: number; message: string} | string>;
+	} | null> (null);
+
+	const downloadFromEndpoint = async (endpoint: string, filename: string) => {
+		setGdprBusy(true);
+		setMessage(null);
+
+		try {
+			const res = await fetch(`api/users${endpoint}`, {
+				method: 'GET',
+				credentials: 'include',
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => null);
+				throw new Error(err?.message || `HTTP ${res.status}`);
+			}
+
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+
+			setMessage({type: 'success', text: t('settings.gdpr.exportSuccess')});
+		} catch (e: unknown) {
+			const err = e as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.gdpr.exportFailed')});
+		} finally {
+			setGdprBusy(false);
+		}
+	};
+
+	const handleDeleteAccount = async () => {
+		if (!deleteAcknowledge || deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+			setMessage({type: 'error', text: t('settings.gdpr.deleteConfirmInvalid')});
+			return ;
+		}
+
+		setGdprBusy(true);
+		setMessage(null);
+
+		try {
+			const res = await fetch('api/users/gdpr/delete', {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => null);
+				throw new Error(err?.message || `HTTP ${res.status}`);
+			}
+
+			try {
+				await api.logout();
+			} catch {}
+
+			setShowDeleteModal(false);
+			setMessage({type: 'success', text: t('settings.gdpr.deleteSuccess')});
+
+			window.location.href = '/';
+		} catch (e: unknown) {
+			const err = e as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.gdpr.deleteFailed')});
+		} finally {
+			setGdprBusy(false);
+			setDeleteConfirmText('');
+			setDeleteAcknowledge(false);
+		}
+	};
+
+	const handleImport = async () => {
+		if (!importFile) {
+			setMessage({type: 'error', text: t('settings.import.noFile')});
+			return ;
+		}
+
+		setImportBusy(true);
+		setImportSummary(null);
+		setMessage(null);
+
+		try {
+			const form = new FormData();
+			form.append('file', importFile);
+
+			const res = await fetch('api/users/import', {
+				method: 'POST',
+				body: form,
+				credentials: 'include',
+			});
+
+			const data = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(data?.message || `HTTP ${res.status}`);
+			}
+
+			setImportSummary({
+				processed: data?.processed,
+				updated: data?.updated,
+				skipped: data?.skipped,
+				errors: data?.errors || [],
+			});
+
+			setMessage({type: 'success', text: t('settings.import.success')});
+
+		} catch (e: unknown) {
+			const err = e as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.import.failed')});
+		} finally {
+			setImportBusy(false);
+		}
+	};
 
 	// Sync language state with current i18n language when it changes externally
 	useEffect(() => {
@@ -182,6 +314,152 @@ function Settings() {
 					{isLoading ? t('settings.saving') : t('settings.saveChanges')}
 				</button>
 			</form>
+
+			{/* GDPR / Export / Import */}
+			<div className="mt-8 space-y-4">
+			<div className="p-4 rounded-md bg-white/5 border border-white/10">
+				<h2 className="text-lg font-semibold mb-3">{t('settings.gdpr.title')}</h2>
+
+				<div className="flex flex-col gap-2">
+				<button
+					type="button"
+					disabled={gdprBusy}
+					onClick={() => downloadFromEndpoint('/gdpr/export', 'user-export.json')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+				>
+					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportJson')}
+				</button>
+
+				<button
+					type="button"
+					disabled={gdprBusy}
+					onClick={() => downloadFromEndpoint('/gdpr/export/csv', 'sessions-export.csv')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+				>
+					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportCsv')}
+				</button>
+
+				{/* Only keep this if you added the backend XML route */}
+				<button
+					type="button"
+					disabled={gdprBusy}
+					onClick={() => downloadFromEndpoint('/gdpr/export/xml', 'user-export.xml')}
+					className="w-full px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50"
+				>
+					{gdprBusy ? t('common.loading') : t('settings.gdpr.exportXml')}
+				</button>
+
+				<button
+					type="button"
+					disabled={gdprBusy}
+					onClick={() => setShowDeleteModal(true)}
+					className="w-full px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+				>
+					{t('settings.gdpr.deleteAccount')}
+				</button>
+				</div>
+			</div>
+
+			<div className="p-4 rounded-md bg-white/5 border border-white/10">
+				<h2 className="text-lg font-semibold mb-3">{t('settings.import.title')}</h2>
+
+				<input
+				type="file"
+				accept=".json,.csv,.xml"
+				onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+				className="block w-full text-sm mb-3"
+				/>
+
+				<button
+				type="button"
+				disabled={importBusy || !importFile}
+				onClick={handleImport}
+				className="w-full px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+				>
+				{importBusy ? t('common.loading') : t('settings.import.upload')}
+				</button>
+
+				{importSummary && (
+				<div className="mt-3 text-sm">
+					<div>{t('settings.import.processed')}: {importSummary.processed ?? 0}</div>
+					<div>{t('settings.import.updated')}: {importSummary.updated ?? 0}</div>
+					<div>{t('settings.import.skipped')}: {importSummary.skipped ?? 0}</div>
+
+					{!!(importSummary.errors && importSummary.errors.length) && (
+					<div className="mt-2">
+						<div className="font-semibold">{t('settings.import.errors')}:</div>
+						<ul className="list-disc pl-5">
+						{importSummary.errors.slice(0, 10).map((er, idx) => (
+							<li key={idx}>
+							{typeof er === 'string' ? er : (er.row ? `Row ${er.row}: ${er.message}` : er.message)}
+							</li>
+						))}
+						</ul>
+					</div>
+					)}
+				</div>
+				)}
+			</div>
+			</div>
+
+			{/* Delete account modal */}
+			{showDeleteModal && (
+			<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+				<div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+				<h2 className="text-xl font-bold mb-2 text-gray-800">
+					{t('settings.gdpr.deleteTitle')}
+				</h2>
+
+				<p className="text-gray-700 mb-4">
+					{t('settings.gdpr.deleteWarning')}
+				</p>
+
+				<label className="flex items-center gap-2 text-gray-800 mb-3">
+					<input
+					type="checkbox"
+					checked={deleteAcknowledge}
+					onChange={(e) => setDeleteAcknowledge(e.target.checked)}
+					/>
+					<span>{t('settings.gdpr.deleteAcknowledge')}</span>
+				</label>
+
+				<label className="block text-sm font-medium text-gray-800 mb-1">
+					{t('settings.gdpr.typeDelete')}
+				</label>
+				<input
+					type="text"
+					value={deleteConfirmText}
+					onChange={(e) => setDeleteConfirmText(e.target.value)}
+					className="w-full px-3 py-2 border rounded-md mb-4 text-gray-800"
+					placeholder="DELETE"
+				/>
+
+				<div className="flex gap-2">
+					<button
+					type="button"
+					onClick={() => {
+						setShowDeleteModal(false);
+						setDeleteConfirmText('');
+						setDeleteAcknowledge(false);
+					}}
+					className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+					>
+					{t('common.cancel')}
+					</button>
+
+					<button
+					type="button"
+					disabled={gdprBusy || !deleteAcknowledge || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+					onClick={handleDeleteAccount}
+					className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+					>
+					{gdprBusy ? t('common.loading') : t('settings.gdpr.confirmDelete')}
+					</button>
+				</div>
+				</div>
+			</div>
+			)}
+
 
 			{/* 2FA setup modal */}
 			{show2FAModal && (
