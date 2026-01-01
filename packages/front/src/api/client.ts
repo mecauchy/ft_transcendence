@@ -115,20 +115,102 @@ class ApiClient {
 	}
 
 	// 2FA
-	async enable2FA() {
-		return this.request<{qrCode: string; secret: string}>('/auth/2fa/enable', {
+	async setup2FA() {
+		return this.request<{qrCode: string; secret: string}>('/auth/2fa/setup', {
 			method: 'POST',
 		});
 	}
 
 	async verify2FA(code: string) {
-		return this.request<{verified: boolean}>('/auth/2fa/verify', {
+		return this.request<{verified: boolean; accessToken?: string}>('/auth/2fa/verify', {
 			method: 'POST',
 			body: JSON.stringify({code}),
 		});
 	}
 
-	// User endpoints
+	async disable2FA() {
+		return this.request<{success: boolean}>('/auth/2fa/disable', {
+			method: 'POST',
+		});
+	}
+
+	// notifs
+	async getNotifications(options?: {limit?: number; offset?: number; unreadOnly?: boolean}) {
+		const params = new URLSearchParams();
+		if (options?.limit) params.append('limit', options.limit.toString());
+		if (options?.offset) params.append('offset', options.offset.toString());
+		if (options?.unreadOnly) params.append('unreadOnly', 'true');
+		return this.request<{
+			notifications: Array<{
+				id: string;
+				type: string;
+				title: string;
+				message: string;
+				data: Record<string, unknown>;
+				isRead: boolean;
+				createdAt: string;
+			}>;
+			total: number;
+			unreadCount: number;
+			hasMore: boolean;
+		}>(`/users/notifications${params.toString() ? '?' + params.toString() : ''}`);
+	}
+
+	async getUnreadNotificationCount() {
+		return this.request<{unreadCount: number}>('/users/notifications/unread-count');
+	}
+
+	async markNotificationRead(notificationId: string) {
+		return this.request<{success: boolean}>(`/users/notifications/${notificationId}/read`, {
+			method: 'PUT',
+		});
+	}
+
+	async markAllNotificationsRead() {
+		return this.request<{success: boolean; count: number}>('/users/notifications/read-all', {
+			method: 'PUT',
+		});
+	}
+
+	async deleteNotification(notificationId: string) {
+		return this.request<{success: boolean}>(`/users/notifications/${notificationId}`, {
+			method: 'DELETE',
+		});
+	}
+
+	// gdpr
+	async exportUserData() {
+		return this.request<Record<string, unknown>>('/users/gdpr/export');
+	}
+
+	async deleteAccount() {
+		return this.request<{success: boolean}>('/users/gdpr/delete', {
+			method: 'DELETE',
+		});
+	}
+
+	// match history
+	async getPongHistory(options?: {cursor?: string; limit?: number}) {
+		const params = new URLSearchParams();
+		if (options?.cursor) params.append('cursor', options.cursor);
+		if (options?.limit) params.append('limit', options.limit.toString());
+		return this.request<{
+			matches: Array<{
+				id: string;
+				playerId: string;
+				mode: 'AI' | 'LOCAL';
+				difficulty: string;
+				score1: number;
+				score2: number;
+				winner: string;
+				startedAt: string;
+				endedAt: string;
+			}>;
+			nextCursor: string | null;
+		}>(`/game/pong/history${params.toString() ? '?' + params.toString() : ''}`);
+	}
+
+	// user endpoints
 	async getProfile(userId?: string) {
 		const endpoint = userId ? `/users/${userId}` : '/users/me';
 		return this.request<{

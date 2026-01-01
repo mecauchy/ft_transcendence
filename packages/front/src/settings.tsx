@@ -12,6 +12,10 @@ function Settings() {
 	const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 	const [language, setLanguage] = useState<'en' | 'fr' | 'es'>((i18n.language as 'en' | 'fr' | 'es') || 'en');
 	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+	const [show2FAModal, setShow2FAModal] = useState(false);
+	const [qrCode, setQrCode] = useState<string | null>(null);
+	const [twoFACode, setTwoFACode] = useState('');
+	const [is2FALoading, setIs2FALoading] = useState(false);
 
 	// Sync language state with current i18n language when it changes externally
 	useEffect(() => {
@@ -21,14 +25,59 @@ function Settings() {
 		}
 	}, [i18n.language]);
 
-	const handle2FAChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setIs2FAEnabled(e.target.checked);
-	}
+	const handle2FAToggle = async () => {
+		if (is2FAEnabled) {
+			// disable 2FA
+			try {
+				await api.disable2FA();
+				setIs2FAEnabled(false);
+				setMessage({type: 'success', text: t('settings.2faDisabled')});
+			} catch (error: unknown) {
+				const err = error as {message?: string};
+				setMessage({type: 'error', text: err.message || t('settings.2faDisableFailed')});
+			}
+		} else {
+			// start 2FA setup
+			setIs2FALoading(true);
+			try {
+				const response = await api.setup2FA();
+				setQrCode(response.qrCode);
+				setShow2FAModal(true);
+			} catch (error: unknown) {
+				const err = error as {message?: string};
+				setMessage({type: 'error', text: err.message || t('settings.2faSetupFailed')});
+			} finally {
+				setIs2FALoading(false);
+			}
+		}
+	};
+
+	const verify2FACode = async () => {
+		if (!twoFACode || twoFACode.length !== 6) {
+			setMessage({type: 'error', text: t('settings.invalid2FACode')});
+			return;
+		}
+		setIs2FALoading(true);
+		try {
+			const response = await api.verify2FA(twoFACode);
+			if (response.verified) {
+				setIs2FAEnabled(true);
+				setShow2FAModal(false);
+				setQrCode(null);
+				setTwoFACode('');
+				setMessage({type: 'success', text: t('settings.2faEnabled')});
+			}
+		} catch (error: unknown) {
+			const err = error as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.2faVerifyFailed')});
+		} finally {
+			setIs2FALoading(false);
+		}
+	};
 
 	const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const newLang = e.target.value as 'en' | 'fr' | 'es';
 		setLanguage(newLang);
-		// Don't change language immediately - wait for form submit
 	}
 
 	const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -112,17 +161,17 @@ function Settings() {
 					</select>
 				</div>
 				<div>
-					<label htmlFor='2fa' className="block text-sm font-medium mb-1">
+					<label className="block text-sm font-medium mb-1">
 						{t('settings.twoFactor')}
 					</label>
-					<input
-						id='2fa'
-						type="checkbox"
-						checked={is2FAEnabled}
-						onChange={handle2FAChange}
-						className="mr-2 leading-tight"
-					/>
-					<span>{t('settings.enable2FA')}</span>
+					<button
+						type="button"
+						onClick={handle2FAToggle}
+						disabled={is2FALoading}
+						className={`px-4 py-2 rounded-md ${is2FAEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white disabled:opacity-50`}
+					>
+						{is2FALoading ? t('common.loading') : (is2FAEnabled ? t('settings.disable2FA') : t('settings.enable2FA'))}
+					</button>
 				</div>
 
 				<button
@@ -133,6 +182,44 @@ function Settings() {
 					{isLoading ? t('settings.saving') : t('settings.saveChanges')}
 				</button>
 			</form>
+
+			{/* 2FA setup modal */}
+			{show2FAModal && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+					<div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+						<h2 className="text-xl font-bold mb-4 text-gray-800">{t('settings.setup2FA')}</h2>
+						<p className="text-gray-600 mb-4">{t('settings.scan2FAQRCode')}</p>
+						{qrCode && (
+							<div className="flex justify-center mb-4">
+								<img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
+							</div>
+						)}
+						<input
+							type="text"
+							value={twoFACode}
+							onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+							placeholder={t('settings.enter2FACode')}
+							className="w-full px-3 py-2 border rounded-md mb-4 text-gray-800"
+							maxLength={6}
+						/>
+						<div className="flex gap-2">
+							<button
+								onClick={() => {setShow2FAModal(false); setQrCode(null); setTwoFACode('');}}
+								className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+							>
+								{t('common.cancel')}
+							</button>
+							<button
+								onClick={verify2FACode}
+								disabled={is2FALoading || twoFACode.length !== 6}
+								className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+							>
+								{is2FALoading ? t('common.loading') : t('common.confirm')}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

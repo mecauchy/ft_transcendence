@@ -101,7 +101,7 @@ function Network() {
 	  <div className="mb-6">
 		<input
 		  type="text"
-		  placeholder={t('network.entertargetUsername')}
+		  placeholder={t('network.enterFriendUsername')}
 		  className="border border-gray-300 rounded-md p-2 w-64 text-white bg-transparent focus:bg-purple-600 focus:outline-none"
 		  value={targetUsername}
 		  onChange={e => settargetUsername(e.target.value)}
