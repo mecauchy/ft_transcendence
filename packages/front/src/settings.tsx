@@ -299,9 +299,8 @@ function Settings() {
 				setQrCode(null);
 				setTwoFACode('');
 				setMessage({type: 'success', text: t('settings.2faEnabled')});
-				// refresh userdata and reload page to show 2FA is enabled
+				// refresh userdata
 				await refreshUser();
-				setTimeout(() => window.location.reload(), 1500);
 			}
 		} catch (error: unknown) {
 			const err = error as {message?: string};
