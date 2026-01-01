@@ -109,19 +109,19 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 			return reply.send({
 				success: true,
-				gameId: gameLog.id
-			});
+			gameId: gameLog.id.toString()
+		});
 
-			return ;
-		} catch (error) {
-			request.log.error({error}, 'Failed to log game');
-			return reply.status(500).send({
-				statusCode:	500,
-				error:		'Internal Server Error',
-				message:	'Failed to start session',
-			});
-		}
-	});
+		return ;
+	} catch (error) {
+		request.log.error({error}, 'Failed to log game');
+		return reply.status(500).send({
+			statusCode:	500,
+			error:		'Internal Server Error',
+			message:	'Failed to start session',
+		});
+	}
+});
 
 	// get pong stats for curr user
 	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -287,7 +287,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 
 			return reply.send({
 				success: true,
-				gameId: gameLog.id
+				gameId: gameLog.id.toString()
 			});
 
 			return ;

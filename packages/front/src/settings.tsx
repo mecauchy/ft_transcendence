@@ -39,7 +39,7 @@ function Settings() {
 		setMessage(null);
 
 		try {
-			const res = await fetch(`api/users${endpoint}`, {
+			const res = await fetch(`api/user${endpoint}`, {
 				method: 'GET',
 				credentials: 'include',
 			});
@@ -78,7 +78,7 @@ function Settings() {
 		setMessage(null);
 
 		try {
-			const res = await fetch('api/users/gdpr/delete', {
+			const res = await fetch('api/user/gdpr/delete', {
 				method: 'DELETE',
 				credentials: 'include',
 			});
@@ -120,7 +120,7 @@ function Settings() {
 			const form = new FormData();
 			form.append('file', importFile);
 
-			const res = await fetch('api/users/import', {
+			const res = await fetch('api/user/import', {
 				method: 'POST',
 				body: form,
 				credentials: 'include',
