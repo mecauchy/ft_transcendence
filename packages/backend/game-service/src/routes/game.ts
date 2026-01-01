@@ -124,7 +124,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 });
 
 	// get pong stats for curr user
-	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
+	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('/pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
 		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
@@ -185,7 +185,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	});
 
 	// get pong stats for a user
-	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('pong/history/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('/pong/history/:id', async (request: FastifyRequest, reply: FastifyReply) => {
 		const {id: idStr} = (request.params as {id: string});
 		const id = BigInt(idStr);
 		if (!isValidBigIntId(idStr)) {
@@ -403,7 +403,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	});
 
 	// get breathe stats for curr user
-	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('breathe/history', async (request: FastifyRequest, reply: FastifyReply) => {
+	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('/breathe/history', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
 		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);

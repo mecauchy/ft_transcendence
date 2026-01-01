@@ -34,7 +34,7 @@
 - **Major:** 2 points each
 - **Minor:** 1 point each
 
-#### **Current points (fully complete):**
+#### **Current points (fully complete):** 	
 
 - Major modules completed: 6 × 2 = **12**
 - Minor modules completed: 13 × 1 = **13**

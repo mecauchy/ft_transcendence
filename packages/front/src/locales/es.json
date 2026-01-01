@@ -71,6 +71,8 @@
   },
   "nav": {
     "play": "Jugar",
+    "profile": "Perfil",
+    "history": "Historial",
     "network": "Red",
     "settings": "Configuración",
 	"leaderboard": "Clasificación",
@@ -84,6 +86,7 @@
     "read": "Leido"
     },
      "profile": {
+       "title": "Perfil",
        "username": "Jugador",
        "matches": "Partidas",
        "wins": "Victorias",
@@ -91,8 +94,38 @@
        "pointsFor": "Puntos a favor",
        "pointsAgainst": "Puntos en contra",
        "timeSpent": "Tiempo jugado",
-       "minutes": "min"
+       "minutes": "min",
+       "winRate": "Tasa de victorias",
+       "stress": "Nivel de estrés",
+       "confidence": "Confianza",
+       "stressDescription": "Más bajo es mejor - indica calma",
+       "confidenceDescription": "Más alto es mejor - indica seguridad",
+       "achievements": "Logros",
+       "pongStats": "Estadísticas Pong",
+       "breatheStats": "Estadísticas Respiración",
+       "sessions": "Sesiones",
+       "totalTime": "Tiempo total",
+       "avgSessionTime": "Sesión prom.",
+       "noAchievements": "Aún no hay logros"
      },
+  "history": {
+    "title": "Historial de partidas",
+    "game": "Juego",
+    "result": "Resultado",
+    "all": "Todos",
+    "loadMore": "Cargar más...",
+    "noPong": "Aún no hay partidas de Pong",
+    "noBreathe": "Aún no hay sesiones de Respiración"
+  },
+  "chat": {
+    "title": "Mensajes",
+    "yesterday": "Ayer",
+    "noConversations": "Aún no hay conversaciones. ¡Empieza a chatear con amigos!",
+    "selectConversation": "Seleccionar una conversación",
+    "selectPrompt": "Selecciona una conversación para empezar a chatear",
+    "loadMore": "Cargar mensajes anteriores...",
+    "placeholder": "Escribe un mensaje..."
+  },
   "home": {
     "title": "ft_transcendance",
     "subtitle": "Cuando hablar se convierte en mecánica de juego."
@@ -162,6 +195,14 @@
       "updated": "Registros actualizados",
       "skipped": "Registros omitidos",
       "errors": "Errores de importación"
+    },
+    "avatar": {
+      "change": "Cambiar",
+      "hint": "Haz clic para subir un nuevo avatar (máx. 5MB)",
+      "invalidType": "Por favor selecciona un archivo de imagen",
+      "tooLarge": "La imagen debe ser menor a 5MB",
+      "uploadSuccess": "¡Avatar actualizado exitosamente!",
+      "uploadFailed": "Error al subir el avatar"
     }
   },
   "languages": {

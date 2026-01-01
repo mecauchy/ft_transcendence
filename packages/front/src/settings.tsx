@@ -15,7 +15,7 @@ function Settings() {
 	// avatar upload
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [avatarUploading, setAvatarUploading] = useState(false);
-	const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl || null);
 
 	const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -44,14 +44,14 @@ function Settings() {
 
 		try {
 			const res = await api.uploadAvatar(file);
-			setAvatarPreview(res.avatar);
+			setAvatarPreview(res.url);
 			setMessage({type: 'success', text: t('settings.avatar.uploadSuccess')});
 			await refreshUser();
 		} catch (error: unknown) {
 			const err = error as {message?: string};
 			setMessage({type: 'error', text: err.message || t('settings.avatar.uploadFailed')});
 			// on error revert
-			setAvatarPreview(user?.avatar || null);
+			setAvatarPreview(user?.avatarUrl || null);
 		} finally {
 			setAvatarUploading(false);
 		}

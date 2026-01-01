@@ -270,8 +270,8 @@ class ApiClient {
 			headers['Authorization'] = `Bearer ${this.token}`;
 		}
 
-		const response = await fetch(`${API_BASE}/users/avatar`, {
-			method: 'POST',
+		const response = await fetch(`${API_BASE}/users/me/avatar`, {
+			method: 'PUT',
 			headers,
 			credentials: 'include',
 			body: formData,
@@ -286,7 +286,7 @@ class ApiClient {
 			throw error;
 		}
 
-		return response.json() as Promise<{avatarUrl: string; message: string}>;
+		return response.json() as Promise<{url: string; success: boolean}>;
 	}
 
 	async getSettings() {

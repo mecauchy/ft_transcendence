@@ -7,12 +7,13 @@ type Conversation = {
 	otherUser: {
 		id: string;
 		username: string;
-		avatar: string;
+		avatarUrl?: string;
 		isOnline?: boolean;
 	};
 	lastMessage?: {
 		content: string;
 		createdAt: string;
+		isRead?: boolean;
 	};
 	unreadCount: number;
 };
@@ -20,10 +21,9 @@ type Conversation = {
 type Message = {
 	id: string;
 	senderId: string;
-	receiverId: string;
 	content: string;
+	isRead: boolean;
 	createdAt: string;
-	read: boolean;
 };
 
 type ChatModalProps = {
@@ -65,13 +65,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 						setSelectedConversation(existing);
 					} else {
 						// new convo placeholder
-						const userRes = await api.getProfile();
 						setSelectedConversation({
 							id: 'new',
 							otherUser: {
 								id: initialUserId,
 								username: 'User',
-								avatar: '',
 							},
 							unreadCount: 0,
 						});
@@ -143,7 +141,14 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 			const res = await api.sendMessage(selectedConversation.otherUser.id, newMessage.trim());
 
 			// add msg to list
-			setMessages((prev) => [...prev, res.message]);
+			const newMsg: Message = {
+				id: res.messageId,
+				senderId: 'me',
+				content: newMessage.trim(),
+				isRead: false,
+				createdAt: new Date().toISOString(),
+			};
+			setMessages((prev) => [...prev, newMsg]);
 			setNewMessage('');
 
 			// update conversation
@@ -152,10 +157,10 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					c.id === selectedConversation.id || c.otherUser.id === selectedConversation.otherUser.id
 						? {
 								...c,
-								id: res.message.conversationId || c.id,
+								id: res.conversationId || c.id,
 								lastMessage: {
-									content: res.message.content,
-									createdAt: res.message.createdAt,
+									content: newMessage.trim(),
+									createdAt: new Date().toISOString(),
 								},
 						  }
 						: c
@@ -165,7 +170,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 			// if newconvo, update id
 			if (selectedConversation.id === 'new') {
 				setSelectedConversation((prev) =>
-					prev ? {...prev, id: res.message.conversationId} : prev
+					prev ? {...prev, id: res.conversationId} : prev
 				);
 			}
 		} catch (e) {
@@ -223,9 +228,9 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 									}`}
 								>
 									<div className="relative">
-										{conv.otherUser.avatar ? (
+										{conv.otherUser.avatarUrl ? (
 											<img
-												src={conv.otherUser.avatar}
+												src={conv.otherUser.avatarUrl}
 												alt=""
 												className="w-10 h-10 rounded-full"
 											/>
@@ -265,9 +270,9 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					<div className="p-4 border-b border-gray-700 flex items-center justify-between">
 						{selectedConversation ? (
 							<div className="flex items-center gap-3">
-								{selectedConversation.otherUser.avatar ? (
-									<img
-										src={selectedConversation.otherUser.avatar}
+									{selectedConversation.otherUser.avatarUrl ? (
+										<img
+											src={selectedConversation.otherUser.avatarUrl}
 										alt=""
 										className="w-8 h-8 rounded-full"
 									/>
