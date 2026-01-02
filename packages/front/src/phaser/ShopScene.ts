@@ -11,11 +11,11 @@ const ITEM_EFFECTS: Record<string, { stress?: number; confidence?: number }> = {
 	"chocolate": { stress: -3 }, 
 	"water": { stress: -2 }, 
 	"flower": { stress: -2, confidence: 2 },
-	"book": { stress: -3, confidence: 3 
+	"book": { stress: -3, confidence: 3 },
 	"bear": { stress: -4 }, 
 	"duck": { stress: -2, confidence: 1 }, 
-	"ball": { confidence: 2 
-	"camera": { confidence: 3 
+	"ball": { confidence: 2 },
+	"camera": { confidence: 3 },
 	"controller": { stress: -2 }, 
 	"phone": { stress: 2, confidence: -1 },
 	"soap": { stress: -1 },

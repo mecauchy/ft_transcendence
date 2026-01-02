@@ -77,7 +77,9 @@
 	"notifications": {
 		"title": "Notifications",
 		"empty": "No notifications",
-		"markAllRead": "Mark all read"
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear",
+    "read": "Read"
   },
   "profile": {
     "title": "Profile",
@@ -120,9 +122,6 @@
     "loadMore": "Load earlier messages...",
     "placeholder": "Type a message..."
   },
-		"clearAll": "Clear",
-		"read": "Read"
-	},
 	"stats": {
 		"level": "Level",
 		"xp": "XP",

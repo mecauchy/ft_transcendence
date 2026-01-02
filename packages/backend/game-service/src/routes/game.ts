@@ -158,8 +158,29 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		return reply.status(500).send({
 			statusCode:	500,
 			error:		'Internal Server Error',
-			message:	'Failed to start session',
+			message:	'Failed to log game',
 		});
+	}
+	});
+
+	// get pong history for authenticated user
+	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('/pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+		if (!userId) {
+			return reply.status(401).send({
+				statusCode:	401,
+				error:		'Unauthorized',
+				message:	'Authentication required',
+			});
+		}
+
+		const limitRaw = (request.query as {limit?: string}).limit;
+		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
+
+		const cursor = (request.query as {cursor?: string}).cursor;
+		if (cursor !== undefined && !isValidCursor(cursor)) {
+			return reply.status(400).send({
+				statusCode:	400,
 				error:		'Bad Request',
 				message:	'Invalid cursor',
 			});

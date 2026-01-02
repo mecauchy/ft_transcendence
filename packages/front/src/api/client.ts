@@ -9,6 +9,12 @@ interface ApiError {
 	message:	string;
 }
 
+interface IBreatheGame {
+	playerid: string;
+	timestamp1: string;
+	timestamp2: string;
+}
+
 interface IPongGame {
 	playerid: string;
 	mode: "AI" | "LOCAL";

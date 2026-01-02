@@ -289,7 +289,7 @@ export default function MatchHistory() {
 								>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-3">
-											<span className="text-xl">🌬️</span>
+											<span className="text-xl"></span>
 											<div>
 												<div className="font-semibold">
 													{formatDuration(session.startedAt, session.endedAt)} session
