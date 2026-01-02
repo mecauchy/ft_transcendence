@@ -51,6 +51,38 @@ async function triggerAchievementEvent(
 	}
 }
 
+// helper to award XP via internal API
+async function awardXpInternal(
+	userId: string,
+	amount: number,
+	reason: string
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		console.warn('INTERNAL_SERVICE_KEY not set, skipping XP award');
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/xp/award`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				amount,
+				reason,
+			}),
+		});
+	} catch (error) {
+		console.error('Failed to award XP:', error);
+	}
+}
+
 function toJsonPong(row : {
 	id:			bigint;
 	playerId:	bigint | null;
@@ -148,9 +180,33 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			winner,
 		});
 
+		let xpAmount = 10;
+		let xpReason = 'Pong match completed';
+
+		if (winner === 'PLAYER') {
+			xpAmount += 15;
+			xpReason = 'Pong match won';
+
+			if (difficulty === 'HARD') {
+				xpAmount += 10;
+				xpReason = 'Pong match won (Hard)';
+			} else if (difficulty === 'MEDIUM') {
+				xpAmount += 5;
+				xpReason = 'Pong match won (Medium)';
+			}
+
+			if (Number(score2) === 0) {
+				xpAmount += 20;
+				xpReason += ' - Flawless!';
+			}
+		}
+		
+		await awardXpInternal(userId, xpAmount, xpReason);
+
 		return reply.send({
 			success: true,
-			gameId: gameLog.id.toString()
+			gameId: gameLog.id.toString(),
+			xpAwarded: xpAmount
 		});
 
 	} catch (error) {
@@ -438,11 +494,30 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			const durationSeconds = Math.floor((new Date(timestamp2).getTime() - new Date(timestamp1).getTime()) / 1000);
 			await triggerAchievementEvent(userId, 'BREATHE_SESSION_SAVED', {
 				durationSeconds,
+				duration: durationSeconds,
 			});
+
+			// Award XP for breathing session
+			let xpAmount = 5; // Base XP
+			let xpReason = 'Breathing session completed';
+			
+			if (durationSeconds >= 300) { // 5+ minutes
+				xpAmount = 20;
+				xpReason = 'Extended breathing session (5+ min)';
+			} else if (durationSeconds >= 180) { // 3+ minutes
+				xpAmount = 15;
+				xpReason = 'Breathing session (3+ min)';
+			} else if (durationSeconds >= 60) { // 1+ minute
+				xpAmount = 10;
+				xpReason = 'Breathing session (1+ min)';
+			}
+			
+			await awardXpInternal(userId, xpAmount, xpReason);
 
 			return reply.send({
 				success: true,
-				gameId: gameLog.id.toString()
+				gameId: gameLog.id.toString(),
+				xpAwarded: xpAmount
 			});
 		} catch (error) {
 			request.log.error({error}, 'Failed to log game');

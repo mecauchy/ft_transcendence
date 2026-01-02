@@ -43,6 +43,37 @@ async function triggerAchievementEvent(
 	}
 }
 
+// helper to award XP via internal API
+async function awardXpInternal(
+	userId: string,
+	amount: number,
+	reason: string
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/xp/award`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				amount,
+				reason,
+			}),
+		});
+	} catch (error) {
+		console.error('Failed to award XP:', error);
+	}
+}
+
 export async function friendsRoutes(fastify: FastifyInstance) {
 	// apply middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
@@ -325,6 +356,11 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					triggerAchievementEvent(requesterId.toString(), 'FRIEND_ACCEPTED'),
 				]);
 
+				await Promise.all([
+					awardXpInternal(userId.toString(), 25, 'Made a new friend'),
+					awardXpInternal(requesterId.toString(), 25, 'Made a new friend'),
+				]);
+
 				// get user info for notification
 				const currentUser = await prisma.user.findUnique({
 					where:	{id: userId},
@@ -432,6 +468,40 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 				statusCode:	500,
 				error:		'Internal Server Error',
 				message:	'Failed to block user',
+			});
+		}
+	});
+
+	// unblocking a user
+	fastify.post<{Params: {id: string}}>('/:id/unblock', async (request, reply) => {
+		const userId = BigInt(request.user!.userId);
+		const targetId = BigInt(request.params.id);
+
+		try {
+			// remove blocked entry
+			const deleted = await prisma.friend.deleteMany({
+				where: {
+					initiatorId: userId,
+					receiverId: targetId,
+					status: 'BLOCKED',
+				},
+			});
+
+			if (deleted.count === 0) {
+				return reply.status(404).send({
+					statusCode:	404,
+					error:		'Not Found',
+					message:	'User is not blocked',
+				});
+			}
+
+			return {success: true, message: 'User unblocked'};
+		} catch (error) {
+			request.log.error({error}, 'Failed to unblock user');
+			return reply.status(500).send({
+				statusCode:	500,
+				error:		'Internal Server Error',
+				message:	'Failed to unblock user',
 			});
 		}
 	});

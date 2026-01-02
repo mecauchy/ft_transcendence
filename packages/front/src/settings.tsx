@@ -151,9 +151,7 @@ function Settings() {
 
 		try {
 			const token = localStorage.getItem('accessToken');
-			const headers: HeadersInit = {
-				'Content-Type': 'application/json',
-			};
+			const headers: HeadersInit = {};
 			if (token) {
 				headers['Authorization'] = `Bearer ${token}`;
 			}

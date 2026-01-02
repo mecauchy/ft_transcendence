@@ -1,5 +1,6 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import {checkAchievements} from '../services/achievements';
+import {awardXP} from '../services/xp';
 
 function requireInternalKey(request: FastifyRequest, reply: FastifyReply): boolean {
 	const expected = process.env.INTERNAL_SERVICE_KEY;
@@ -60,6 +61,47 @@ export async function internalRoutes(fastify: FastifyInstance) {
 				statusCode: 500,
 				error: 'Internal Server Error',
 				message: 'Failed to process event',
+			});
+		}
+	});
+
+	fastify.post<{
+		Body: { userId: string; amount: number; reason: string; sessionId?: string };
+	}>('/xp/award', async (request, reply) => {
+		if (!requireInternalKey(request, reply)) return;
+
+		const { userId, amount, reason, sessionId } = request.body || ({} as any);
+
+		if (!userId || typeof amount !== 'number' || !reason) {
+			return reply.status(400).send({
+				statusCode: 400,
+				error: 'Bad Request',
+				message: 'userId, amount, and reason are required',
+			});
+		}
+
+		if (amount <= 0 || amount > 10000) {
+			return reply.status(400).send({
+				statusCode: 400,
+				error: 'Bad Request',
+				message: 'Amount must be between 1 and 10000',
+			});
+		}
+
+		try {
+			const result = await awardXP(userId, amount, reason, sessionId);
+			return {
+				ok: true,
+				xpAwarded: result.xpLog.amount,
+				levelUp: result.levelUp,
+				newLevel: result.newLevel,
+			};
+		} catch (error) {
+			request.log.error({ error }, 'Internal XP award failed');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to award XP',
 			});
 		}
 	});

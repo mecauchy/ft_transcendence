@@ -9,15 +9,30 @@ import MatchHistory from "./history.tsx";
 function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
-		const current = window.location.pathname.replace("/", "");
+		const path = window.location.pathname;
+		const current = path.replace("/", "");
 		if (["tournament", "game", "network", "settings", "profile", "history"].includes(current)) {
 			return current;
 		}
+		if (path.startsWith('/profile/')) {
+			return 'profile';
+		}
 		return "game";
 	};
-	const [page, setPage] = useState<string>(getInitialPage());	
+
+	const getProfileUserId = (): string | null => {
+		const path = window.location.pathname;
+		const match = path.match(/^\/profile\/(\d+)$/);
+		return match ? match[1] : null;
+	};
+
+	const [page, setPage] = useState<string>(getInitialPage());
+	const [viewingUserId, setViewingUserId] = useState<string | null>(getProfileUserId());
+	
 	useEffect(() => {
-		window.history.replaceState({page: 'game'}, "", "/game");
+		if (window.location.pathname === '/') {
+			window.history.replaceState({page: 'game'}, "", "/game");
+		}
 	}, []);
 	
 	//handlers
@@ -30,7 +45,8 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 	useEffect(() => {
 		const handlePopState = (event: PopStateEvent) => {
 			if (event.state?.page) {
-			setPage(event.state.page);
+				setPage(event.state.page);
+				setViewingUserId(event.state.userId || null);
 			}
 		};
 
@@ -38,9 +54,14 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		return () => window.removeEventListener("popstate", handlePopState);
 	}, []);
 
-	const changePage = (newPage: string) => {
+	const changePage = (newPage: string, userId?: string) => {
 		setPage(newPage);
-		window.history.pushState({page: newPage}, '', `/${newPage}`);
+		setViewingUserId(userId || null);
+		if (userId && newPage === 'profile') {
+			window.history.pushState({page: newPage, userId}, '', `/profile/${userId}`);
+		} else {
+			window.history.pushState({page: newPage}, '', `/${newPage}`);
+		}
 	}
 
 	//render
@@ -50,7 +71,7 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		{page === 'game' && <Game />}
 		{page === 'network' && <Network />}
 		{page === 'settings' && <Settings />}
-		{page === 'profile' && <Profile />}
+		{page === 'profile' && <Profile userId={viewingUserId} />}
 		{page === 'history' && <MatchHistory />}
 	</div>
   	)

@@ -248,8 +248,67 @@ async function evaluateCondition(
 			return totalSeconds >= requiredSeconds;
 		}
 
+		case 'BREATHE_SESSION_COUNT': {
+			const requiredCount = condition.count as number;
+			const count = await prisma.gameBreathe.count({
+				where: { playerId: userIdBigInt },
+			});
+			return count >= requiredCount;
+		}
+
+		case 'BREATHE_DURATION_MIN': {
+			const requiredDuration = condition.duration as number;
+			const duration = eventData.duration as number | undefined;
+			if (duration === undefined) return false;
+			return duration >= requiredDuration;
+		}
+
+		case 'STRESS_REDUCTION': {
+			const requiredAmount = condition.amount as number;
+			const stressReduction = eventData.stressReduction as number | undefined;
+			if (stressReduction === undefined) return false;
+			return stressReduction >= requiredAmount;
+		}
+
+		case 'PONG_FLAWLESS_WIN': {
+			const score1 = eventData.score1 as number | undefined;
+			const score2 = eventData.score2 as number | undefined;
+			const winner = eventData.winner as string | undefined;
+			if (score1 === undefined || score2 === undefined || winner !== 'PLAYER') return false;
+			return score2 === 0;
+		}
+
+		case 'PONG_WIN_STREAK': {
+			const requiredStreak = condition.count as number;
+			const recentMatches = await prisma.gamePong.findMany({
+				where: { playerId: userIdBigInt },
+				orderBy: { createdAt: 'desc' },
+				take: requiredStreak,
+				select: { winner: true },
+			});
+			if (recentMatches.length < requiredStreak) return false;
+			return recentMatches.every(m => m.winner === 'PLAYER');
+		}
+
+		case 'PURCHASE_COUNT': {
+			const requiredCount = condition.count as number;
+			const user = await prisma.user.findUnique({
+				where: { id: userIdBigInt },
+				select: { inventory: true },
+			});
+			const inventory = user?.inventory as string[] || [];
+			return inventory.length >= requiredCount;
+		}
+
+		case 'MESSAGE_COUNT': {
+			const requiredCount = condition.count as number;
+			const count = await prisma.message.count({
+				where: { senderId: userIdBigInt },
+			});
+			return count >= requiredCount;
+		}
+
 		case 'PERFECT_SESSION': {
-			// if trust >= 0.9 and stress < 0.3
 			const metrics = eventData.metrics as Record<string, number> | undefined;
 			if (!metrics) return false;
 			return metrics.trust >= 0.9 && metrics.stress < 0.3;
@@ -328,20 +387,6 @@ async function evaluateCondition(
 				},
 			});
 			return count >= requiredBlocks;
-		}
-
-		case 'CHAT_MESSAGE_COUNT': {
-			const requiredCount = condition.count as number;
-
-			// TODO: Replace prisma.message with my message model when chatting implemented
-			const anyPrisma = prisma as any;
-			if (!anyPrisma.message) return false;
-
-			const count = await anyPrisma.message.count({
-				where: {senderId: userIdBigInt},
-			});
-
-			return count >= requiredCount;
 		}
 
 		default:

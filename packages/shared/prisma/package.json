@@ -16,9 +16,11 @@
     "@prisma/client": "5.22.0"
  },
   "devDependencies": {
-    "prisma": "5.22.0"
+    "prisma": "5.22.0",
+    "tsx": "^4.7.0"
  },
   "prisma": {
-    "schema": "schema.prisma"
+    "schema": "schema.prisma",
+    "seed": "tsx seed.ts"
  }
 }

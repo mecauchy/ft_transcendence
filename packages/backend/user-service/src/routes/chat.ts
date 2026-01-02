@@ -46,6 +46,37 @@ async function triggerAchievementEvent(
 	}
 }
 
+// helper to award XP via internal API
+async function awardXpInternal(
+	userId: string,
+	amount: number,
+	reason: string
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/xp/award`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				amount,
+				reason,
+			}),
+		});
+	} catch (error) {
+		console.error('Failed to award XP:', error);
+	}
+}
+
 export async function chatRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
@@ -285,10 +316,10 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
 	// send a message
 	fastify.post<{
-		Body: {conversationId: string; content: string};
+		Body: {conversationId?: string; receiverId?: string; content: string};
 	}>('/messages', async (request, reply) => {
 		const senderId = BigInt(request.user!.userId);
-		const {conversationId, content} = request.body;
+		const {conversationId: convId, receiverId: recvId, content} = request.body;
 
 		if (!content || content.trim().length === 0) {
 			return reply.status(400).send({
@@ -306,35 +337,100 @@ export async function chatRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		try {
-			// verify if user is in convo
-			const conversation = await prisma.conversation.findFirst({
-				where: {
-					id: conversationId,
-					OR: [
-						{user1Id: senderId},
-						{user2Id: senderId},
-					],
-				},
+		if (!convId && !recvId) {
+			return reply.status(400).send({
+				statusCode:	400,
+				error:		'Bad Request',
+				message:	'Either conversationId or receiverId is required',
 			});
+		}
 
-			if (!conversation) {
-				return reply.status(404).send({
-					statusCode:	404,
-					error:		'Not Found',
-					message:	'Conversation not found',
+		try {
+			let conversation;
+			let receiverId: bigint;
+
+			if (convId) {
+				// verify if user is in convo
+				conversation = await prisma.conversation.findFirst({
+					where: {
+						id: convId,
+						OR: [
+							{user1Id: senderId},
+							{user2Id: senderId},
+						],
+					},
 				});
-			}
 
-			// send to rcver
-			const receiverId = conversation.user1Id === senderId
-				? conversation.user2Id
-				: conversation.user1Id;
+				if (!conversation) {
+					return reply.status(404).send({
+						statusCode:	404,
+						error:		'Not Found',
+						message:	'Conversation not found',
+					});
+				}
+
+				receiverId = conversation.user1Id === senderId
+					? conversation.user2Id
+					: conversation.user1Id;
+			} else {
+				receiverId = BigInt(recvId!);
+
+				const receiver = await prisma.user.findUnique({
+					where: {id: receiverId},
+					select: {id: true},
+				});
+
+				if (!receiver) {
+					return reply.status(404).send({
+						statusCode:	404,
+						error:		'Not Found',
+						message:	'Receiver not found',
+					});
+				}
+
+				// check if blocked
+				const blocked = await prisma.friend.findFirst({
+					where: {
+						OR: [
+							{initiatorId: senderId, receiverId: receiverId, status: 'BLOCKED'},
+							{initiatorId: receiverId, receiverId: senderId, status: 'BLOCKED'},
+						],
+					},
+				});
+
+				if (blocked) {
+					return reply.status(403).send({
+						statusCode:	403,
+						error:		'Forbidden',
+						message:	'Cannot send message to this user',
+					});
+				}
+
+				// find convo if existing
+				conversation = await prisma.conversation.findFirst({
+					where: {
+						OR: [
+							{user1Id: senderId, user2Id: receiverId},
+							{user1Id: receiverId, user2Id: senderId},
+						],
+					},
+				});
+
+				// if not then create
+				if (!conversation) {
+					conversation = await prisma.conversation.create({
+						data: {
+							user1Id: senderId,
+							user2Id: receiverId,
+						},
+					});
+				}
+			}
 
 			// create message
 			const message = await prisma.message.create({
 				data: {
-					conversationId,
+					conversationId: conversation.id,
 					senderId,
 					receiverId,
 					content: content.trim(),
@@ -342,11 +438,20 @@ export async function chatRoutes(fastify: FastifyInstance) {
 			});
 
 			// trigger achievement event
-			await triggerAchievementEvent(senderId.toString(), 'CHAT_MESSAGE_SENT');
+			await triggerAchievementEvent(senderId.toString(), 'MESSAGE_SENT');
+
+			// small xp for convo
+			const today = new Date().toISOString().split('T')[0];
+			const cacheKey = `xp:msg:${senderId}:${conversation.id}:${today}`;
+			const alreadyAwarded = await redis.get(cacheKey);
+			if (!alreadyAwarded) {
+				await awardXpInternal(senderId.toString(), 5, 'Chat message sent');
+				await redis.setex(cacheKey, 86400, '1');
+			}
 
 			// update conversation timestamp
 			await prisma.conversation.update({
-				where: {id: conversationId},
+				where: {id: conversation.id},
 				data: {updatedAt: new Date()},
 			});
 
@@ -355,7 +460,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 				type: 'NEW_MESSAGE',
 				data: {
 					id:			message.id,
-					conversationId,
+					conversationId: conversation.id,
 					senderId:	senderId.toString(),
 					receiverId:	receiverId.toString(),
 					content:	message.content,
@@ -372,19 +477,14 @@ export async function chatRoutes(fastify: FastifyInstance) {
 					type:		'MESSAGE',
 					title:		'New Message',
 					message:	`You have a new message`,
-					data:		{conversationId, messageId: message.id},
+					data:		{conversationId: conversation.id, messageId: message.id},
 				},
 			});
 
 			return {
 				success: true,
-				message:	{
-					id:			message.id,
-					senderId:	senderId.toString(),
-					receiverId:	receiverId.toString(),
-					content:	message.content,
-					createdAt:	message.createdAt,
-				},
+				messageId:	message.id,
+				conversationId: conversation.id,
 			};
 		} catch (error) {
 			request.log.error({error}, 'Failed to send message');

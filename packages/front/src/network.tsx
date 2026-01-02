@@ -130,7 +130,7 @@ const handleDeclineFriend = async (request: UserPreview) => {
 // view profile
 const handleViewProfile = (friendId: string) => {
 	window.history.pushState({page: 'profile', userId: friendId}, '', `/profile/${friendId}`);
-	window.location.reload();
+	window.dispatchEvent(new PopStateEvent('popstate', {state: {page: 'profile', userId: friendId}}));
 };
 
 // start chatting

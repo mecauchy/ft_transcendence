@@ -464,7 +464,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post<{Body: {refreshToken?: string}}>(
 		'/logout',
 		async (request, reply) => {
-			const {refreshToken} = request.body;
+			const refreshToken = request.body?.refreshToken;
 
 			if (refreshToken) {
 				await blacklistToken(refreshToken);

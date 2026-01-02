@@ -141,9 +141,10 @@ function AchievementBadge({achievement}: {achievement: Achievement}) {
 	);
 }
 
-export default function Profile() {
+export default function Profile({userId}: {userId?: string | null}) {
 	const {user} = useAuth();
 	const {t} = useTranslation();
+	const isOwnProfile = !userId || userId === user?.userId || userId === user?.id;
 
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -158,8 +159,8 @@ export default function Profile() {
 			setError(null);
 
 			try {
-				// load profile
-				const profileData = await api.getProfile();
+				// load profile - pass userId if viewing someone else
+				const profileData = await api.getProfile(isOwnProfile ? undefined : userId!);
 				setProfile(profileData);
 
 				// load achievements
@@ -218,7 +219,7 @@ export default function Profile() {
 		if (user) {
 			loadData();
 		}
-	}, [user]);
+	}, [user, userId, isOwnProfile]);
 
 	if (loading) {
 		return (

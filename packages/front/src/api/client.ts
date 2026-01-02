@@ -378,14 +378,14 @@ class ApiClient {
 	}
 
 	async blockUser(userId: string) {
-		return this.request<{message: string}>(`/users/block/${userId}`, {
+		return this.request<{message: string}>(`/users/friends/${userId}/block`, {
 			method: 'POST',
 		});
 	}
 
 	async unblockUser(userId: string) {
-		return this.request<{message: string}>(`/users/block/${userId}`, {
-			method: 'DELETE',
+		return this.request<{message: string}>(`/users/friends/${userId}/unblock`, {
+			method: 'POST',
 		});
 	}
 
