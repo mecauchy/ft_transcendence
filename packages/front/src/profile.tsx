@@ -144,7 +144,7 @@ function AchievementBadge({achievement}: {achievement: Achievement}) {
 export default function Profile({userId}: {userId?: string | null}) {
 	const {user} = useAuth();
 	const {t} = useTranslation();
-	const isOwnProfile = !userId || userId === user?.userId || userId === user?.id;
+	const isOwnProfile = !userId || userId === user?.userId;
 
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [achievements, setAchievements] = useState<Achievement[]>([]);

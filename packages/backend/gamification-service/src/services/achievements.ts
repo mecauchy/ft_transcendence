@@ -282,7 +282,7 @@ async function evaluateCondition(
 			const requiredStreak = condition.count as number;
 			const recentMatches = await prisma.gamePong.findMany({
 				where: { playerId: userIdBigInt },
-				orderBy: { createdAt: 'desc' },
+				orderBy: { endedAt: 'desc' },
 				take: requiredStreak,
 				select: { winner: true },
 			});
@@ -291,13 +291,12 @@ async function evaluateCondition(
 		}
 
 		case 'PURCHASE_COUNT': {
+			const purchaseCount = eventData.purchaseCount as number | undefined;
 			const requiredCount = condition.count as number;
-			const user = await prisma.user.findUnique({
-				where: { id: userIdBigInt },
-				select: { inventory: true },
-			});
-			const inventory = user?.inventory as string[] || [];
-			return inventory.length >= requiredCount;
+			if (purchaseCount !== undefined) {
+				return purchaseCount >= requiredCount;
+			}
+			return false;
 		}
 
 		case 'MESSAGE_COUNT': {
