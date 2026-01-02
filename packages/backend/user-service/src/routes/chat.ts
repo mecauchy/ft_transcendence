@@ -15,6 +15,37 @@ const pubClient = new Redis({
 	port:	config.redis.port,
 });
 
+// helper to trigger achievement events
+async function triggerAchievementEvent(
+	userId: string,
+	eventType: string,
+	eventData?: Record<string, unknown>
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/events`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				eventType,
+				eventData: eventData || {},
+			}),
+		});
+	} catch (error) {
+		console.error('Failed to trigger achievement event:', error);
+	}
+}
+
 export async function chatRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
@@ -309,6 +340,9 @@ export async function chatRoutes(fastify: FastifyInstance) {
 					content: content.trim(),
 				},
 			});
+
+			// trigger achievement event
+			await triggerAchievementEvent(senderId.toString(), 'CHAT_MESSAGE_SENT');
 
 			// update conversation timestamp
 			await prisma.conversation.update({

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
 import { t } from "./i18nHelper";
+import { api } from "../api/client";
 
 export default class ParkingScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -11,6 +12,7 @@ export default class ParkingScene extends Phaser.Scene {
 	private breathe_text!: Phaser.GameObjects.Text;
 
 	private game_started: boolean = false;
+	private session_start_time: number | null = null;
 
 	private popup!: Popup;
 
@@ -36,6 +38,7 @@ export default class ParkingScene extends Phaser.Scene {
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
+							this.session_start_time = Date.now();
 							this.breathe_exercise();
 						},
 					},
@@ -51,7 +54,11 @@ export default class ParkingScene extends Phaser.Scene {
 		//wait if not true
 		const keyboard = this.input.keyboard;
 		if (!keyboard) return;
-		keyboard.once("keydown-ESC", () => {
+		keyboard.once("keydown-ESC", async () => {
+			// if a session is started await sending breathe stats before reloading
+			if (this.session_start_time !== null) {
+				await this.sendBreatheStats();
+			}
 			this.scene.start("WorldMapScene");
 			this.popup.destroy();
 		});
@@ -95,6 +102,42 @@ export default class ParkingScene extends Phaser.Scene {
 		};
 
 		breatheIn();
+	}
+
+	private async sendBreatheStats(): Promise<void> {
+		if (this.session_start_time === null) return;
+
+		try {
+			const payload = {
+				playerid: "",
+				timestamp1: new Date(this.session_start_time).toISOString(),
+				timestamp2: new Date().toISOString(),
+			};
+
+			await api.sendBreathe(payload);
+			console.log('Breathe session saved successfully');
+
+			const sessionDurationMs = Date.now() - this.session_start_time;
+			const sessionDurationMinutes = sessionDurationMs / (1000 * 60);
+			const stressReduction = sessionDurationMinutes * 2.5;
+
+			if (stressReduction > 0) {
+				try {
+					const profile = await api.getProfile();
+					const currentStress = profile.stressLevel ?? 50;
+					const newStress = Math.max(0, currentStress - stressReduction);
+
+					await api.updateProfile({
+						stressLevel: Math.round(newStress),
+					});
+					console.log(`Breathe session: reduced stress by ${stressReduction.toFixed(1)} (${currentStress} -> ${Math.round(newStress)})`);
+				} catch (e) {
+					console.error('Failed to update stress level:', e);
+				}
+			}
+		} catch (error) {
+			console.error('Failed to save breathe session:', error);
+		}
 	}
 
 	private onResize() {

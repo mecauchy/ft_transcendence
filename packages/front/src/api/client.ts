@@ -366,6 +366,10 @@ class ApiClient {
 		});
 	}
 
+	async searchUser(username: string) {
+		return this.request<{id: string; username: string}>(`/users/search?username=${encodeURIComponent(username)}`);
+	}
+
 	async blockUser(userId: string) {
 		return this.request<{message: string}>(`/users/block/${userId}`, {
 			method: 'POST',
@@ -440,6 +444,13 @@ class ApiClient {
 	// game endpoints
 	async sendPong(payload: IPongGame) {
 		return this.request<{success: boolean; gameId: string}>('/game/pong/match', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+		});
+	}
+
+	async sendBreathe(payload: IBreatheGame) {
+		return this.request<{success: boolean; gameId: string}>('/game/breathe', {
 			method: 'POST',
 			body: JSON.stringify(payload),
 		});

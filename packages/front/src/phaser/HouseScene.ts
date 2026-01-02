@@ -427,22 +427,52 @@ export default class HouseScene extends Phaser.Scene {
 			await api.sendPong(payload);
 			console.log("Successfully sent pong stats");
 
-			// const res = await fetch("/api/game/pong", {
-			// 	method: "POST",
-			// 	headers: { "Content-Type": "application/json" },
-			// 	credentials: "include",
-			// 	keepalive: true,
-			// 	body: JSON.stringify(payload),
-			// });
-			// if (!res.ok) {
-			// 	const text = await res.text().catch(() => "");
-			// 	console.error("Failed to send pong stats:", res.status, res.statusText, text)
-			// 	this.matchSent = false;
-			// 	return;
-			// }
-			
+			// update stress/confidence
+			if (this.ia_mode) {
+				await this.updateStressConfidence();
+			}
 		} catch (e) {
 			console.error("Failed to send pong stats [network error]", e);
+		}
+	}
+
+	private async updateStressConfidence(): Promise<void> {
+		// get current profile to know meter levels
+		try {
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+			
+			// calculate based on diff
+			let difficultyMultiplier = 1;
+			if (this.ia_difficulty < 0.2) {
+				difficultyMultiplier = 3; // HARD
+			} else if (this.ia_difficulty < 0.6) {
+				difficultyMultiplier = 2; // MEDIUM
+			} else {
+				difficultyMultiplier = 1; // EASY
+			}
+
+			const playerWon = this.score2 >= 5;
+			let newStress = currentStress;
+			let newConfidence = currentConfidence;
+
+			if (playerWon) {
+				newConfidence = Math.min(100, currentConfidence + (5 * difficultyMultiplier));
+				newStress = Math.max(0, currentStress - (2 * difficultyMultiplier));
+			} else {
+				newStress = Math.min(100, currentStress + (3 * difficultyMultiplier));
+				newConfidence = Math.max(0, currentConfidence - (2 * difficultyMultiplier));
+			}
+
+			// update profile with new values
+			await api.updateProfile({
+				stressLevel: Math.round(newStress),
+				confidenceLevel: Math.round(newConfidence),
+			});
+			console.log(`Updated stress: ${currentStress} -> ${Math.round(newStress)}, confidence: ${currentConfidence} -> ${Math.round(newConfidence)}`);
+		} catch (e) {
+			console.error("Failed to update stress/confidence:", e);
 		}
 	}
 

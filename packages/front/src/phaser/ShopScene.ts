@@ -1,6 +1,25 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
 import { t } from "./i18nHelper";
+import { api } from "../api/client";
+
+// item effects on meters
+const ITEM_EFFECTS: Record<string, { stress?: number; confidence?: number }> = {
+	"anxiety pills": { stress: -10, confidence: -5 },
+	"sleeping pills": { stress: -5, confidence: -3 },
+	"wine": { confidence: 8, stress: 3 },
+	"chocolate": { stress: -3 }, 
+	"water": { stress: -2 }, 
+	"flower": { stress: -2, confidence: 2 },
+	"book": { stress: -3, confidence: 3 
+	"bear": { stress: -4 }, 
+	"duck": { stress: -2, confidence: 1 }, 
+	"ball": { confidence: 2 
+	"camera": { confidence: 3 
+	"controller": { stress: -2 }, 
+	"phone": { stress: 2, confidence: -1 },
+	"soap": { stress: -1 },
+};
 
 export default class ShopScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -186,6 +205,7 @@ export default class ShopScene extends Phaser.Scene {
 	private end_shopping() {
 		if (this.popup_active) return;
 		this.popup_active = true;
+		this.applyItemEffects();
 		this.popup.show(
 			t("common.returningToMap"),
 			[
@@ -199,6 +219,42 @@ export default class ShopScene extends Phaser.Scene {
 				},
 			]
 		);
+	}
+
+	private async applyItemEffects(): Promise<void> {
+		try {
+			let totalStressChange = 0;
+			let totalConfidenceChange = 0;
+
+			for (const item of this.items_picks) {
+				const effect = ITEM_EFFECTS[item];
+				if (effect) {
+					totalStressChange += effect.stress ?? 0;
+					totalConfidenceChange += effect.confidence ?? 0;
+				}
+			}
+
+			if (totalStressChange === 0 && totalConfidenceChange === 0) return;
+
+			// get current profile
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+
+			// apply changes with clamping
+			const newStress = Math.max(0, Math.min(100, currentStress + totalStressChange));
+			const newConfidence = Math.max(0, Math.min(100, currentConfidence + totalConfidenceChange));
+
+			// update profiule
+			await api.updateProfile({
+				stressLevel: Math.round(newStress),
+				confidenceLevel: Math.round(newConfidence),
+			});
+
+			console.log(`Shop items effect: stress ${currentStress} -> ${Math.round(newStress)}, confidence ${currentConfidence} -> ${Math.round(newConfidence)}`);
+		} catch (error) {
+			console.error('Failed to apply shop item effects:', error);
+		}
 	}
 
 	private onResize() {

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
 import { t } from "./i18nHelper";
+import {api} from "../api"
 
 export default class WorldMapScene extends Phaser.Scene {
 	private player!: Phaser.GameObjects.Sprite;
@@ -18,6 +19,16 @@ export default class WorldMapScene extends Phaser.Scene {
 	private houseLabel!: Phaser.GameObjects.Text;
 	private parkingLabel!: Phaser.GameObjects.Text;
 	private coffeeLabel!: Phaser.GameObjects.Text;
+
+	// meters
+	private stressMeterBg!: Phaser.GameObjects.Rectangle;
+	private stressMeterFill!: Phaser.GameObjects.Rectangle;
+	private stressMeterLabel!: Phaser.GameObjects.Text;
+	private confidenceMeterBg!: Phaser.GameObjects.Rectangle;
+	private confidenceMeterFill!: Phaser.GameObjects.Rectangle;
+	private confidenceMeterLabel!: Phaser.GameObjects.Text;
+	private stressValue: number = 50;
+	private confidenceValue: number = 50;
 
 	// Normalized player position (0–1)
 	private playerNX = 0.5;
@@ -119,8 +130,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parkingLabel = this.add.text(0, 0, t("scenes.worldMap.parking"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
 		this.coffeeLabel = this.add.text(0, 0, t("scenes.worldMap.coffee"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
 
+		// create the meters
+		this.createMeters();
+		
 		this.popup = new Popup(this);
 		this.centerScene();
+
+		// fetch initial values
+		this.fetchStressConfidence();
 
 
 		this.scale.on("resize", this.onResize, this);
@@ -340,6 +357,96 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.makeInteractiveBuilding(this.coffee);
 	}
 
+	private createMeters() {
+		const meterWidth = 100;
+		const meterHeight = 14;
+		
+		// stress meter
+		this.stressMeterBg = this.add.rectangle(0, 0, meterWidth, meterHeight, 0x333333);
+		this.stressMeterBg.setOrigin(0, 0.5);
+		this.stressMeterFill = this.add.rectangle(0, 0, meterWidth * (this.stressValue / 100), meterHeight - 4, 0xff4444);
+		this.stressMeterFill.setOrigin(0, 0.5);
+		this.stressMeterLabel = this.add.text(0, 0, t("common.stress") + ":", {
+			fontFamily: 'GameFont',
+			fontSize: '12px',
+			color: '#ffffff',
+		});
+		this.stressMeterLabel.setOrigin(1, 0.5);
+
+		// confidence meter
+		this.confidenceMeterBg = this.add.rectangle(0, 0, meterWidth, meterHeight, 0x333333);
+		this.confidenceMeterBg.setOrigin(0, 0.5);
+		this.confidenceMeterFill = this.add.rectangle(0, 0, meterWidth * (this.confidenceValue / 100), meterHeight - 4, 0x44cc44);
+		this.confidenceMeterFill.setOrigin(0, 0.5);
+		this.confidenceMeterLabel = this.add.text(0, 0, t("common.confidence") + ":", {
+			fontFamily: 'GameFont',
+			fontSize: '12px',
+			color: '#ffffff',
+		});
+		this.confidenceMeterLabel.setOrigin(1, 0.5);
+
+		this.stressMeterBg.setDepth(100);
+		this.stressMeterFill.setDepth(101);
+		this.stressMeterLabel.setDepth(100);
+		this.confidenceMeterBg.setDepth(100);
+		this.confidenceMeterFill.setDepth(101);
+		this.confidenceMeterLabel.setDepth(100);
+	}
+
+	private async fetchStressConfidence(): Promise<void> {
+		try {
+			const profile = await api.getProfile();
+			this.stressValue = profile.stressLevel ?? 50;
+			this.confidenceValue = profile.confidenceLevel ?? 50;
+			this.updateMeterFills();
+		} catch (error) {
+			console.error('Failed to fetch stress/confidence:', error);
+		}
+	}
+
+	private updateMeterFills() {
+		const meterWidth = 100;
+		const meterHeight = 14;
+
+		this.stressMeterFill.width = Math.max(2, meterWidth * (this.stressValue / 100));
+		this.confidenceMeterFill.width = Math.max(2, meterWidth * (this.confidenceValue / 100));
+
+		// color gradient for stress green to red
+		const stressR = Math.floor(255 * (this.stressValue / 100));
+		const stressG = Math.floor(255 * (1 - this.stressValue / 100));
+		this.stressMeterFill.fillColor = (stressR << 16) | (stressG << 8) | 0x44;
+
+		// color for confidence green to blue
+		const confG = Math.floor(150 + 105 * (this.confidenceValue / 100));
+		this.confidenceMeterFill.fillColor = (0x44 << 16) | (confG << 8) | 0x44;
+	}
+
+	private positionMeters() {
+		const padding = 10;
+		const labelGap = 5;
+		const meterWidth = 100;
+		const scaleFactor = Math.min(this.scale.width, this.scale.height) / 600;
+
+		const scale = Math.max(0.8, Math.min(1.5, scaleFactor));
+
+		const stressY = padding + 15;
+		this.stressMeterLabel.setPosition(padding + 60 * scale, stressY);
+		this.stressMeterLabel.setScale(scale);
+		this.stressMeterBg.setPosition(padding + 65 * scale, stressY);
+		this.stressMeterBg.setScale(scale);
+		this.stressMeterFill.setPosition(padding + 67 * scale, stressY);
+		this.stressMeterFill.setScale(scale);
+		
+		// Position confidence meter below stress
+		const confidenceY = stressY + 22 * scale;
+		this.confidenceMeterLabel.setPosition(padding + 60 * scale, confidenceY);
+		this.confidenceMeterLabel.setScale(scale);
+		this.confidenceMeterBg.setPosition(padding + 65 * scale, confidenceY);
+		this.confidenceMeterBg.setScale(scale);
+		this.confidenceMeterFill.setPosition(padding + 67 * scale, confidenceY);
+		this.confidenceMeterFill.setScale(scale);
+	}
+
 	// Recomputes layout when screen size or player position changes
 	centerScene() {
 		const size = Math.min(this.scale.width, this.scale.height);
@@ -356,6 +463,9 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.placeAllBuildings(size);
 
 		this.placeAllLabels(size);
+
+		// Position stress/confidence meters
+		this.positionMeters();
 
 		// this.makeAllInteractiveBuildings();
 	}

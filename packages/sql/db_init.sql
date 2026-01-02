@@ -196,177 +196,41 @@ CREATE INDEX IF NOT EXISTS idx_users_level ON users (current_level DESC);
 
 -- TODO: fill this with real achievements, current aislop
 INSERT INTO achievements (code, name, description, xp_reward, rarity, category, condition_json) VALUES
-	('FIRST_SESSION', 'First Steps', 'Complete your first therapy session', 500, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 1}'),
-	('SESSION_5', 'Getting Started', 'Complete 5 therapy sessions', 200, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 5}'),
-	('SESSION_25', 'Regular Patient', 'Complete 25 therapy sessions', 500, 'UNCOMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 25}'),
-	('SESSION_100', 'Dedicated Soul', 'Complete 100 therapy sessions', 1500, 'RARE', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 100}'),
-	('PERFECT_SESSION', 'Perfect Understanding', 'Complete a session with 90%+ trust and <30% stress', 300, 'UNCOMMON', 'skill', '{"type": "PERFECT_SESSION", "eventType": "SESSION_COMPLETE"}'),
-	('STREAK_7', 'Weekly Warrior', 'Play for 7 consecutive days', 400, 'UNCOMMON', 'dedication', '{"type": "STREAK", "eventType": "DAILY_LOGIN", "days": 7}'),
-	('STREAK_30', 'Monthly Master', 'Play for 30 consecutive days', 1000, 'RARE', 'dedication', '{"type": "STREAK", "eventType": "DAILY_LOGIN", "days": 30}'),
-	('LEVEL_10', 'Rising Star', 'Reach level 10', 0, 'UNCOMMON', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 10}'),
-	('LEVEL_25', 'Experienced', 'Reach level 25', 0, 'RARE', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 25}'),
-	('LEVEL_50', 'Veteran', 'Reach level 50', 0, 'EPIC', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 50}'),
-	('FRIENDS_5', 'Social Butterfly', 'Add 5 friends', 150, 'COMMON', 'social', '{"type": "FRIEND_COUNT", "eventType": "FRIEND_ADDED", "count": 5}'),
-	('FRIENDS_25', 'Popular', 'Add 25 friends', 400, 'UNCOMMON', 'social', '{"type": "FRIEND_COUNT", "eventType": "FRIEND_ADDED", "count": 25}'),
+	-- ('FIRST_SESSION', 'First Steps', 'Complete your first therapy session', 500, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 1}'),
+	-- ('SESSION_5', 'Getting Started', 'Complete 5 therapy sessions', 200, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 5}'),
+	-- ('SESSION_25', 'Regular Patient', 'Complete 25 therapy sessions', 500, 'UNCOMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 25}'),
+	-- ('SESSION_100', 'Dedicated Soul', 'Complete 100 therapy sessions', 1500, 'RARE', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 100}'),
+	-- ('PERFECT_SESSION', 'Perfect Understanding', 'Complete a session with 90%+ trust and <30% stress', 300, 'UNCOMMON', 'skill', '{"type": "PERFECT_SESSION", "eventType": "SESSION_COMPLETE"}'),
+	-- ('STREAK_7', 'Weekly Warrior', 'Play for 7 consecutive days', 400, 'UNCOMMON', 'dedication', '{"type": "STREAK", "eventType": "DAILY_LOGIN", "days": 7}'),
+	-- ('STREAK_30', 'Monthly Master', 'Play for 30 consecutive days', 1000, 'RARE', 'dedication', '{"type": "STREAK", "eventType": "DAILY_LOGIN", "days": 30}'),
+	-- ('LEVEL_10', 'Rising Star', 'Reach level 10', 0, 'UNCOMMON', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 10}'),
+	-- ('LEVEL_25', 'Experienced', 'Reach level 25', 0, 'RARE', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 25}'),
+	-- ('LEVEL_50', 'Veteran', 'Reach level 50', 0, 'EPIC', 'progression', '{"type": "LEVEL_REACHED", "eventType": "XP_GAINED", "level": 50}'),
+	-- ('FRIENDS_5', 'Social Butterfly', 'Add 5 friends', 150, 'COMMON', 'social', '{"type": "FRIEND_COUNT", "eventType": "FRIEND_ADDED", "count": 5}'),
+	-- ('FRIENDS_25', 'Popular', 'Add 25 friends', 400, 'UNCOMMON', 'social', '{"type": "FRIEND_COUNT", "eventType": "FRIEND_ADDED", "count": 25}'),
 	('XP_1000', 'First Milestone', 'Earn 1,000 total XP', 0, 'COMMON', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 1000}'),
 	('XP_10000', 'Ten Thousand Strong', 'Earn 10,000 total XP', 0, 'UNCOMMON', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 10000}'),
-	('XP_100000', 'XP Legend', 'Earn 100,000 total XP', 0, 'LEGENDARY', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 100000}')
-ON CONFLICT (code) DO NOTHING;
+	('XP_100000', 'XP Legend', 'Earn 100,000 total XP', 0, 'LEGENDARY', 'progression', '{"type": "TOTAL_XP", "eventType": "XP_GAINED", "xp": 100000}'),
 
-/*
-import { prisma } from '../src/db';
+	-- Pong achievements
+	('PONG_FIRST_MATCH', 'First Match!', 'Play your first Pong match.', 50, 'COMMON', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_MATCH_COUNT", "count": 1}'),
+	('PONG_5_MATCHES', 'Getting Warm', 'Play 5 Pong matches.', 100, 'COMMON', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_MATCH_COUNT", "count": 5}'),
+	('PONG_25_MATCHES', 'Pong Regular', 'Play 25 Pong matches.', 250, 'UNCOMMON', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_MATCH_COUNT", "count": 25}'),
+	('PONG_LOCAL_MATCH', 'Couch Rivalry', 'Play a local Pong match.', 50, 'COMMON', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_LOCAL_MATCH_COUNT", "count": 1}'),
+	('PONG_HARD_AI_WIN', 'AI Challenger', 'Win a Pong match against HARD AI.', 200, 'RARE', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_WIN_HARD_AI"}'),
+	('PONG_HARD_AI_PERFECT', 'Perfect Machine', 'Win 5-0 against HARD AI.', 400, 'EPIC', 'PONG', '{"eventType": "PONG_MATCH_SAVED", "type": "PONG_PERFECT_WIN_HARD_AI"}'),
 
-type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+	-- Breathe achievements
+	('BREATHE_1_MIN', 'One Minute Calm', 'Accumulate 1 minute of breathing sessions.', 50, 'COMMON', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	('BREATHE_10_MIN', 'Ten Minutes Calm', 'Accumulate 10 minutes of breathing sessions.', 150, 'UNCOMMON', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 600}'),
+	('BREATHE_1_HOUR', 'Hour of Peace', 'Accumulate 1 hour of breathing sessions.', 500, 'EPIC', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 3600}'),
 
-const achievements = [
-	// Pong
-	{
-		code: 'PONG_FIRST_MATCH',
-		name: 'First Match!',
-		description: 'Play your first Pong match.',
-		iconUrl: null,
-		xpReward: 50,
-		rarity: 'COMMON' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 1 },
-	},
-	{
-		code: 'PONG_5_MATCHES',
-		name: 'Getting Warm',
-		description: 'Play 5 Pong matches.',
-		iconUrl: null,
-		xpReward: 100,
-		rarity: 'COMMON' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 5 },
-	},
-	{
-		code: 'PONG_25_MATCHES',
-		name: 'Pong Regular',
-		description: 'Play 25 Pong matches.',
-		iconUrl: null,
-		xpReward: 250,
-		rarity: 'UNCOMMON' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_MATCH_COUNT', count: 25 },
-	},
-	{
-		code: 'PONG_LOCAL_MATCH',
-		name: 'Couch Rivalry',
-		description: 'Play a local Pong match.',
-		iconUrl: null,
-		xpReward: 50,
-		rarity: 'COMMON' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_LOCAL_MATCH_COUNT', count: 1 },
-	},
-	{
-		code: 'PONG_HARD_AI_WIN',
-		name: 'AI Challenger',
-		description: 'Win a Pong match against HARD AI.',
-		iconUrl: null,
-		xpReward: 200,
-		rarity: 'RARE' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_WIN_HARD_AI' },
-	},
-	{
-		code: 'PONG_HARD_AI_PERFECT',
-		name: 'Perfect Machine',
-		description: 'Win 5-0 against HARD AI.',
-		iconUrl: null,
-		xpReward: 400,
-		rarity: 'EPIC' as Rarity,
-		category: 'PONG',
-		conditionJson: { eventType: 'PONG_MATCH_SAVED', type: 'PONG_PERFECT_WIN_HARD_AI' },
-	},
+	-- Social achievements
+	('FRIEND_FIRST', 'Hello Friend', 'Make your first friend.', 50, 'COMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 1}'),
+	('FRIEND_5', 'Friendly', 'Make 5 friends.', 150, 'UNCOMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 5}'),
+	('FRIEND_15', 'Social Circle', 'Make 15 friends.', 400, 'RARE', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 15}'),
+	('BLOCK_FIRST', 'Boundaries', 'Block 1 person.', 25, 'COMMON', 'SOCIAL', '{"eventType": "USER_BLOCKED", "type": "BLOCK_COUNT", "count": 1}'),
 
-	// Breathe
-	{
-		code: 'BREATHE_1_MIN',
-		name: 'One Minute Calm',
-		description: 'Accumulate 1 minute of breathing sessions.',
-		iconUrl: null,
-		xpReward: 50,
-		rarity: 'COMMON' as Rarity,
-		category: 'BREATHE',
-		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 60 },
-	},
-	{
-		code: 'BREATHE_10_MIN',
-		name: 'Ten Minutes Calm',
-		description: 'Accumulate 10 minutes of breathing sessions.',
-		iconUrl: null,
-		xpReward: 150,
-		rarity: 'UNCOMMON' as Rarity,
-		category: 'BREATHE',
-		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 600 },
-	},
-	{
-		code: 'BREATHE_1_HOUR',
-		name: 'Hour of Peace',
-		description: 'Accumulate 1 hour of breathing sessions.',
-		iconUrl: null,
-		xpReward: 500,
-		rarity: 'EPIC' as Rarity,
-		category: 'BREATHE',
-		conditionJson: { eventType: 'BREATHE_SESSION_SAVED', type: 'BREATHE_TOTAL_SECONDS', seconds: 3600 },
-	},
-
-	// Friends
-	{
-		code: 'FRIEND_FIRST',
-		name: 'Hello Friend',
-		description: 'Make your first friend.',
-		iconUrl: null,
-		xpReward: 50,
-		rarity: 'COMMON' as Rarity,
-		category: 'SOCIAL',
-		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 1 },
-	},
-	{
-		code: 'FRIEND_5',
-		name: 'Friendly',
-		description: 'Make 5 friends.',
-		iconUrl: null,
-		xpReward: 150,
-		rarity: 'UNCOMMON' as Rarity,
-		category: 'SOCIAL',
-		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 5 },
-	},
-	{
-		code: 'FRIEND_15',
-		name: 'Social Circle',
-		description: 'Make 15 friends.',
-		iconUrl: null,
-		xpReward: 400,
-		rarity: 'RARE' as Rarity,
-		category: 'SOCIAL',
-		conditionJson: { eventType: 'FRIEND_ACCEPTED', type: 'FRIEND_COUNT', count: 15 },
-	},
-
-	// Block
-	{
-		code: 'BLOCK_FIRST',
-		name: 'Boundaries',
-		description: 'Block 1 person.',
-		iconUrl: null,
-		xpReward: 25,
-		rarity: 'COMMON' as Rarity,
-		category: 'SOCIAL',
-		conditionJson: { eventType: 'USER_BLOCKED', type: 'BLOCK_COUNT', count: 1 },
-	},
-
-	// Chat
-	{
-		code: 'CHAT_FIRST_MESSAGE',
-		name: 'First Words',
-		description: 'Send your first chat message.',
-		iconUrl: null,
-		xpReward: 25,
-		rarity: 'COMMON' as Rarity,
-		category: 'CHAT',
-		conditionJson: { eventType: 'CHAT_MESSAGE_SENT', type: 'CHAT_MESSAGE_COUNT', count: 1 },
-	},
-];
-*/
+	-- Chat achievements
+	('CHAT_FIRST_MESSAGE', 'First Words', 'Send your first chat message.', 25, 'COMMON', 'CHAT', '{"eventType": "CHAT_MESSAGE_SENT", "type": "CHAT_MESSAGE_COUNT", "count": 1}')
+	ON CONFLICT (code) DO NOTHING;

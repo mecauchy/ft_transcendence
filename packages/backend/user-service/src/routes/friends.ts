@@ -12,6 +12,37 @@ const redis = new Redis({
 	port: config.redis.port,
 });
 
+// achievement event trigger helper
+async function triggerAchievementEvent(
+	userId: string,
+	eventType: string,
+	eventData?: Record<string, unknown>
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/events`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				eventType,
+				eventData: eventData || {},
+			}),
+		});
+	} catch (error) {
+		console.error('Failed to trigger achievement event:', error);
+	}
+}
+
 export async function friendsRoutes(fastify: FastifyInstance) {
 	// apply middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
@@ -288,6 +319,12 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					data: {status: 'ACCEPTED'},
 				});
 
+				// trigger achievement event for both users
+				await Promise.all([
+					triggerAchievementEvent(userId.toString(), 'FRIEND_ACCEPTED'),
+					triggerAchievementEvent(requesterId.toString(), 'FRIEND_ACCEPTED'),
+				]);
+
 				// get user info for notification
 				const currentUser = await prisma.user.findUnique({
 					where:	{id: userId},
@@ -384,6 +421,9 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					status: 'BLOCKED',
 				},
 			});
+
+			// trigg achievement event
+			await triggerAchievementEvent(userId.toString(), 'USER_BLOCKED');
 
 			return {success: true, message:	'User blocked'};
 		} catch (error) {

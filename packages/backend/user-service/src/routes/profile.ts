@@ -16,6 +16,49 @@ export async function profileRoutes(fastify: FastifyInstance) {
 	// apply auth middleware to all routes
 	fastify.addHook('preHandler', authMiddleware);
 
+	// search user by username
+	fastify.get<{Querystring: {username: string}}>('/search', async (request: FastifyRequest<{Querystring: {username: string}}>, reply: FastifyReply) => {
+		const {username} = request.query;
+
+		if (!username || typeof username !== 'string') {
+			return reply.status(400).send({
+				statusCode: 400,
+				error: 'Bad Request',
+				message: 'Username query parameter is required',
+			});
+		}
+
+		try {
+			const user = await prisma.user.findUnique({
+				where: {username},
+				select: {
+					id: true,
+					username: true,
+				},
+			});
+
+			if (!user) {
+				return reply.status(404).send({
+					statusCode: 404,
+					error: 'Not Found',
+					message: 'User not found',
+				});
+			}
+
+			return {
+				id: user.id.toString(),
+				username: user.username,
+			};
+		} catch (error) {
+			request.log.error({error}, 'Failed to search user');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to search user',
+			});
+		}
+	});
+
 	// get curr user data
 	fastify.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);

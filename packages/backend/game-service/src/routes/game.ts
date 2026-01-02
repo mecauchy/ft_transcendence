@@ -19,6 +19,38 @@ function isValidCursor(v: unknown): v is string {
 	return typeof v === 'string' && /^\d+$/.test(v);
 }
 
+// helper to trigger achievement events
+async function triggerAchievementEvent(
+	userId: string,
+	eventType: string,
+	eventData?: Record<string, unknown>
+): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${gamificationServiceUrl}/internal/events`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				eventType,
+				eventData: eventData || {},
+			}),
+		});
+	} catch (error) {
+		// log error without failing
+		console.error('Failed to trigger achievement event:', error);
+	}
+}
+
 function toJsonPong(row : {
 	id:			bigint;
 	playerId:	bigint | null;
@@ -107,12 +139,20 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				}
 			});
 
-			return reply.send({
-				success: true,
+		// Trigger achievement event
+		await triggerAchievementEvent(userId, 'PONG_MATCH_SAVED', {
+			mode,
+			difficulty,
+			score1: Number(score1),
+			score2: Number(score2),
+			winner,
+		});
+
+		return reply.send({
+			success: true,
 			gameId: gameLog.id.toString()
 		});
 
-		return ;
 	} catch (error) {
 		request.log.error({error}, 'Failed to log game');
 		return reply.status(500).send({
@@ -120,19 +160,6 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			error:		'Internal Server Error',
 			message:	'Failed to start session',
 		});
-	}
-});
-
-	// get pong stats for curr user
-	fastify.get<{Querystring: {cursor?: string; limit?: string};}>('/pong/history', async (request: FastifyRequest, reply: FastifyReply) => {
-		const userId = BigInt(request.user!.userId);
-		const limitRaw = (request.query as {limit?: string}).limit;
-		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);
-
-		const cursor = (request.query as {cursor?: string}).cursor;
-		if (cursor !== undefined && isValidCursor(cursor)) {
-			return reply.status(400).send({
-				statusCode:	400,
 				error:		'Bad Request',
 				message:	'Invalid cursor',
 			});
@@ -386,12 +413,16 @@ export async function gameRoutes(fastify: FastifyInstance) {
 				}
 			});
 
+			// trigger achievement event
+			const durationSeconds = Math.floor((new Date(timestamp2).getTime() - new Date(timestamp1).getTime()) / 1000);
+			await triggerAchievementEvent(userId, 'BREATHE_SESSION_SAVED', {
+				durationSeconds,
+			});
+
 			return reply.send({
 				success: true,
 				gameId: gameLog.id.toString()
 			});
-
-			return ;
 		} catch (error) {
 			request.log.error({error}, 'Failed to log game');
 			return reply.status(500).send({

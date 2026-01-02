@@ -14,7 +14,9 @@
     "finish": "Terminar",
     "returningToMap": "Volviendo al mapa del mundo.",
     "enter": "Entrar",
-    "leave": "Salir"
+    "leave": "Salir",
+    "stress": "Estrés",
+    "confidence": "Confianza"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -143,7 +145,20 @@
     "friendRequests": "Solicitudes de amistad",
     "noPendingRequests": "No hay solicitudes pendientes",
     "accept": "Aceptar",
-    "decline": "Rechazar"
+    "decline": "Rechazar",
+    "block": "Bloquear",
+    "viewProfile": "Ver perfil",
+    "chat": "Chatear",
+    "remove": "Eliminar",
+    "unfriend": "Quitar de amigos",
+    "blockUser": "Bloquear usuario",
+    "friendRemoved": "Amigo eliminado con éxito",
+    "userBlocked": "Usuario bloqueado con éxito",
+    "friendRequestSent": "Solicitud de amistad enviada",
+    "failedToAddFriend": "Error al agregar amigo",
+    "failedToBlockUser": "Error al bloquear usuario",
+    "removeFriend": "Eliminar amigo",
+    "removeFriendConfirm": "¿Qué deseas hacer con {{username}}?"
   },
   "settings": {
     "title": "Configuración",

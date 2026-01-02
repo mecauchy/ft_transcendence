@@ -1418,7 +1418,7 @@ const ws = new WebSocket(`ws://localhost:3000/ws/game?sessionId=${sessionId}&tok
 ```json
 {
   "type": "CONNECTED",
-  "message": "Welcome to Speak-Up Investigation Engine",
+  "message": "Welcome to Speak-Up Investigation Engine",q
   "timestamp": 1703683200000
 }
 ```
