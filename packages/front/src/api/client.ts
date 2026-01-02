@@ -158,9 +158,10 @@ class ApiClient {
 		});
 	}
 
-	async disable2FA() {
+	async disable2FA(code: string) {
 		return this.request<{success: boolean}>('/auth/2fa/disable', {
 			method: 'POST',
+			body: JSON.stringify({code}),
 		});
 	}
 

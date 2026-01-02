@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 import {config} from './config';
 import {profileRoutes} from './routes/profile';
 import {friendsRoutes} from './routes/friends';
@@ -40,6 +42,13 @@ async function start() {
 			limits: {
 				fileSize: config.upload.maxFileSize,
 			},
+		});
+
+		// serve static uploads (avatars)
+		await fastify.register(fastifyStatic, {
+			root: path.join('/app', 'uploads'),
+			prefix: '/uploads/',
+			decorateReply: false,
 		});
 
 		// healthcheck

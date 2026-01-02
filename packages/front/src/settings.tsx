@@ -60,6 +60,7 @@ function Settings() {
 	// 2FA
 	const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 	const [show2FAModal, setShow2FAModal] = useState(false);
+	const [show2FADisableModal, setShow2FADisableModal] = useState(false);
 	const [qrCode, setQrCode] = useState<string | null>(null);
 	const [twoFACode, setTwoFACode] = useState('');
 	const [is2FALoading, setIs2FALoading] = useState(false);
@@ -260,15 +261,9 @@ function Settings() {
 
 	const handle2FAToggle = async () => {
 		if (is2FAEnabled) {
-			// disable 2FA
-			try {
-				await api.disable2FA();
-				setIs2FAEnabled(false);
-				setMessage({type: 'success', text: t('settings.2faDisabled')});
-			} catch (error: unknown) {
-				const err = error as {message?: string};
-				setMessage({type: 'error', text: err.message || t('settings.2faDisableFailed')});
-			}
+			// show disable modal to enter code
+			setTwoFACode('');
+			setShow2FADisableModal(true);
 		} else {
 			// start 2FA setup
 			setIs2FALoading(true);
@@ -282,6 +277,27 @@ function Settings() {
 			} finally {
 				setIs2FALoading(false);
 			}
+		}
+	};
+
+	const handleDisable2FA = async () => {
+		if (!twoFACode || twoFACode.length !== 6) {
+			setMessage({type: 'error', text: t('settings.invalid2FACode')});
+			return;
+		}
+		setIs2FALoading(true);
+		try {
+			await api.disable2FA(twoFACode);
+			setIs2FAEnabled(false);
+			setShow2FADisableModal(false);
+			setTwoFACode('');
+			setMessage({type: 'success', text: t('settings.2faDisabled')});
+			await refreshUser();
+		} catch (error: unknown) {
+			const err = error as {message?: string};
+			setMessage({type: 'error', text: err.message || t('settings.2faDisableFailed')});
+		} finally {
+			setIs2FALoading(false);
 		}
 	};
 
@@ -711,6 +727,39 @@ function Settings() {
 								className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
 							>
 								{is2FALoading ? t('common.loading') : t('common.confirm')}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* 2FA disable modal */}
+			{show2FADisableModal && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+					<div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+						<h2 className="text-xl font-bold mb-4 text-gray-800">{t('settings.disable2FA')}</h2>
+						<p className="text-gray-600 mb-4">{t('settings.enter2FACodeToDisable')}</p>
+						<input
+							type="text"
+							value={twoFACode}
+							onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+							placeholder={t('settings.enter2FACode')}
+							className="w-full px-3 py-2 border rounded-md mb-4 text-gray-800"
+							maxLength={6}
+						/>
+						<div className="flex gap-2">
+							<button
+								onClick={() => {setShow2FADisableModal(false); setTwoFACode('');}}
+								className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+							>
+								{t('common.cancel')}
+							</button>
+							<button
+								onClick={handleDisable2FA}
+								disabled={is2FALoading || twoFACode.length !== 6}
+								className="flex-1 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+							>
+								{is2FALoading ? t('common.loading') : t('settings.disable2FA')}
 							</button>
 						</div>
 					</div>

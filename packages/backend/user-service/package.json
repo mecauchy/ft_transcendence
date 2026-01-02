@@ -13,6 +13,7 @@
 		"@fastify/cors": "^10.0.1",
 		"@fastify/helmet": "^12.0.1",
 		"@fastify/multipart": "^9.0.1",
+		"@fastify/static": "^8.0.4",
 		"@prisma/client": "^6.0.0",
 		"@speak-up/shared": "file:../../shared/types",
 		"fastify": "^5.2.0",

@@ -189,6 +189,8 @@ services:
       - GAME_TICK_RATE=20
       - SESSION_TIMEOUT=3600000
       - RECONNECT_WINDOW=30000
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - GAMIFICATION_SERVICE_INTERNAL_URL=http://gamification-service:3004
     secrets:
       - source: vault_token
         target: /tmp/vault_token
@@ -228,6 +230,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - VAULT_ADDR=http://vault:8200
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token

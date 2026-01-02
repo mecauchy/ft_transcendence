@@ -206,6 +206,20 @@ async function	start() {
 			},
 		});
 
+		// uploads static files (avatars) - proxied to user-service
+		await fastify.register(proxy, {
+			upstream:		config.services.userService,
+			prefix:			'/uploads',
+			rewritePrefix:	'/uploads',
+			http2:			false,
+			preHandler: async (request: FastifyRequest) => {
+				request.log.info(
+					{path: request.url},
+					'Proxying static upload request'
+				);
+			},
+		});
+
 		// game service route
 		await fastify.register(proxy, {
 			upstream:		config.services.gameService,

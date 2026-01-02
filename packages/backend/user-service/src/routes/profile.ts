@@ -73,6 +73,13 @@ export async function profileRoutes(fastify: FastifyInstance) {
 					role: true,
 					twofaEnabled: true,
 					createdAt: true,
+					totalXp: true,
+					currentLevel: true,
+					stressLevel: true,
+					confidenceLevel: true,
+					displayName: true,
+					avatarUrl: true,
+					lastActiveAt: true,
 					settings: {
 						select: {
 							avatar: true,
@@ -112,14 +119,21 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				avgTrust = totalTrust / sessionsCompleted;
 			}
 
-			const profile: IUserProfile = {
+			const profile = {
 				id: user.id.toString(),
 				alias: user.username,
 				username: user.username,
 				email: user.email,
-				avatarUrl: user.settings?.avatar || '/assets/default-avatar.png',
+				displayName: user.displayName,
+				avatarUrl: user.avatarUrl || user.settings?.avatar || '/assets/default-avatar.png',
 				role: user.role as UserRole,
 				twofaEnabled: user.twofaEnabled || false,
+				totalXp: user.totalXp,
+				level: user.currentLevel,
+				stressLevel: user.stressLevel,
+				confidenceLevel: user.confidenceLevel,
+				lastActiveAt: user.lastActiveAt?.toISOString(),
+				createdAt: user.createdAt?.toISOString(),
 				preferences: {
 					language: (user.settings?.locale || 'en') as 'en' | 'fr',
 					theme: (user.settings?.colour || 'light') as 'light' | 'dark',
@@ -246,6 +260,9 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		Body: {
 			username?: string;
 			email?: string;
+			displayName?: string;
+			stressLevel?: number;
+			confidenceLevel?: number;
 			preferences?: {
 				language?: 'en' | 'fr';
 				theme?: 'light' | 'dark';
@@ -258,18 +275,22 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		};
 	}>('/me', async (request, reply) => {
 		const userId = BigInt(request.user!.userId);
-		const {username, email, preferences} = request.body;
+		const {username, email, displayName, stressLevel, confidenceLevel, preferences} = request.body;
 
 		try {
-			// update user table if email or username given
-			if (username || email) {
+			// update user table if any user field given
+			const userUpdateData: Record<string, unknown> = {};
+			if (username) userUpdateData.username = username;
+			if (email) userUpdateData.email = email;
+			if (displayName !== undefined) userUpdateData.displayName = displayName;
+			if (stressLevel !== undefined) userUpdateData.stressLevel = Math.max(0, Math.min(100, stressLevel));
+			if (confidenceLevel !== undefined) userUpdateData.confidenceLevel = Math.max(0, Math.min(100, confidenceLevel));
+
+			if (Object.keys(userUpdateData).length > 0) {
+				userUpdateData.updatedAt = new Date();
 				await prisma.user.update({
 					where: {id: userId},
-					data: {
-						...(username && {username}),
-						...(email && {email}),
-						updatedAt: new Date(),
-					},
+					data: userUpdateData,
 				});
 			}
 

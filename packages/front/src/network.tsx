@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import { api } from "./api/client";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import ChatModal from "./components/ChatModal";
 
 //todo : websocket for real-time updates
@@ -16,7 +15,6 @@ status?: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 function Network() {
 const { user } = useAuth();
 const { t } = useTranslation();
-const navigate = useNavigate();
 
 const [targetUsername, settargetUsername] = useState("");
 const [friends, setFriends] = useState<UserPreview[]>([]);
@@ -131,7 +129,8 @@ const handleDeclineFriend = async (request: UserPreview) => {
 
 // view profile
 const handleViewProfile = (friendId: string) => {
-	navigate(`/profile/${friendId}`);
+	window.history.pushState({page: 'profile', userId: friendId}, '', `/profile/${friendId}`);
+	window.location.reload();
 };
 
 // start chatting
