@@ -73,10 +73,11 @@ services:
       - VAULT_ADDRESS=http://vault:8200
       - CORS_ORIGIN=https://192.168.1.57
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
-    volumes:
-      - ./infra/secret/jwt_secret.txt:/run/secrets/jwt_secret.txt:ro
-      - ./infra/secret/vault_token.txt:/run/secrets/vault_token.txt:ro
-    command: ["/bin/sh", "-c", "export JWT_SECRET=\"$(cat /run/secrets/jwt_secret.txt)\"; export VAULT_TOKEN=\"$(cat /run/secrets/vault_token.txt)\"; exec node dist/index.js"]
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
 
   auth-service:
     environment:

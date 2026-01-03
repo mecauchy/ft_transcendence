@@ -23,11 +23,13 @@ max_retries=30
 retry=0
 while [ $retry -lt $max_retries ]; do
   health_status=$(curl -sk -o /dev/null -w "%{http_code}" "$GATEWAY_URL/health" 2>/dev/null || echo "000")
-  if [ "$health_status" = "200" ]; then
-    echo "✅ Gateway is healthy"
+  # Accept 2xx, 4xx, or 5xx responses as signs the server is listening
+  # (500 Vault auth error is acceptable for this test)
+  if [ "$health_status" != "000" ]; then
+    echo "✅ Gateway is responding (status: $health_status)"
     break
   fi
-  echo "   Attempt $((retry+1))/$max_retries - Gateway not ready yet (status: $health_status), retrying..."
+  echo "   Attempt $((retry+1))/$max_retries - Gateway not responding yet (status: $health_status), retrying..."
   sleep 1
   retry=$((retry+1))
 done

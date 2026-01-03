@@ -4,6 +4,11 @@ set -e
 # Load Vault secrets from Docker secrets directory if present
 SECRETS_DIR=${SECRETS_DIR:-/run/secrets}
 
+# Load JWT secret from file if JWT_SECRET_FILE is set
+if [ -f "$SECRETS_DIR/jwt_secret.txt" ]; then
+  export JWT_SECRET="$(cat "$SECRETS_DIR/jwt_secret.txt")"
+fi
+
 if [ -f "$SECRETS_DIR/vault_role_id" ]; then
   export VAULT_ROLE_ID="$(cat "$SECRETS_DIR/vault_role_id")"
 fi
