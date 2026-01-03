@@ -27,18 +27,18 @@ export const config = {
     authService:
       process.env.AUTH_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://auth:3001'
-        : 'https://auth:3001'),
+        ? 'http://auth-service:3001'
+        : 'http://auth-service:3001'),
     userService:
       process.env.USER_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://user:3002'
-        : 'https://user:3002'),
+        ? 'http://user-service:3002'
+        : 'http://user-service:3002'),
     gameService:
       process.env.GAME_SERVICE_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://game:3003'
-        : 'https://game:3003'),
+        ? 'http://game-service:3003'
+        : 'http://game-service:3003'),
   },
 
   cors: {
