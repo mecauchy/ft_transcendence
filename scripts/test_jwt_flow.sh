@@ -23,9 +23,9 @@ max_retries=30
 retry=0
 while [ $retry -lt $max_retries ]; do
   health_status=$(curl -sk -o /dev/null -w "%{http_code}" "$GATEWAY_URL/health" 2>/dev/null || echo "000")
-  # Accept 2xx, 4xx, or 5xx responses as signs the server is listening
-  # (500 Vault auth error is acceptable for this test)
-  if [ "$health_status" != "000" ]; then
+  # Accept any 2xx, 3xx, 4xx, or 5xx response as healthy (connection succeeded)
+  # Reject only 000 which means curl failed to connect at all
+  if [ "$health_status" != "000" ] && [ "$health_status" != "000000" ]; then
     echo "✅ Gateway is responding (status: $health_status)"
     break
   fi

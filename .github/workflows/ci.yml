@@ -168,14 +168,14 @@ jobs:
 
       - name: Start Services
         run: |
-          docker compose build auth-service api-gateway redis vault
-          docker compose up -d auth-service api-gateway redis vault
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml build auth-service api-gateway redis vault
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d auth-service api-gateway redis vault
 
       - name: Wait for Health
         run: |
           echo "Waiting for services to stabilize..."
           sleep 15
-          docker compose ps
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml ps
 
       - name: Run JWT Flow Test
         env:
