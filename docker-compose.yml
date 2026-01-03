@@ -21,8 +21,8 @@ services:
     image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "80:80"     # Access HTTP traffic (host 80 -> container 80)
-      - "443:443"   # Access HTTPS traffic (host 443 -> container 443)
+      - "80"     # Access HTTP traffic (container 80)
+      - "443"   # Access HTTPS traffic (container 443)
     volumes:
       - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro

@@ -20,7 +20,7 @@ export class VaultClient implements IVaultClient {
 	private client: any;
 
 	constructor(config: VaultConfig = {}) {
-		this.address = config.address || process.env.VAULT_ADDRESS || 'https://vault:8200';
+		this.address = config.address || process.env.VAULT_ADDRESS || 'http://vault:8200';
 		this.token = config.token || process.env.VAULT_TOKEN;
 		
 		// Configure TLS settings for self-signed certificates in dev
@@ -50,10 +50,16 @@ export class VaultClient implements IVaultClient {
 		const roleId = process.env.VAULT_ROLE_ID;
 		const secretId = process.env.VAULT_SECRET_ID;
 
-		// In production, AppRole is required
+		// If we have a direct token, use it (works for both dev and prod)
+		if (this.token) {
+			this.client.token = this.token;
+			return;
+		}
+
+		// In production without token, AppRole is required
 		if (env === 'production') {
 			if (!roleId || !secretId) {
-				throw new Error('VAULT_ROLE_ID and VAULT_SECRET_ID must be provided in production');
+				throw new Error('VAULT_ROLE_ID and VAULT_SECRET_ID must be provided in production (or set VAULT_TOKEN)');
 			}
 			await this.loginWithAppRole(roleId, secretId);
 			return;

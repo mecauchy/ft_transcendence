@@ -43,18 +43,17 @@ services:
   postgres:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
-      POSTGRES_INITDB_ARGS: "-c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key"
     volumes:
       - ./infra/secret:/run/secrets:ro
-      - ./infra/certs:/var/lib/postgresql:ro
+      - ./infra/certs/nginx.crt:/etc/postgresql/ssl/server.crt:ro
+      - ./infra/certs/nginx.key:/etc/postgresql/ssl/server.key:ro
     ports:
       - "5432:5432"
 
   redis:
-    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\" --tls-port 6379 --port 0 --tls-cert-file /tls/server.crt --tls-key-file /tls/server.key --tls-ca-cert-file /tls/ca.crt"]
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
     volumes:
       - ./infra/secret:/run/secrets:ro
-      - ./infra/certs:/tls:ro
     ports:
       - "6378:6379"
 

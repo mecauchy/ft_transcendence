@@ -54,7 +54,8 @@ while [ $i -le 60 ]; do
 done
 
 # Set environment variables for init script
-export VAULT_ADDR="http://localhost:8200"
+export VAULT_ADDR="https://localhost:8200"
+export VAULT_SKIP_VERIFY="true"
 # Export token for convenience to init script and other local tooling
 export VAULT_TOKEN="$DEV_ROOT_TOKEN"
 
