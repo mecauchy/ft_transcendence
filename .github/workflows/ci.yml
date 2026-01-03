@@ -5,6 +5,7 @@ on:
     branches: ["master", "dev", "feature/*"]
   pull_request:
     branches: ["master", "dev"]
+  workflow_dispatch: # Allow manual triggering
 
 # Grant write permissions for commit comments
 permissions:
