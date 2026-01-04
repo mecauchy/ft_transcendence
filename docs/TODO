@@ -1,0 +1,16 @@
+-properly connect the achievement system (fix why you dont unlock achievements)
+-add achievements to the database and use the db to fetch them and verify
+-make the notification appear without reload/clicking on the bell
+-connect the oauth system with my 42 keys privately stored
+-reload the 2fa when updated in settings
+-fix autoreload bug on login ??? (auto refresh token doesnt work as expected)
+-profile viewing for others doesnt include breathe game stats
+-fix the chat modal (autorefresh when get a message, probably the websocket not working properly)
+-remove the invite button from the chat, useless feature
+-verify gdpr/import/export work as intended manually (patch the data transmitted)
+-implement the leaderboard page ?? or remove it ? do something with that tab
+-make notifications link you to the correct tab
+-add chat modal popup button instead of having to start a conversation with a person everytime by clicking (add interface in the network tab)
+
+
+-STRIP ALL UNUSED FEATURE FROM THE OFFICIAL VOGSPHERE REPO, KEEP AS IS FOR NADIA VER
