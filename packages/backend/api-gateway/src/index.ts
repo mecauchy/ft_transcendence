@@ -57,7 +57,7 @@ async function start() {
 					: config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
-		await vault.authenticate();
+		await vault.init();
 
 		// Register cookie and session middleware
 		// Note: add dependencies '@fastify/cookie' and '@fastify/session' to package.json

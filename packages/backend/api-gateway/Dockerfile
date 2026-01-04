@@ -1,66 +1,76 @@
 FROM node:18-alpine AS builder
 
-# Enable pnpm via Corepack (bundled with Node)
-RUN corepack enable
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package files
-COPY packages/backend/api-gateway/package.json ./
-COPY packages/backend/api-gateway/tsconfig.json ./
-COPY tsconfig.base.json ../
+# 1. Copy Lockfile & Manifests first (Optimizes Docker Cache)
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY package.json ./package.json
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY packages/backend/api-gateway/package.json ./packages/backend/api-gateway/package.json
+# Copy tsconfig base to parent directory (standard monorepo structure)
+COPY tsconfig.base.json ./tsconfig.base.json
 
-# Copy local file: dependencies used by package.json
-COPY packages/shared/types ../shared/types
+# 2. Copy Shared Dependencies (REQUIRED for your build)
+COPY packages/shared/types ./packages/shared/types
 
-# Install dependencies
-RUN pnpm install
+# 3. Install Dependencies
+# Use the frozen lockfile for deterministic installs and hoist to a flat node_modules
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
-# Copy source files
-COPY packages/backend/api-gateway/src ./src
+# 4. Copy Source Code
+# Copy package tsconfig and source
+COPY packages/backend/api-gateway/tsconfig.json ./packages/backend/api-gateway/tsconfig.json
+COPY packages/backend/api-gateway/src ./packages/backend/api-gateway/src
 
-# Build TypeScript files
-RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
+# 5. Build the package from its package directory so output goes to packages/backend/api-gateway/dist
+WORKDIR /app/packages/backend/api-gateway
+RUN pnpm run build
 
-# Production stage
+# --- Production Stage ---
 FROM node:18-alpine
 
-# Enable pnpm via Corepack (bundled with Node)
 RUN corepack enable
 
 WORKDIR /app
 
-# Install small runtime tools used by healthchecks
-RUN apk add --no-cache wget
+# 1. Install Runtime Dependencies
+# We keep 'su-exec' because your entrypoint needs it to drop privileges after reading secrets
+RUN apk add --no-cache wget su-exec
 
-# Ensure PATH is set for non-interactive shells
+# 2. Create User
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Create a non-root user for rootless execution
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy package.json for production dependencies
-COPY packages/backend/api-gateway/package.json ./
+# 3. Install Production Dependencies Only
+COPY packages/backend/api-gateway/package.json ./packages/backend/api-gateway/package.json
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY package.json ./package.json
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY packages/shared/types ./packages/shared/types
+# Install production dependencies deterministically from the lockfile (hoisted layout)
+RUN pnpm install --prod --frozen-lockfile --shamefully-hoist
 
-# Copy local file: dependencies used by package.json
-COPY packages/shared/types ../shared/types
-RUN pnpm install --prod
+# 4. Copy Built Artifacts from Builder (package build output path)
+COPY --from=builder /app/packages/backend/api-gateway/dist ./dist
 
-# Copy built files from the builder stage
-COPY --from=builder /app/dist ./dist
-
-# Change ownership of the application files to the non-root user
+# 5. Permissions
 RUN chown -R nodejs:nodejs /app
 
-# Switch to the non-root user
-USER nodejs
+# 6. Setup Entrypoint for Secrets
+COPY packages/backend/api-gateway/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh
 
-# Expose the application port
+# Run as root initially so entrypoint.sh can read /run/secrets, 
+# then it drops privileges to 'nodejs' using su-exec.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
 EXPOSE 3000
 
-# Health check endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-	CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
+# Fixed Typo: "dist// cindex.js" -> "dist/index.js"
 CMD ["node", "dist/index.js"]

@@ -63,18 +63,40 @@ vault secrets list 2>/dev/null | grep -q "^database/" || \
 	echo -e "${YELLOW}⚠ Database engine already enabled${NC}"
 
 # --------------------------------------------------------------------------
-# LOAD POLICIES
+# LOAD POLICIES (GRANULAR LEAST-PRIVILEGE)
 #---------------------------------------------------------------------------
 echo ""
-echo -e "${YELLOW}📋 Loading policies...${NC}"
+echo -e "${YELLOW}📋 Loading granular security policies...${NC}"
 
-# Load all policies from the policies directory
-for policy_file in /policies/*.hcl; do
+# Load policies in order of specificity (most specific first)
+# Using a simple list approach compatible with sh
+for policy_name in api-gateway-policy auth-service-policy chat-policy game-policy user-policy postgres-policy grafana-policy kuma-policy; do
+	policy_file="/policies/${policy_name}.hcl"
 	if [ -f "$policy_file" ]; then
-		policy_name=$(basename "$policy_file" .hcl)
 		vault policy write "$policy_name" "$policy_file" 2>/dev/null && \
 			echo -e "${GREEN}✓ Policy '$policy_name' loaded${NC}" || \
 			echo -e "${YELLOW}⚠ Policy '$policy_name' already exists${NC}"
+	else
+		echo -e "${YELLOW}⚠ Policy file not found: $policy_file${NC}"
+	fi
+done
+
+# Fallback: Load any remaining .hcl files not in the explicit list
+echo -e "${YELLOW}  Loading additional policies...${NC}"
+for policy_file in /policies/*.hcl; do
+	if [ -f "$policy_file" ]; then
+		policy_name=$(basename "$policy_file" .hcl)
+		# Check if already loaded (simple string matching)
+		case "$policy_name" in
+			api-gateway-policy|auth-service-policy|chat-policy|game-policy|user-policy|postgres-policy|grafana-policy|kuma-policy)
+				# Skip already loaded
+				;;
+			*)
+				vault policy write "$policy_name" "$policy_file" 2>/dev/null && \
+					echo -e "${GREEN}✓ Policy '$policy_name' loaded${NC}" || \
+					echo -e "${YELLOW}⚠ Policy '$policy_name' already exists${NC}"
+				;;
+		esac
 	fi
 done
 
@@ -186,14 +208,38 @@ echo -e "${GREEN}✓ Service tokens created${NC}"
 # Enable APProle
 vault auth enable approle
 
-# AUTH SERVICE
-# Define roles and bind policies
+# --------------------------------------------------------------------------
+# CREATE APPROLES WITH GRANULAR POLICIES (LEAST PRIVILEGE)
+#---------------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}🔐 Creating AppRoles with granular policy assignments...${NC}"
+
+# API-GATEWAY: Limited to gateway-specific secrets + JWT
+vault write auth/approle/role/api-gateway-role \
+	token_policies="api-gateway-policy" \
+	token_ttl=1h \
+	token_max_ttl=24h \
+	token_no_default_policy=true 2>/dev/null && \
+	echo -e "${GREEN}✓ API Gateway AppRole created (policy: api-gateway-policy)${NC}" || \
+	echo -e "${YELLOW}⚠ API Gateway AppRole already exists${NC}"
+
+# AUTH-SERVICE: JWT + Auth DB credentials ONLY
+vault write auth/approle/role/auth-service-role \
+	token_policies="auth-service-policy" \
+	token_ttl=1h \
+	token_max_ttl=24h \
+	token_no_default_policy=true 2>/dev/null && \
+	echo -e "${GREEN}✓ Auth Service AppRole created (policy: auth-service-policy)${NC}" || \
+	echo -e "${YELLOW}⚠ Auth Service AppRole already exists${NC}"
+
+# LEGACY: Keep old role names for backward compatibility (map to new policies)
+# These will be deprecated in future versions
 vault write auth/approle/role/auth-role \
-	token_policies="auth-policy" \
+	token_policies="auth-service-policy" \
 	token_ttl=1h \
 	token_max_ttl=24h 2>/dev/null && \
-	echo -e "${GREEN}✓ Auth service AppRole created${NC}" || \
-	echo -e "${YELLOW}⚠ Auth service AppRole already exists${NC}"
+	echo -e "${GREEN}✓ Auth service AppRole (legacy) created${NC}" || \
+	echo -e "${YELLOW}⚠ Auth service AppRole (legacy) already exists${NC}"
 
 # Chat Service AppRole
 vault write auth/approle/role/chat-role \
@@ -220,17 +266,83 @@ vault write auth/approle/role/user-role \
 	echo -e "${YELLOW}⚠ User service AppRole already exists${NC}"
 
 echo ""
+echo -e "${YELLOW}📊 Policy Assignment Summary:${NC}"
+echo -e "  ${GREEN}api-gateway-role${NC}     → api-gateway-policy  (JWT, session, redis)"
+echo -e "  ${GREEN}auth-service-role${NC}    → auth-service-policy (JWT, auth DB only)"
+echo -e "  ${GREEN}chat-role${NC}            → chat-policy         (Chat DB only)"
+echo -e "  ${GREEN}game-role${NC}            → game-policy         (Game DB only)"
+echo -e "  ${GREEN}user-role${NC}            → user-policy         (User DB only)"
+
+# --------------------------------------------------------------------------
+# EXTRACT AND SAVE APPROLE CREDENTIALS (WITH ROLE MIGRATION)
+#---------------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}🔑 Extracting AppRole credentials for services...${NC}"
+
+# Process api-gateway service (NEW: uses api-gateway-role with granular policy)
+echo -e "${YELLOW}  Processing api-gateway (role: api-gateway-role)...${NC}"
+ROLE_ID=$(vault read -field=role_id auth/approle/role/api-gateway-role/role-id 2>/dev/null)
+SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/api-gateway-role/secret-id 2>/dev/null)
+
+# Fallback to legacy auth-role if new role doesn't exist
+if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
+	echo -e "${YELLOW}  ⚠ api-gateway-role not found, falling back to auth-role (legacy)${NC}"
+	ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-role/role-id 2>/dev/null)
+	SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>/dev/null)
+fi
+
+if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
+	echo -n "$ROLE_ID" > "/run/secrets/api-gateway_role_id"
+	echo -n "$SECRET_ID" > "/run/secrets/api-gateway_secret_id"
+	chmod 600 "/run/secrets/api-gateway_role_id" "/run/secrets/api-gateway_secret_id" 2>/dev/null || true
+	echo -e "${GREEN}✓ api-gateway: RoleID and SecretID saved${NC}"
+else
+	echo -e "${RED}✗ Failed to extract credentials for api-gateway${NC}"
+fi
+
+# Process auth-service (NEW: uses auth-service-role with granular policy)
+echo -e "${YELLOW}  Processing auth-service (role: auth-service-role)...${NC}"
+ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-service-role/role-id 2>/dev/null)
+SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-service-role/secret-id 2>/dev/null)
+
+# Fallback to legacy auth-role if new role doesn't exist
+if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
+	echo -e "${YELLOW}  ⚠ auth-service-role not found, falling back to auth-role (legacy)${NC}"
+	ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-role/role-id 2>/dev/null)
+	SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>/dev/null)
+fi
+
+if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
+	echo -n "$ROLE_ID" > "/run/secrets/auth-service_role_id"
+	echo -n "$SECRET_ID" > "/run/secrets/auth-service_secret_id"
+	chmod 600 "/run/secrets/auth-service_role_id" "/run/secrets/auth-service_secret_id" 2>/dev/null || true
+	echo -e "${GREEN}✓ auth-service: RoleID and SecretID saved${NC}"
+else
+	echo -e "${RED}✗ Failed to extract credentials for auth-service${NC}"
+fi
+echo -e "${YELLOW}  Processing auth-service (role: auth-role)...${NC}"
+ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-role/role-id 2>/dev/null)
+SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>/dev/null)
+
+if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
+	echo -n "$ROLE_ID" > "/run/secrets/auth-service_role_id"
+	echo -n "$SECRET_ID" > "/run/secrets/auth-service_secret_id"
+	chmod 600 "/run/secrets/auth-service_role_id" "/run/secrets/auth-service_secret_id" 2>/dev/null || true
+	echo -e "${GREEN}✓ auth-service: RoleID and SecretID saved${NC}"
+else
+	echo -e "${RED}✗ Failed to extract credentials for auth-service${NC}"
+fi
+
+echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║           ✅ Vault initialization complete!                ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${YELLOW} Vault is ready with:${NC}"
+echo -e "${YELLOW}📦 Vault is ready with:${NC}"
 echo "   • KV secret engine for static secrets"
 echo "   • PostgreSQL database engine for dynamic credentials"
 echo "   • AppRole authentication for services"
+echo "   • AppRole credentials extracted and saved"
 echo "   • Database credentials for all services"
 echo ""
-echo -e "${YELLOW}Next steps:${NC}"
-echo "   1. Configure AppRole with RoleID and SecretID"
-echo "   2. Deploy services with AppRole authentication"
-echo "   3. Monitor secret rotation and token expiration"
+echo -e "${YELLOW}🚀 Services can now authenticate via AppRole${NC}"

@@ -16,22 +16,75 @@ tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
 
 # ---------------------------------------------------------
+# STEP 0: WAIT FOR SERVICE HEALTH
+# ---------------------------------------------------------
+echo "0) Waiting for gateway to be ready..."
+max_retries=30
+retry=0
+while [ $retry -lt $max_retries ]; do
+  health_status=$(curl -sk -o /dev/null -w "%{http_code}" "$GATEWAY_URL/health" 2>/dev/null || echo "000")
+  # Accept any 2xx, 3xx, 4xx, or 5xx response as healthy (connection succeeded)
+  # Reject only 000 which means curl failed to connect at all
+  if [ "$health_status" != "000" ] && [ "$health_status" != "000000" ]; then
+    echo "✅ Gateway is responding (status: $health_status)"
+    break
+  fi
+  echo "   Attempt $((retry+1))/$max_retries - Gateway not responding yet (status: $health_status), retrying..."
+  sleep 1
+  retry=$((retry+1))
+done
+
+if [ $retry -eq $max_retries ]; then
+  echo "❌ Gateway failed to become healthy after $max_retries attempts" >&2
+  echo "   Final health check returned: $health_status" >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------
 # STEP 1: LOGIN
 # ---------------------------------------------------------
 echo "1) Requesting token from auth endpoint: ${AUTH_ENDPOINT}"
 # Use a valid JSON body (username is optional for dev, but good practice)
-resp=$(curl -sk -X POST "$GATEWAY_URL${AUTH_ENDPOINT}" \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"ci_user", "userId":"999"}' || true)
-
-echo "Raw response:" >&2
-echo "$resp" >&2
+# Add retry logic in case auth service is still initializing
+retry=0
+max_retries=10
+while [ $retry -lt $max_retries ]; do
+  resp=$(curl -sk -w "\n%{http_code}" -X POST "$GATEWAY_URL${AUTH_ENDPOINT}" \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"ci_user", "userId":"999"}' 2>&1 || true)
+  
+  # Extract HTTP status code (last line)
+  http_code=$(echo "$resp" | tail -1)
+  # Get response body (all but last line)
+  resp_body=$(echo "$resp" | head -n -1)
+  
+  echo "Raw response (HTTP $http_code):" >&2
+  echo "$resp_body" >&2
+  
+  # If we got a response with 200 status, try to extract token
+  if [ "$http_code" = "200" ]; then
+    token=$(echo "$resp_body" | jq -r '.accessToken // .token // .data.accessToken // empty' 2>/dev/null || true)
+    if [ -n "$token" ] && [ "$token" != "null" ]; then
+      break
+    fi
+  fi
+  
+  # Retry if we got empty response or non-200 status
+  if [ $retry -lt $((max_retries-1)) ]; then
+    echo "   Retrying token request ($((retry+1))/$max_retries)..." >&2
+    sleep 1
+    retry=$((retry+1))
+  else
+    retry=$((retry+1))
+    break
+  fi
+done
 
 # Extract token using jq or fallback grep/sed
-token=$(echo "$resp" | jq -r '.accessToken // .token // .data.accessToken // empty' 2>/dev/null || true)
+token=$(echo "$resp_body" | jq -r '.accessToken // .token // .data.accessToken // empty' 2>/dev/null || true)
 
 if [ -z "$token" ] || [ "$token" = "null" ]; then
-  echo "❌ No access token found in response. Response may be placeholder or endpoint missing." >&2
+  echo "❌ No access token found in response after $max_retries attempts. Response may be placeholder or endpoint missing." >&2
   exit 2
 fi
 
