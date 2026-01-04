@@ -8,6 +8,11 @@ COPY packages/backend/gamification-service/package.json ./
 COPY packages/backend/gamification-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
 
+WORKDIR /shared/types
+ENV CI=true
+RUN pnpm install && pnpm run build
+
+WORKDIR /app
 RUN pnpm install
 
 COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma

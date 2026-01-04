@@ -1,6 +1,7 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, useCallback} from 'react';
 import {api} from '../api/client';
 import {useTranslation} from 'react-i18next';
+import {wsService} from '../services/websocket';
 
 type Conversation = {
 	id: string;
@@ -43,8 +44,94 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	const [sending, setSending] = useState(false);
 	const [cursor, setCursor] = useState<string | null>(null);
 	const [hasMore, setHasMore] = useState(false);
+	const [isTyping, setIsTyping] = useState(false);
+	const [otherUserTyping, setOtherUserTyping] = useState(false);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// typing indicator
+	const sendTypingIndicator = useCallback(() => {
+		if (selectedConversation && selectedConversation.id !== 'new') {
+			wsService.send('TYPING', {
+				conversationId: selectedConversation.id,
+				recipientId: selectedConversation.otherUser.id,
+			});
+		}
+	}, [selectedConversation]);
+
+	// typing indicator on input change
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setNewMessage(e.target.value);
+		
+		// send typing indicator if istyping
+		if (!isTyping) {
+			setIsTyping(true);
+			sendTypingIndicator();
+		}
+
+		// clear typing timeout on update
+		if (typingTimeoutRef.current) {
+			clearTimeout(typingTimeoutRef.current);
+		}
+
+		// set timeout to not show infinitely
+		typingTimeoutRef.current = setTimeout(() => {
+			setIsTyping(false);
+		}, 2000);
+	};
+
+	// listen for typing indicators from other users
+	useEffect(() => {
+		if (!selectedConversation || selectedConversation.id === 'new') return;
+
+		const unsubscribe = wsService.on('TYPING', (message) => {
+			const data = message.data as { conversationId: string; userId: string };
+			if (data.conversationId === selectedConversation.id && 
+				data.userId === selectedConversation.otherUser.id) {
+				setOtherUserTyping(true);
+				setTimeout(() => setOtherUserTyping(false), 3000);
+			}
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	}, [selectedConversation]);
+
+	// sned game invite
+	const handleGameInvite = async () => {
+		if (!selectedConversation) return;
+		
+		try {
+			const inviteMessage = t('chat.gameInvite', '🎮 I\'d like to play a game with you! Join me in the Game section.');
+			await api.sendMessage(selectedConversation.otherUser.id, inviteMessage);
+			
+			// add to local messages
+			const newMsg: Message = {
+				id: `invite-${Date.now()}`,
+				senderId: 'me',
+				content: inviteMessage,
+				isRead: false,
+				createdAt: new Date().toISOString(),
+			};
+			setMessages((prev) => [...prev, newMsg]);
+			
+			// create notification for other user
+			try {
+				await api.request('/users/notifications/game-invite', {
+					method: 'POST',
+					body: JSON.stringify({
+						recipientId: selectedConversation.otherUser.id,
+					}),
+				});
+			} catch {
+
+			}
+		} catch (e) {
+			console.error('Failed to send game invite:', e);
+		}
+	};
 
 	// load chat
 	useEffect(() => {
@@ -295,6 +382,14 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 									</div>
 								)}
 								<span className="font-medium">{selectedConversation.otherUser.username}</span>
+								{/* Game Invite Button */}
+								<button
+									onClick={handleGameInvite}
+									className="ml-2 px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-1"
+									title={t('chat.inviteToGame', 'Invite to Game')}
+								>
+									{t('chat.invite', 'Invite')}
+								</button>
 							</div>
 						) : (
 							<span className="text-gray-400">{t('chat.selectConversation', 'Select a conversation')}</span>
@@ -348,6 +443,15 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 									);
 								})}
 								<div ref={messagesEndRef} />
+
+								{/* Typing indicator */}
+								{otherUserTyping && (
+									<div className="flex justify-start">
+										<div className="bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm italic">
+											{selectedConversation.otherUser.username} {t('chat.isTyping', 'is typing...')}
+										</div>
+									</div>
+								)}
 							</div>
 
 							{/* Input */}
@@ -357,7 +461,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 										ref={inputRef}
 										type="text"
 										value={newMessage}
-										onChange={(e) => setNewMessage(e.target.value)}
+										onChange={handleInputChange}
 										placeholder={t('chat.placeholder', 'Type a message...')}
 										className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
 										maxLength={1000}

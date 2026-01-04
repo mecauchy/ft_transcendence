@@ -180,7 +180,7 @@ export async function internalRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			request.log.info({userId, newLevel}, 'Level up notification created');
+			request.log.info({userId, newLevel}, 'Level up notification creatAed');
 
 			return {
 				success: true,

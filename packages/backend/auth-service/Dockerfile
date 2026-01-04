@@ -8,6 +8,11 @@ COPY packages/backend/auth-service/package.json ./
 COPY packages/backend/auth-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
 
+WORKDIR /shared/types
+ENV CI=true
+RUN pnpm install && pnpm run build
+
+WORKDIR /app
 RUN pnpm install
 
 # IMPORTANT -> copies prisma schema to normalize across containers and correctly use it for ORM
