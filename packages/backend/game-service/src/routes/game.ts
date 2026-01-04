@@ -586,7 +586,7 @@ export async function gameRoutes(fastify: FastifyInstance) {
 	});
 
 	// get breathe stats for a user
-	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('breathe/history/id', async (request: FastifyRequest, reply: FastifyReply) => {
+	fastify.get<{Params: {id: string}, Querystring: {cursor?: string; limit?: string};}>('/breathe/history/:id', async (request: FastifyRequest, reply: FastifyReply) => {
 		const id = BigInt((request.params as {id: string}).id);
 		const limitRaw = (request.query as {limit?: string}).limit;
 		const limit = Math.min(Math.max(parseInt(limitRaw ?? '20', 10) || 20, 1), 50);

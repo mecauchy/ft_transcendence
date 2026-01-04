@@ -20,9 +20,11 @@ function formatTime(iso: string) {
 export default function NotificationsDropdown({
 	onUnreadCountChange,
 	onClose,
+	onNavigate,
 }: {
 	onUnreadCountChange?: (count: number) => void;
 	onClose?: () => void;
+	onNavigate?: (page: string, userId?: string) => void;
 }) {
 	const { t } = useTranslation();
 	const [loading, setLoading] = useState(true);
@@ -127,6 +129,36 @@ export default function NotificationsDropdown({
 
 	const headerTitle = useMemo(() => t('notifications.title', 'Notifications'), [t]);
 
+	// handle notif click
+	const handleNotificationClick = async (notification: NotificationItem) => {
+		// mark as read
+		if (!notification.isRead) {
+			await markOneRead(notification.id);
+		}
+
+		// goto page based on notif type
+		if (!onNavigate) return;
+
+		switch (notification.type) {
+			case 'FRIEND_REQUEST':
+			case 'FRIEND_ACCEPTED':
+				onNavigate('network');
+				break;
+			case 'MESSAGE':
+				onNavigate('network');
+				break;
+			case 'ACHIEVEMENT':
+				onNavigate('profile');
+				break;
+			case 'GAME_INVITE':
+				onNavigate('game');
+				break;
+			case 'SYSTEM':
+			default:
+				break;
+		}
+	};
+
 	return (
 		<div
 			ref={dropdownRef}
@@ -173,12 +205,13 @@ export default function NotificationsDropdown({
 					items.map((n) => (
 						<div
 							key={n.id}
-							className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition ${
+							onClick={() => handleNotificationClick(n)}
+							className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition cursor-pointer ${
 								!n.isRead ? 'bg-white/[0.06]' : ''
 							}`}
 						>
 							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
+								<div className="min-w-0 flex-1">
 									<div className={`text-sm ${!n.isRead ? 'font-semibold text-white' : 'text-white/90'}`}>
 										{n.title}
 									</div>
@@ -186,7 +219,7 @@ export default function NotificationsDropdown({
 									<div className="text-[11px] text-white/50 mt-1">{formatTime(n.createdAt)}</div>
 								</div>
 
-								<div className="flex flex-col gap-2 shrink-0">
+								<div className="flex flex-col gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
 									{!n.isRead && (
 										<button
 											onClick={() => markOneRead(n.id)}

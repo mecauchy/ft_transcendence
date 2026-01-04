@@ -65,7 +65,7 @@ function Settings() {
 	const [twoFACode, setTwoFACode] = useState('');
 	const [is2FALoading, setIs2FALoading] = useState(false);
 
-	// load 2FA status on mount
+	// load 2FA status on mount AND when user changes
 	useEffect(() => {
 		const load2FAStatus = async () => {
 			try {
@@ -76,7 +76,7 @@ function Settings() {
 			}
 		};
 		load2FAStatus();
-	}, []);
+	}, [user?.userId]);
 
 	// GDPR / export / import
 	const [gdprBusy, setGdprBusy] = useState(false);
@@ -109,7 +109,7 @@ function Settings() {
 				headers['Authorization'] = `Bearer ${token}`;
 			}
 
-			const res = await fetch(`api/users${endpoint}`, {
+			const res = await fetch(`/api/users${endpoint}`, {
 				method: 'GET',
 				headers,
 				credentials: 'include',

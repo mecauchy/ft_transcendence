@@ -99,39 +99,62 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		};
 	}, [selectedConversation]);
 
-	// sned game invite
-	const handleGameInvite = async () => {
-		if (!selectedConversation) return;
-		
-		try {
-			const inviteMessage = t('chat.gameInvite', '🎮 I\'d like to play a game with you! Join me in the Game section.');
-			await api.sendMessage(selectedConversation.otherUser.id, inviteMessage);
-			
-			// add to local messages
-			const newMsg: Message = {
-				id: `invite-${Date.now()}`,
-				senderId: 'me',
-				content: inviteMessage,
-				isRead: false,
-				createdAt: new Date().toISOString(),
+	// listen with websockket
+	useEffect(() => {
+		const unsubscribe = wsService.on('CHAT_MESSAGE', (message) => {
+			const data = message.data as {
+				messageId: string;
+				senderId: string;
+				senderUsername?: string;
+				senderAvatarUrl?: string;
+				content: string;
+				conversationId: string;
+				createdAt: string;
 			};
-			setMessages((prev) => [...prev, newMsg]);
-			
-			// create notification for other user
-			try {
-				await api.request('/users/notifications/game-invite', {
-					method: 'POST',
-					body: JSON.stringify({
-						recipientId: selectedConversation.otherUser.id,
-					}),
-				});
-			} catch {
 
+			// if conversation is selected and new message is in that convo, update list
+			if (selectedConversation && 
+				(selectedConversation.id === data.conversationId || 
+				 selectedConversation.otherUser.id === data.senderId)) {
+				// if message isnt from us, add to chatlog
+				const newMsg: Message = {
+					id: data.messageId,
+					senderId: data.senderId,
+					content: data.content,
+					isRead: false,
+					createdAt: data.createdAt,
+				};
+				setMessages((prev) => {
+					// duplicate fix
+					if (prev.some((m) => m.id === data.messageId)) return prev;
+					return [...prev, newMsg];
+				});
 			}
-		} catch (e) {
-			console.error('Failed to send game invite:', e);
-		}
-	};
+
+			// update convo list with latest interaction
+			setConversations((prev) =>
+				prev.map((c) =>
+					c.id === data.conversationId || c.otherUser.id === data.senderId
+						? {
+								...c,
+								lastMessage: {
+									content: data.content,
+									createdAt: data.createdAt,
+									isRead: selectedConversation?.id === data.conversationId,
+								},
+								unreadCount: selectedConversation?.id === data.conversationId 
+									? c.unreadCount 
+									: c.unreadCount + 1,
+						  }
+						: c
+				)
+			);
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	}, [selectedConversation]);
 
 	// load chat
 	useEffect(() => {
@@ -382,14 +405,6 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 									</div>
 								)}
 								<span className="font-medium">{selectedConversation.otherUser.username}</span>
-								{/* Game Invite Button */}
-								<button
-									onClick={handleGameInvite}
-									className="ml-2 px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-1"
-									title={t('chat.inviteToGame', 'Invite to Game')}
-								>
-									{t('chat.invite', 'Invite')}
-								</button>
 							</div>
 						) : (
 							<span className="text-gray-400">{t('chat.selectConversation', 'Select a conversation')}</span>

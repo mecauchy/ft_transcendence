@@ -1,14 +1,16 @@
 import '../styles/navbar.css'
 import {useTranslation} from 'react-i18next'
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import NotificationsDropdown from './NotificationDropdown';
 import { api } from '../api/client';
+import { useRealtimeNotifications } from '../hooks/useWebSocket';
 
 
-function NotificationsBell() {
+function NotificationsBell({onNavigate}: {onNavigate?: (page: string, userId?: string) => void}) {
 	const [open, setOpen] = useState(false);
 	const [unread, setUnread] = useState(0);
 
+	// fetch notif unread count
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
@@ -24,6 +26,20 @@ function NotificationsBell() {
 		};
 	}, []);
 
+	// listen for realtime notifs
+	const handleNotification = useCallback((notification: unknown) => {
+		// new notif -> increment count
+		setUnread((prev) => prev + 1);
+		
+		// show visual feedback
+		if (notification && typeof notification === 'object') {
+			const notif = notification as { title?: string; message?: string };
+			console.log('[NotificationsBell] New notification:', notif.title || notif.message);
+		}
+	}, []);
+
+	useRealtimeNotifications(handleNotification);
+
 	return (
 		<div className="relative">
 			<button
@@ -34,7 +50,7 @@ function NotificationsBell() {
 			>
 				<span className="text-lg">🔔</span>
 				{unread > 0 && (
-					<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">
+					<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none animate-pulse">
 						{unread}
 					</span>
 				)}
@@ -44,13 +60,17 @@ function NotificationsBell() {
 				<NotificationsDropdown
 					onClose={() => setOpen(false)}
 					onUnreadCountChange={(c) => setUnread(c)}
+					onNavigate={(page, userId) => {
+						setOpen(false);
+						onNavigate?.(page, userId);
+					}}
 				/>
 			)}
 		</div>
 	);
 }
 
-function Navbar({setPage, username}: {setPage: (page: string) => void, username: string | null}) {
+function Navbar({setPage, username}: {setPage: (page: string, userId?: string) => void, username: string | null}) {
 	  const {t} = useTranslation();
 	  
 	  return (
@@ -75,7 +95,7 @@ function Navbar({setPage, username}: {setPage: (page: string) => void, username:
   			  <button className="nav_button" onClick={() => setPage("network")}>{t('nav.network')}</button>
   			  <button className="nav_button" onClick={() => setPage("settings")}>{t('nav.settings')}</button>
   			  <button className="nav_button" onClick={() => setPage("leaderboard")}>{t('nav.leaderboard')}</button>
-			  <NotificationsBell />
+			  <NotificationsBell onNavigate={setPage} />
   			  <button className="nav_button logout" onClick={() => setPage("logout")}>
   			    {t('nav.logout')} ({username})
   			  </button>

@@ -1,10 +1,10 @@
 -properly connect the achievement system (fix why you dont unlock achievements)
 -add achievements to the database and use the db to fetch them and verify
 -make the notification appear without reload/clicking on the bell
--connect the oauth system with my 42 keys privately stored
+-connect the oauth system with my 42 keys privately stored ---- SKIP
 -reload the 2fa when updated in settings
--fix autoreload bug on login ??? (auto refresh token doesnt work as expected)
--profile viewing for others doesnt include breathe game stats
+-fix autoreload bug on login page ??? (auto refresh token doesnt work as expected) context -> for some reason when I open localhost, it just loop refreshes until I hit a rate limit.
+-profile viewing for others doesnt include breathe game stats, fix that
 -fix the chat modal (autorefresh when get a message, probably the websocket not working properly)
 -remove the invite button from the chat, useless feature
 -verify gdpr/import/export work as intended manually (patch the data transmitted)
@@ -13,4 +13,6 @@
 -add chat modal popup button instead of having to start a conversation with a person everytime by clicking (add interface in the network tab)
 
 
--STRIP ALL UNUSED FEATURE FROM THE OFFICIAL VOGSPHERE REPO, KEEP AS IS FOR NADIA VER
+
+Can you now normalize my codebase to have a coherent flow of data? i.e centralizing all exports/imports in the shared types instead of having some definitions here and there, making sure there aren't any stray functions/functionalities/interfaces that exist but are unused, making sure theres no redundancy, replace some terneries for code to be more human when unnecessary use of terneries, etc... 
+Keep the whole sessions/scenarios/conversation nodes structure but separate it on files that arent deployed, since for the project validation we need the modules to be valid, but the objective of this project is to LATER implement those scenario functionalities (doctor patient dialogue sessions scenarios etc...) but we're going to do that AFTER submitting our current project as is since its the start to the long term project.

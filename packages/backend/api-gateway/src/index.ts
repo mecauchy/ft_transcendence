@@ -333,12 +333,28 @@ async function	start() {
 				const subscriber = redis.duplicate();
 				await subscriber.subscribe(`user:${userId}:notifications`);
 				await subscriber.subscribe(`user:${userId}:presence`);
+				await subscriber.subscribe(`user:${userId}:messages`);
 				await subscriber.subscribe('global:announcements');
 
 				subscriber.on('message', (channel: string, message: string) => {
 					try {
 						const data = JSON.parse(message);
-						connection.socket.send(JSON.stringify(data));
+
+						if (data.type === 'NEW_MESSAGE') {
+							connection.socket.send(JSON.stringify({
+								type: 'CHAT_MESSAGE',
+								data: {
+									messageId: data.data.id?.toString(),
+									senderId: data.data.senderId?.toString(),
+									content: data.data.content,
+									conversationId: data.data.conversationId?.toString(),
+									createdAt: data.data.createdAt,
+								},
+								timestamp: Date.now(),
+							}));
+						} else {
+							connection.socket.send(JSON.stringify(data));
+						}
 					} catch {
 						// ignores parse errors
 					}

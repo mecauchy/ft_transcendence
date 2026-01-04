@@ -193,7 +193,10 @@ export default function Profile({userId}: {userId?: string | null}) {
 
 				// load breathe stats
 				try {
-					const breatheHistory = await api.getBreatheHistory({limit: 50});
+					const breatheHistory = await api.getBreatheHistory({
+						limit: 50, 
+						userId: isOwnProfile ? undefined : userId!
+					});
 					const sessions = breatheHistory.matches || [];
 					let totalTime = 0;
 					for (const s of sessions) {

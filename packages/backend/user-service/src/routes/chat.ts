@@ -438,7 +438,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 			});
 
 			// trigger achievement event
-			await triggerAchievementEvent(senderId.toString(), 'MESSAGE_SENT');
+			await triggerAchievementEvent(senderId.toString(), 'CHAT_MESSAGE_SENT');
 
 			// small xp for convo
 			const today = new Date().toISOString().split('T')[0];

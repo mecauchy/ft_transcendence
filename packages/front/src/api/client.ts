@@ -110,10 +110,14 @@ class ApiClient {
 					// retry original token
 					return this.request<T>(endpoint, options, false);
 				} catch {
-					// if fail to refresh clear auth state and redirect
+					// if fail to refresh clear auth state
 					localStorage.removeItem('accessToken');
 					this.token = null;
-					window.location.href = '/';
+					// only redirect if not logged in (fixes autoreload bug)
+					if (window.location.pathname !== '/' && window.location.pathname !== '/auth/callback') {
+						window.location.href = '/';
+					}
+					throw new Error('Session expired');
 				}
 			}
 
@@ -489,10 +493,16 @@ class ApiClient {
 	}
 
 	// breathe game history
-	async getBreatheHistory(options?: {cursor?: string; limit?: number}) {
+	async getBreatheHistory(options?: {cursor?: string; limit?: number; userId?: string}) {
 		const params = new URLSearchParams();
 		if (options?.cursor) params.append('cursor', options.cursor);
 		if (options?.limit) params.append('limit', options.limit.toString());
+		
+		// if uid provided fetch for user, else fetch for self
+		const endpoint = options?.userId 
+			? `/game/breathe/history/${options.userId}` 
+			: '/game/breathe/history';
+		
 		return this.request<{
 			matches: Array<{
 				id: string;
@@ -501,7 +511,7 @@ class ApiClient {
 				endedAt: string;
 			}>;
 			nextCursor: string | null;
-		}>(`/game/breathe/history${params.toString() ? '?' + params.toString() : ''}`);
+		}>(`${endpoint}${params.toString() ? '?' + params.toString() : ''}`);
 	}
 
 	// game endpoints

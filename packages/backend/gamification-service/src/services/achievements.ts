@@ -299,7 +299,8 @@ async function evaluateCondition(
 			return false;
 		}
 
-		case 'MESSAGE_COUNT': {
+		case 'MESSAGE_COUNT':
+		case 'CHAT_MESSAGE_COUNT': {
 			const requiredCount = condition.count as number;
 			const count = await prisma.message.count({
 				where: { senderId: userIdBigInt },
@@ -500,6 +501,7 @@ export async function getAchievementProgress(
 			break;
 		}
 
+		case 'MESSAGE_COUNT':
 		case 'CHAT_MESSAGE_COUNT': {
 			total = condition.count as number;
 
