@@ -341,6 +341,7 @@ return (
 			className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 rounded-full shadow-lg flex items-center justify-center text-white text-2xl transition-transform hover:scale-110 z-40"
 			title={t('network.openChat', 'Open Chat')}
 		>
+			💬
 		</button>
 	)}
 	</div>

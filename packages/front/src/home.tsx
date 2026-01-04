@@ -5,13 +5,14 @@ import Network from "./network.tsx";
 import Settings from "./settings.tsx";
 import Profile from "./profile.tsx";
 import MatchHistory from "./history.tsx";
+import Leaderboard from "./leaderboard.tsx";
 
 function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
 		const path = window.location.pathname;
 		const current = path.replace("/", "");
-		if (["tournament", "game", "network", "settings", "profile", "history"].includes(current)) {
+		if (["tournament", "game", "network", "settings", "profile", "history", "leaderboard"].includes(current)) {
 			return current;
 		}
 		if (path.startsWith('/profile/')) {
@@ -73,6 +74,7 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		{page === 'settings' && <Settings />}
 		{page === 'profile' && <Profile userId={viewingUserId} />}
 		{page === 'history' && <MatchHistory />}
+		{page === 'leaderboard' && <Leaderboard />}
 	</div>
   	)
 }

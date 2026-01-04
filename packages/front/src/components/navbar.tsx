@@ -6,103 +6,103 @@ import { api } from '../api/client';
 import { useRealtimeNotifications } from '../hooks/useWebSocket';
 
 
-function NotificationsBell({onNavigate}: {onNavigate?: (page: string, userId?: string) => void}) {
-	const [open, setOpen] = useState(false);
-	const [unread, setUnread] = useState(0);
+	function NotificationsBell({onNavigate}: {onNavigate?: (page: string, userId?: string) => void}) {
+		const [open, setOpen] = useState(false);
+		const [unread, setUnread] = useState(0);
 
-	// fetch notif unread count
-	useEffect(() => {
-		let mounted = true;
-		(async () => {
-			try {
-				const res = await api.getUnreadNotificationCount();
-				if (mounted) setUnread(res.unreadCount);
-			} catch {
-				// ignore
+		// fetch notif unread count
+		useEffect(() => {
+			let mounted = true;
+			(async () => {
+				try {
+					const res = await api.getUnreadNotificationCount();
+					if (mounted) setUnread(res.unreadCount);
+				} catch {
+					// ignore
+				}
+			})();
+			return () => {
+				mounted = false;
+			};
+		}, []);
+
+		// listen for realtime notifs
+		const handleNotification = useCallback((notification: unknown) => {
+			// new notif -> increment count
+			setUnread((prev) => prev + 1);
+			
+			// show visual feedback
+			if (notification && typeof notification === 'object') {
+				const notif = notification as { title?: string; message?: string };
+				console.log('[NotificationsBell] New notification:', notif.title || notif.message);
 			}
-		})();
-		return () => {
-			mounted = false;
-		};
-	}, []);
+		}, []);
 
-	// listen for realtime notifs
-	const handleNotification = useCallback((notification: unknown) => {
-		// new notif -> increment count
-		setUnread((prev) => prev + 1);
-		
-		// show visual feedback
-		if (notification && typeof notification === 'object') {
-			const notif = notification as { title?: string; message?: string };
-			console.log('[NotificationsBell] New notification:', notif.title || notif.message);
-		}
-	}, []);
+		useRealtimeNotifications(handleNotification);
 
-	useRealtimeNotifications(handleNotification);
+		return (
+			<div className="relative">
+				<button
+					type="button"
+					onClick={() => setOpen((v) => !v)}
+					className="relative p-2 rounded-md hover:bg-white/10 text-white"
+					aria-label="Notifications"
+				>
+					<span className="text-lg">🔔</span>
+					{unread > 0 && (
+						<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none animate-pulse">
+							{unread}
+						</span>
+					)}
+				</button>
 
-	return (
-		<div className="relative">
-			<button
-				type="button"
-				onClick={() => setOpen((v) => !v)}
-				className="relative p-2 rounded-md hover:bg-white/10 text-white"
-				aria-label="Notifications"
-			>
-				<span className="text-lg">🔔</span>
-				{unread > 0 && (
-					<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full leading-none animate-pulse">
-						{unread}
-					</span>
+				{open && (
+					<NotificationsDropdown
+						onClose={() => setOpen(false)}
+						onUnreadCountChange={(c) => setUnread(c)}
+						onNavigate={(page, userId) => {
+							setOpen(false);
+							onNavigate?.(page, userId);
+						}}
+					/>
 				)}
-			</button>
-
-			{open && (
-				<NotificationsDropdown
-					onClose={() => setOpen(false)}
-					onUnreadCountChange={(c) => setUnread(c)}
-					onNavigate={(page, userId) => {
-						setOpen(false);
-						onNavigate?.(page, userId);
-					}}
-				/>
-			)}
-		</div>
-	);
-}
-
-function Navbar({setPage, username}: {setPage: (page: string, userId?: string) => void, username: string | null}) {
-	  const {t} = useTranslation();
-	  
-	  return (
-		<nav className="navbar">
-  			<div className="flex">
-				<img src="/controler.png" alt="Logo" className="logo_image" />
-				<p className="mt-5 text-white">
-					ft_transcendance
-				</p>
 			</div>
+		);
+	}
 
-  			<div className="nav_left">
-  			  <button className="nav_button tournament_box" onClick={() => setPage("game")}>
-  			    {t('nav.play')}
-  			  </button>
+	function Navbar({setPage, username}: {setPage: (page: string, userId?: string) => void, username: string | null}) {
+		const {t} = useTranslation();
+		
+		return (
+			<nav className="navbar">
+				<div className="flex">
+					<img src="/controler.png" alt="Logo" className="logo_image" />
+					<p className="mt-5 text-white">
+						ft_transcendance
+					</p>
+				</div>
 
-  			</div>
+				<div className="nav_left">
+				<button className="nav_button tournament_box" onClick={() => setPage("game")}>
+					{t('nav.play')}
+				</button>
 
-  			<div className="nav_right">
-  			  <button className="nav_button" onClick={() => setPage("profile")}>{t('nav.profile')}</button>
-  			  <button className="nav_button" onClick={() => setPage("history")}>{t('nav.history')}</button>
-  			  <button className="nav_button" onClick={() => setPage("network")}>{t('nav.network')}</button>
-  			  <button className="nav_button" onClick={() => setPage("settings")}>{t('nav.settings')}</button>
-  			  <button className="nav_button" onClick={() => setPage("leaderboard")}>{t('nav.leaderboard')}</button>
-			  <NotificationsBell onNavigate={setPage} />
-  			  <button className="nav_button logout" onClick={() => setPage("logout")}>
-  			    {t('nav.logout')} ({username})
-  			  </button>
-  			</div>
-		</nav>
+				</div>
 
-  )
+				<div className="nav_right">
+				<button className="nav_button" onClick={() => setPage("profile")}>{t('nav.profile')}</button>
+				<button className="nav_button" onClick={() => setPage("history")}>{t('nav.history')}</button>
+				<button className="nav_button" onClick={() => setPage("network")}>{t('nav.network')}</button>
+				<button className="nav_button" onClick={() => setPage("settings")}>{t('nav.settings')}</button>
+				<button className="nav_button" onClick={() => setPage("leaderboard")}>{t('nav.leaderboard')}</button>
+				<NotificationsBell onNavigate={setPage} />
+				<button className="nav_button logout" onClick={() => setPage("logout")}>
+					{t('nav.logout')} ({username})
+				</button>
+				</div>
+			</nav>
+
+	)
 }
 
 export default Navbar;

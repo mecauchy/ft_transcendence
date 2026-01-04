@@ -12,14 +12,6 @@ import {config} from './config';
 import {VaultClient} from './vault/client';
 import {authGuard, optionalAuth} from './middleware/auth';
 
-// import shared contracts
-import type {
-	IAuthResponse,
-	IUserProfile,
-	ISessionStartRequest,
-	ISessionStartResponse,
-} from '@speak-up/shared';
-
 const fastify = Fastify({
 	logger: {
 		level: config.logLevel,
@@ -133,6 +125,11 @@ async function	start() {
 			enableDraftSpec:	true,
 			cache:				10000,
 			allowList:			['127.0.0.1'],
+			// skip ratelimit for websocket and healthchecks
+			skip: (request: FastifyRequest) => {
+				const url = request.url || '';
+				return url.includes('/ws/') || url.includes('/health');
+			},
 		} as any);
 
 		// support websocket for gameservices
@@ -261,13 +258,13 @@ async function	start() {
 				get: (
 					arg0: string,
 					arg1: {websocket: any;},
-					arg2: (connection: any, request: FastifyRequest) => Promise<void>
+					arg2: (socket: any, request: FastifyRequest) => Promise<void>
 				) => void;
 			}) => {
 				// store connected clients by uid
 				const connectedClients = new Map<string, Set<any>>();
 
-				fastify.get('/realtime', {websocket: true as any}, async (connection: any, request: FastifyRequest) => {
+				fastify.get('/realtime', {websocket: true as any}, async (socket: any, request: FastifyRequest) => {
 				const token = (request.query as any).token as string;
 
 				request.log.info(
@@ -277,12 +274,12 @@ async function	start() {
 
 				if (!token) {
 					request.log.warn({ip: request.ip}, 'WebSocket connection rejected: missing token');
-					connection.socket.send(JSON.stringify({
+					socket.send(JSON.stringify({
 						type:		'ERROR',
 						code:		'AUTH_REQUIRED',
 						message:	'Authentication token required. Pass ?token=<jwt> in query string.',
 					}));
-					connection.socket.close(4001, 'Authentication required');
+					socket.close(4001, 'Authentication required');
 					return;
 				}
 
@@ -299,12 +296,12 @@ async function	start() {
 						twoFAVerified?:	boolean};
 
 					if (decoded.requires2FA && !decoded.twoFAVerified) {
-						connection.socket.send(JSON.stringify({
+						socket.send(JSON.stringify({
 							type:		'ERROR',
 							code:		'2FA_REQUIRED',
 							message:	'2FA verification required before connecting.',
 						}));
-						connection.socket.close(4003, '2FA required');
+						socket.close(4003, '2FA required');
 						return;
 					}
 
@@ -314,12 +311,12 @@ async function	start() {
 
 				} catch (err) {
 					request.log.warn({ip: request.ip, error: (err as Error).message}, 'WebSocket auth failed');
-					connection.socket.send(JSON.stringify({
+					socket.send(JSON.stringify({
 						type:		'ERROR',
 						code:		'AUTH_FAILED',
 						message:	'Invalid or expired token.',
 					}));
-					connection.socket.close(4001, 'Authentication failed');
+					socket.close(4001, 'Authentication failed');
 					return;
 				}
 
@@ -327,10 +324,23 @@ async function	start() {
 				if (!connectedClients.has(userId)) {
 					connectedClients.set(userId, new Set());
 				}
-				connectedClients.get(userId)!.add(connection.socket);
+				connectedClients.get(userId)!.add(socket);
 
 				// subscribe to redis for realtime notifs
-				const subscriber = redis.duplicate();
+				// create new redis client for subscriptions
+				const subscriber = new Redis({
+					host: config.redis.host,
+					port: config.redis.port,
+					retryStrategy: (times: number) => Math.min(times * 50, 2000),
+				});
+
+				// wait for client to be ready
+				await new Promise<void>((resolve, reject) => {
+					subscriber.once('ready', () => resolve());
+					subscriber.once('error', (err: Error) => reject(err));
+					setTimeout(() => reject(new Error('Redis subscriber connection timeout')), 5000);
+				});
+
 				await subscriber.subscribe(`user:${userId}:notifications`);
 				await subscriber.subscribe(`user:${userId}:presence`);
 				await subscriber.subscribe(`user:${userId}:messages`);
@@ -341,7 +351,7 @@ async function	start() {
 						const data = JSON.parse(message);
 
 						if (data.type === 'NEW_MESSAGE') {
-							connection.socket.send(JSON.stringify({
+							socket.send(JSON.stringify({
 								type: 'CHAT_MESSAGE',
 								data: {
 									messageId: data.data.id?.toString(),
@@ -353,14 +363,14 @@ async function	start() {
 								timestamp: Date.now(),
 							}));
 						} else {
-							connection.socket.send(JSON.stringify(data));
+							socket.send(JSON.stringify(data));
 						}
 					} catch {
 						// ignores parse errors
 					}
 				});
 
-				connection.socket.on('message', async (message: any) => {
+				socket.on('message', async (message: any) => {
 					try {
 						const data = JSON.parse(message.toString());
 						request.log.info({type: data.type, userId}, 'Received real-time message');
@@ -368,7 +378,7 @@ async function	start() {
 						// handle types
 						switch (data.type) {
 							case 'PING':
-								connection.socket.send(JSON.stringify({
+								socket.send(JSON.stringify({
 									type: 'PONG',
 									timestamp: Date.now(),
 								}));
@@ -395,7 +405,7 @@ async function	start() {
 								break;
 
 							default:
-								connection.socket.send(JSON.stringify({
+								socket.send(JSON.stringify({
 									type: 'ACK',
 									message: 'Message received',
 									timestamp: Date.now(),
@@ -403,7 +413,7 @@ async function	start() {
 						}
 					} catch (err: any) {
 						request.log.error({error: err}, 'Failed to parse WebSocket message');
-						connection.socket.send(JSON.stringify({
+						socket.send(JSON.stringify({
 							type: 'ERROR',
 							message: 'Invalid message format',
 							timestamp: Date.now(),
@@ -411,11 +421,11 @@ async function	start() {
 					}
 				});
 
-				connection.socket.on('close', async () => {
+				socket.on('close', async () => {
 					request.log.info({userId}, 'WebSocket real-time connection closed');
 					
 					// remove from connected clients
-					connectedClients.get(userId)?.delete(connection.socket);
+					connectedClients.get(userId)?.delete(socket);
 					if (connectedClients.get(userId)?.size === 0) {
 						connectedClients.delete(userId);
 						// broadcast offline status
@@ -431,12 +441,27 @@ async function	start() {
 					subscriber.disconnect();
 				});
 
-				connection.socket.on('error', (err: any) => {
+				socket.on('error', (err: any) => {
 					request.log.error({error: err, userId}, 'WebSocket error occurred');
 				});
 
+				// keepalive pinging
+				const pingInterval = setInterval(() => {
+					if (socket.readyState === 1) { // OPEN
+						socket.send(JSON.stringify({
+							type: 'PING',
+							timestamp: Date.now(),
+						}));
+					}
+				}, 30000);
+
+				// on close, clean ping interval
+				socket.on('close', () => {
+					clearInterval(pingInterval);
+				});
+
 				// send connected acknowledgment
-				connection.socket.send(JSON.stringify({
+				socket.send(JSON.stringify({
 					type:		'CONNECTED',
 					message:	'Connected to Speak-Up real-time service',
 					userId,
@@ -457,10 +482,10 @@ async function	start() {
 				get: (
 					arg0: string,
 					arg1: {websocket: any;},
-					arg2: (connection: any, request: FastifyRequest) => Promise<void>
+					arg2: (socket: any, request: FastifyRequest) => Promise<void>
 				) => void;
 			}) => {
-				fastify.get('/investigation', {websocket: true as any}, async (connection: any, request: FastifyRequest) => {
+				fastify.get('/investigation', {websocket: true as any}, async (socket: any, request: FastifyRequest) => {
 				const token = (request.query as any).token as string;
 
 				// log new ws connection
@@ -472,12 +497,12 @@ async function	start() {
 				// validate jwt tok from query params
 				if (!token) {
 					request.log.warn({ip: request.ip}, 'WebSocket connection rejected: missing token');
-					connection.socket.send(JSON.stringify({
+					socket.send(JSON.stringify({
 						type:		'ERROR',
 						code:		'AUTH_REQUIRED',
 						message:	'Authentication token required. Pass ?token=<jwt> in query string.',
 					}));
-					connection.socket.close(4001, 'Authentication required');
+					socket.close(4001, 'Authentication required');
 					return;
 				}
 
@@ -496,12 +521,12 @@ async function	start() {
 
 					// check 2FA
 					if (decoded.requires2FA && !decoded.twoFAVerified) {
-						connection.socket.send(JSON.stringify({
+						socket.send(JSON.stringify({
 							type:		'ERROR',
 							code:		'2FA_REQUIRED',
 							message:	'2FA verification required before connecting.',
 						}));
-						connection.socket.close(4003, '2FA required');
+						socket.close(4003, '2FA required');
 						return;
 					}
 
@@ -512,22 +537,22 @@ async function	start() {
 				} catch (err) {
 					// on token verify err, log to console
 					request.log.warn({ip: request.ip, error:		(err as Error).message}, 'WebSocket auth failed');
-					connection.socket.send(JSON.stringify({
+					socket.send(JSON.stringify({
 						type:		'ERROR',
 						code:		'AUTH_FAILED',
 						message:	'Invalid or expired token.',
 					}));
-					connection.socket.close(4001, 'Authentication failed');
+					socket.close(4001, 'Authentication failed');
 					return;
 				}
 
-				connection.socket.on('message', async (message:	any) => {
+				socket.on('message', async (message:	any) => {
 					try {
 						const data = JSON.parse(message.toString());
 						request.log.info({type: data.type}, 'Received WebSocket message');
 
 						// echo message back
-						connection.socket.send(
+						socket.send(
 							JSON.stringify({
 								type:		'ACK',
 								message:	'Gateway received your message',
@@ -536,7 +561,7 @@ async function	start() {
 						);
 					} catch (err: any) {
 						request.log.error({error:		err}, 'Failed to parse WebSocket message');
-						connection.socket.send(
+						socket.send(
 							JSON.stringify({
 								type:		'ERROR',
 								message:	'Invalid message format',
@@ -546,16 +571,16 @@ async function	start() {
 					}
 				});
 
-				connection.socket.on('close', () => {
+				socket.on('close', () => {
 					request.log.info('WebSocket connection closed');
 				});
 
-				connection.socket.on('error', (err: any) => {
+				socket.on('error', (err: any) => {
 					request.log.error({error:		err}, 'WebSocket error occurred');
 				});
 
 				// send ack
-				connection.socket.send(
+				socket.send(
 					JSON.stringify({
 						type:		'CONNECTED',
 						message:	'Welcome to Speak-Up Investigation Engine',
