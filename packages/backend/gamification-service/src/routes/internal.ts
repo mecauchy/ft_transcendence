@@ -1,6 +1,35 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import {checkAchievements} from '../services/achievements';
-import {awardXP} from '../services/xp';
+import {awardXP, getUserXP} from '../services/xp';
+
+// notify user service
+async function notifyLevelUp(userId: string, newLevel: number, oldLevel: number): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const userServiceInternal =
+		process.env.USER_SERVICE_INTERNAL_URL ||
+		'http://user-service:3002';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${userServiceInternal}/internal/notifications/level-up`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				newLevel,
+				oldLevel,
+			}),
+		});
+	} catch {
+		// ignore
+	}
+}
 
 function requireInternalKey(request: FastifyRequest, reply: FastifyReply): boolean {
 	const expected = process.env.INTERNAL_SERVICE_KEY;
@@ -89,7 +118,21 @@ export async function internalRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
+			const beforeXP = await getUserXP(userId);
+			const oldLevel = beforeXP.level;
+
 			const result = await awardXP(userId, amount, reason, sessionId);
+
+			// notify if level up
+			if (result.levelUp) {
+				await notifyLevelUp(userId, result.newLevel, oldLevel);
+				// check for achievements
+				await checkAchievements(userId, 'LEVEL_UP', {
+					newLevel: result.newLevel,
+					oldLevel,
+				});
+			}
+
 			return {
 				ok: true,
 				xpAwarded: result.xpLog.amount,

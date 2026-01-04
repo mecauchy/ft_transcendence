@@ -28,6 +28,8 @@ interface IPongGame {
 
 class ApiClient {
 	private token: string | null = null;
+	private refreshPromise: Promise<string> | null = null;
+	private tokenRefreshCallback: (() => Promise<void>) | null = null;
 
 	setToken(token: string | null) {
 		this.token = token;
@@ -37,9 +39,50 @@ class ApiClient {
 		return this.token;
 	}
 
+	setTokenRefreshCallback(callback: () => Promise<void>) {
+		this.tokenRefreshCallback = callback;
+	}
+
+	private async refreshTokenInternal(): Promise<string> {
+		if (this.refreshPromise) {
+			return this.refreshPromise;
+		}
+
+		this.refreshPromise = (async () => {
+			try {
+				const response = await fetch(`${API_BASE}/auth/refresh`, {
+					method: 'POST',
+					credentials: 'include',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error('Token refresh failed');
+				}
+
+				const data = await response.json();
+				this.token = data.accessToken;
+				localStorage.setItem('accessToken', data.accessToken);
+				
+				if (this.tokenRefreshCallback) {
+					await this.tokenRefreshCallback();
+				}
+				
+				return data.accessToken;
+			} finally {
+				this.refreshPromise = null;
+			}
+		})();
+
+		return this.refreshPromise;
+	}
+
 	private async request<T>(
 		endpoint: string,
-		options: RequestInit = {}
+		options: RequestInit = {},
+		retryOnUnauthorized = true
 	): Promise<T> {
 		const headers: HeadersInit = {
 			...options.headers,
@@ -61,10 +104,23 @@ class ApiClient {
 		});
 
 		if (!response.ok) {
-			const error:		ApiError = await response.json().catch(() => ({
-				statusCode:	response.status,
-				error:		response.statusText,
-				message:	'An error occurred',
+			if (response.status === 401 && retryOnUnauthorized && !endpoint.includes('/auth/')) {
+				try {
+					await this.refreshTokenInternal();
+					// retry original token
+					return this.request<T>(endpoint, options, false);
+				} catch {
+					// if fail to refresh clear auth state and redirect
+					localStorage.removeItem('accessToken');
+					this.token = null;
+					window.location.href = '/';
+				}
+			}
+
+			const error: ApiError = await response.json().catch(() => ({
+				statusCode: response.status,
+				error: response.statusText,
+				message: 'An error occurred',
 			}));
 			throw error;
 		}

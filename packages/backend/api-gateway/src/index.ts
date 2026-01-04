@@ -264,6 +264,186 @@ async function	start() {
 					arg2: (connection: any, request: FastifyRequest) => Promise<void>
 				) => void;
 			}) => {
+				// store connected clients by uid
+				const connectedClients = new Map<string, Set<any>>();
+
+				fastify.get('/realtime', {websocket: true as any}, async (connection: any, request: FastifyRequest) => {
+				const token = (request.query as any).token as string;
+
+				request.log.info(
+					{token: token ? '***' : 'missing', ip: request.ip},
+					'New WebSocket connection for real-time features'
+				);
+
+				if (!token) {
+					request.log.warn({ip: request.ip}, 'WebSocket connection rejected: missing token');
+					connection.socket.send(JSON.stringify({
+						type:		'ERROR',
+						code:		'AUTH_REQUIRED',
+						message:	'Authentication token required. Pass ?token=<jwt> in query string.',
+					}));
+					connection.socket.close(4001, 'Authentication required');
+					return;
+				}
+
+				let userId:		string;
+				let userRole:	string;
+
+				try {
+					const decoded = jwt.verify(token, config.security.jwtSecret, {
+						algorithms:	['HS256'],
+					}) as {
+						userId:			string;
+						role:			string;
+						requires2FA?:	boolean;
+						twoFAVerified?:	boolean};
+
+					if (decoded.requires2FA && !decoded.twoFAVerified) {
+						connection.socket.send(JSON.stringify({
+							type:		'ERROR',
+							code:		'2FA_REQUIRED',
+							message:	'2FA verification required before connecting.',
+						}));
+						connection.socket.close(4003, '2FA required');
+						return;
+					}
+
+					userId = decoded.userId;
+					userRole = decoded.role;
+					request.log.info({userId, role: userRole}, 'WebSocket real-time authenticated');
+
+				} catch (err) {
+					request.log.warn({ip: request.ip, error: (err as Error).message}, 'WebSocket auth failed');
+					connection.socket.send(JSON.stringify({
+						type:		'ERROR',
+						code:		'AUTH_FAILED',
+						message:	'Invalid or expired token.',
+					}));
+					connection.socket.close(4001, 'Authentication failed');
+					return;
+				}
+
+				// add client to connected clients
+				if (!connectedClients.has(userId)) {
+					connectedClients.set(userId, new Set());
+				}
+				connectedClients.get(userId)!.add(connection.socket);
+
+				// subscribe to redis for realtime notifs
+				const subscriber = redis.duplicate();
+				await subscriber.subscribe(`user:${userId}:notifications`);
+				await subscriber.subscribe(`user:${userId}:presence`);
+				await subscriber.subscribe('global:announcements');
+
+				subscriber.on('message', (channel: string, message: string) => {
+					try {
+						const data = JSON.parse(message);
+						connection.socket.send(JSON.stringify(data));
+					} catch {
+						// ignores parse errors
+					}
+				});
+
+				connection.socket.on('message', async (message: any) => {
+					try {
+						const data = JSON.parse(message.toString());
+						request.log.info({type: data.type, userId}, 'Received real-time message');
+
+						// handle types
+						switch (data.type) {
+							case 'PING':
+								connection.socket.send(JSON.stringify({
+									type: 'PONG',
+									timestamp: Date.now(),
+								}));
+								break;
+
+							case 'PRESENCE_UPDATE':
+								// broadcast presence
+								await redis.publish(`presence:${userId}`, JSON.stringify({
+									type: 'PRESENCE_UPDATE',
+									data: { userId, status: data.status || 'ONLINE' },
+									timestamp: Date.now(),
+								}));
+								break;
+
+							case 'TYPING':
+								// broadcast typing state
+								if (data.conversationId) {
+									await redis.publish(`conversation:${data.conversationId}`, JSON.stringify({
+										type: 'TYPING',
+										data: { userId, conversationId: data.conversationId },
+										timestamp: Date.now(),
+									}));
+								}
+								break;
+
+							default:
+								connection.socket.send(JSON.stringify({
+									type: 'ACK',
+									message: 'Message received',
+									timestamp: Date.now(),
+								}));
+						}
+					} catch (err: any) {
+						request.log.error({error: err}, 'Failed to parse WebSocket message');
+						connection.socket.send(JSON.stringify({
+							type: 'ERROR',
+							message: 'Invalid message format',
+							timestamp: Date.now(),
+						}));
+					}
+				});
+
+				connection.socket.on('close', async () => {
+					request.log.info({userId}, 'WebSocket real-time connection closed');
+					
+					// remove from connected clients
+					connectedClients.get(userId)?.delete(connection.socket);
+					if (connectedClients.get(userId)?.size === 0) {
+						connectedClients.delete(userId);
+						// broadcast offline status
+						await redis.publish(`presence:${userId}`, JSON.stringify({
+							type: 'PRESENCE_UPDATE',
+							data: { userId, status: 'OFFLINE' },
+							timestamp: Date.now(),
+						}));
+					}
+					
+					// unsubscribe from redis
+					await subscriber.unsubscribe();
+					subscriber.disconnect();
+				});
+
+				connection.socket.on('error', (err: any) => {
+					request.log.error({error: err, userId}, 'WebSocket error occurred');
+				});
+
+				// send connected acknowledgment
+				connection.socket.send(JSON.stringify({
+					type:		'CONNECTED',
+					message:	'Connected to Speak-Up real-time service',
+					userId,
+					timestamp:	Date.now(),
+				}));
+
+				// broadcast online status
+				await redis.publish(`presence:${userId}`, JSON.stringify({
+					type: 'PRESENCE_UPDATE',
+					data: { userId, status: 'ONLINE' },
+					timestamp: Date.now(),
+				}));
+			});
+		}, {prefix: '/api/ws'});
+
+		// websocket route for investigation service
+		await fastify.register(async (fastify: {
+				get: (
+					arg0: string,
+					arg1: {websocket: any;},
+					arg2: (connection: any, request: FastifyRequest) => Promise<void>
+				) => void;
+			}) => {
 				fastify.get('/investigation', {websocket: true as any}, async (connection: any, request: FastifyRequest) => {
 				const token = (request.query as any).token as string;
 

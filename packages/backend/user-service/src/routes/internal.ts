@@ -95,4 +95,103 @@ export async function internalRoutes(fastify: FastifyInstance) {
 			});
 		}
 	});
+
+	// achievement unlock notification
+	fastify.post<{
+		Body: {
+			userId: string;
+			achievement: {
+				code: string;
+				name: string;
+				description: string;
+				xpReward: number;
+				rarity: string;
+			};
+		};
+	}>('/notifications/achievement', async (request, reply) => {
+		const {userId, achievement} = request.body;
+
+		if (!userId || !achievement) {
+			return reply.status(400).send({
+				success: false,
+				message: 'Missing userId or achievement data',
+			});
+		}
+
+		try {
+			const notification = await prisma.notification.create({
+				data: {
+					userId: BigInt(userId),
+					type: 'ACHIEVEMENT',
+					title: `Achievement Unlocked: ${achievement.name}`,
+					message: `${achievement.description} (+${achievement.xpReward} XP)`,
+					data: {
+						achievementCode: achievement.code,
+						achievementName: achievement.name,
+						xpReward: achievement.xpReward,
+						rarity: achievement.rarity,
+					},
+				},
+			});
+
+			request.log.info({userId, achievement: achievement.code}, 'Achievement notification created');
+
+			return {
+				success: true,
+				notificationId: notification.id.toString(),
+			};
+		} catch (error) {
+			request.log.error({error, userId, achievement: achievement.code}, 'Failed to create achievement notification');
+			return reply.status(500).send({
+				success: false,
+				message: 'Failed to create achievement notification',
+			});
+		}
+	});
+
+	// level up notif
+	fastify.post<{
+		Body: {
+			userId: string;
+			newLevel: number;
+			oldLevel: number;
+		};
+	}>('/notifications/level-up', async (request, reply) => {
+		const {userId, newLevel, oldLevel} = request.body;
+
+		if (!userId || !newLevel) {
+			return reply.status(400).send({
+				success: false,
+				message: 'Missing userId or newLevel',
+			});
+		}
+
+		try {
+			const notification = await prisma.notification.create({
+				data: {
+					userId: BigInt(userId),
+					type: 'LEVEL_UP',
+					title: `Level Up!`,
+					message: `Congratulations! You've reached level ${newLevel}!`,
+					data: {
+						newLevel,
+						oldLevel: oldLevel || newLevel - 1,
+					},
+				},
+			});
+
+			request.log.info({userId, newLevel}, 'Level up notification created');
+
+			return {
+				success: true,
+				notificationId: notification.id.toString(),
+			};
+		} catch (error) {
+			request.log.error({error, userId, newLevel}, 'Failed to create level up notification');
+			return reply.status(500).send({
+				success: false,
+				message: 'Failed to create level up notification',
+			});
+		}
+	});
 }

@@ -13,8 +13,13 @@ interface AuthenticatedRequest extends FastifyRequest {
 
 export async function	twoFactorRoutes(fastify: FastifyInstance) {
 
-	// auth middleware
+	// auth middleware, skip for /login
 	fastify.addHook('preHandler', async (request: AuthenticatedRequest, reply: FastifyReply) => {
+		// skip auth for 2FA login verification
+		if (request.url.endsWith('/login') || request.url.includes('/login?')) {
+			return;
+		}
+
 		const authHeader = request.headers.authorization;
 
 		if (!authHeader?.startsWith('Bearer ')) {
@@ -265,10 +270,6 @@ export async function	twoFactorRoutes(fastify: FastifyInstance) {
 	// 2FA login verification
 	fastify.post<{Body: {userId: string; code: string}}>(
 		'/login',
-		{
-			// skip auth middleware
-			preHandler: async () => {},
-		},
 		async (request, reply) => {
 			const {userId, code} = request.body;
 

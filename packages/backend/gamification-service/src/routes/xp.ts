@@ -4,6 +4,35 @@ import {getUserXP, getXPHistory, getDailyXP, awardXP} from '../services/xp';
 import {checkAchievements} from '../services/achievements';
 import {config} from '../config';
 
+// notify for levelup
+async function notifyLevelUp(userId: string, newLevel: number, oldLevel: number): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const userServiceInternal =
+		process.env.USER_SERVICE_INTERNAL_URL ||
+		'http://user-service:3002';
+
+	if (!internalKey) {
+		return;
+	}
+
+	try {
+		await fetch(`${userServiceInternal}/internal/notifications/level-up`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-internal-key': internalKey,
+			},
+			body: JSON.stringify({
+				userId,
+				newLevel,
+				oldLevel,
+			}),
+		});
+	} catch {
+		// ignore
+	}
+}
+
 export async function xpRoutes(fastify: FastifyInstance) {
 	// auth middleware
 	fastify.addHook('preHandler', authMiddleware);
@@ -92,13 +121,28 @@ export async function xpRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
+			// get old level
+			const beforeXP = await getUserXP(userId);
+			const oldLevel = beforeXP.level;
+
 			const result = await awardXP(userId, amount, reason, sessionId);
 
-			// check xp triggered achievements
+			// check xp achievements
 			const newAchievements = await checkAchievements(userId, 'XP_GAINED', {
 				amount,
 				totalXP: result.newLevel,
 			});
+
+			// notify if level up
+			if (result.levelUp) {
+				await notifyLevelUp(userId, result.newLevel, oldLevel);
+				// check for achievements
+				const levelAchievements = await checkAchievements(userId, 'LEVEL_UP', {
+					newLevel: result.newLevel,
+					oldLevel,
+				});
+				newAchievements.push(...levelAchievements);
+			}
 
 			return {
 				success: true,

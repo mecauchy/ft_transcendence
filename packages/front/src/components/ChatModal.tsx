@@ -64,15 +64,28 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					if (existing) {
 						setSelectedConversation(existing);
 					} else {
-						// new convo placeholder
-						setSelectedConversation({
-							id: 'new',
-							otherUser: {
-								id: initialUserId,
-								username: 'User',
-							},
-							unreadCount: 0,
-						});
+						// fetch user profile to get avatar
+						try {
+							const userProfile = await api.getProfile(initialUserId);
+							setSelectedConversation({
+								id: 'new',
+								otherUser: {
+									id: initialUserId,
+									username: userProfile.username || 'User',
+									avatarUrl: userProfile.avatarUrl,
+								},
+								unreadCount: 0,
+							});
+						} catch {
+							setSelectedConversation({
+								id: 'new',
+								otherUser: {
+									id: initialUserId,
+									username: 'User',
+								},
+								unreadCount: 0,
+							});
+						}
 					}
 				}
 			} catch (e) {
