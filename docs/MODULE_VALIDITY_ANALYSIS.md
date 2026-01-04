@@ -185,14 +185,13 @@ Missing:
 - [x] ft_transcendence is a web project
 - [x] Single-page application
 - [x] Compatible with latest Chrome
-- [x] No unhandled errors/warnings in console
+- [ ] No unhandled errors/warnings in console - TO VERIFY
 - [x] Docker Compose for deployment
 - [x] Single `make setup` command to run
 - [x] Runs on localhost via HTTPS
-- [x] Secure (no SQL injection, XSS, etc.)
+- [ ] Secure (no SQL injection, XSS, etc.) - TO VERIFY
 - [x] Password hashing (if storing passwords)
 - [x] Server-side validation for forms/user input
 
 ### Minimum Points:
-- [x] At least 25 points total (you have 33-35)
-- [x] At least 7 Major modules (you have 9)
+- [x] At least 14 points total, 19 for 125/100 (you have 33-35)

@@ -233,7 +233,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
 				alias: user.username,
 				username: user.username,
 				email: user.email,
-				displayName: user.displayName,
+				displayName: user.displayName ?? undefined,
 				avatarUrl: user.avatarUrl || user.settings?.avatar || '/assets/default-avatar.png',
 				role: user.role as UserRole,
 				totalXp: user.totalXp,
