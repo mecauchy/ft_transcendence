@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Login from './login.tsx'
 import Home from './home.tsx'
+import './styles/index.css'
 
 
 function App() {

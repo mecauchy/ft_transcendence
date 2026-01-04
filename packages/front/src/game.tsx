@@ -48,7 +48,7 @@ export default function Game() {
 				ParkingScene,
 				HospitalScene
 			],
-			backgroundColor: "#000"
+			backgroundColor: "#353131ff"
 		});
 	}, [gameInPlay]);
 

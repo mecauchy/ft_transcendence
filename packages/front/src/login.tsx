@@ -106,7 +106,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	<div className='login_container'>
 		<img src='/controler.png' alt='Logo' className='login_logo_image' />
 	  <p className='login_title'>ft_transcendance</p>
-	  <p className='login_subtitle'>Tournois de Pong en ligne</p>
+	  <p className='login_subtitle'>Quand parler devient une mécanique de jeu.</p>
 	  {!registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleSubmit} className='login_form'>
@@ -237,7 +237,7 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			onClick={() => setRegisterMode(false)}>
 				Déjà un compte ? Connectez-vous ici
 			</button>}
-			<p>Creez ou rejoignez un tournoi pour commencer</p>
+			<p>Lancez une session et faites vos premiers choix.</p>
 	  </div>
 	</div>
   )
