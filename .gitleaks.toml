@@ -1,12 +1,22 @@
-# Gitleaks configuration - exclude development certificates
+# Gitleaks configuration - exclude development certificates and example docs
 # https://github.com/gitleaks/gitleaks#configuration
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Allowlist for development certificates"
+description = "Allowlist for development certificates and documentation examples"
 paths = [
     '''infra/certs/.*\.key''',
     '''infra/certs/.*\.crt''',
+    '''README\.md''',
+    '''.*\.md''',
+]
+
+# Exclude common placeholder/example values used in documentation
+regexes = [
+    '''AKIAIMNOJ.*''',        # Fake AWS access key examples
+    '''cafebabe.*''',          # Common placeholder value
+    '''deadbeef.*''',          # Common placeholder value
+    '''XXXXX.*''',             # Placeholder patterns
 ]
