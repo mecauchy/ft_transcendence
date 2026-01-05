@@ -12,6 +12,14 @@ username: string;
 status?: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 };
 
+type BlockedUser = {
+id: string;
+username: string;
+displayName?: string;
+avatarUrl?: string;
+blockedAt: string;
+};
+
 function Network() {
 const { user } = useAuth();
 const { t } = useTranslation();
@@ -20,6 +28,7 @@ const [targetUsername, settargetUsername] = useState("");
 const [friends, setFriends] = useState<UserPreview[]>([]);
 const [friendRequests, setFriendRequests] = useState<UserPreview[]>([]);
 const [pendingRequests, setPendingRequests] = useState<UserPreview[]>([]);
+const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
 const [refreshKey, setRefreshKey] = useState(0);
 const [searchError, setSearchError] = useState<string | null>(null);
 const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -98,6 +107,14 @@ useEffect(() => {
 			username: r.username,
 		}))
 		);
+
+		// fetch blocked users
+		try {
+			const blockedResponse = await api.getBlockedUsers();
+			setBlockedUsers(blockedResponse.blockedUsers || []);
+		} catch (blockedError) {
+			console.error("Failed to fetch blocked users:", blockedError);
+		}
 	} catch (error) {
 		console.error("Failed to fetch friends data:", error);
 	}
@@ -117,8 +134,15 @@ const handleAcceptFriend = async (request: UserPreview) => {
 	);
 
 	setFriends(prev => [...prev, request]);
-	} catch (error) {
+	} catch (error: unknown) {
 	console.error("Failed to accept friend request:", error);
+	const err = error as { statusCode?: number };
+	if (err.statusCode === 404) {
+		// on cancel request
+		setFriendRequests(prev => prev.filter(r => r.id !== request.id));
+		setActionMessage(t('network.requestNoLongerExists'));
+		setTimeout(() => setActionMessage(null), 3000);
+	}
 	}
 };
 
@@ -131,8 +155,15 @@ const handleDeclineFriend = async (request: UserPreview) => {
 	setFriendRequests(prev =>
 		prev.filter(r => r.id !== request.id)
 	);
-	} catch (error) {
+	} catch (error: unknown) {
 	console.error("Failed to decline friend request:", error);
+	const err = error as { statusCode?: number };
+	if (err.statusCode === 404) {
+		// on cancel request
+		setFriendRequests(prev => prev.filter(r => r.id !== request.id));
+		setActionMessage(t('network.requestNoLongerExists'));
+		setTimeout(() => setActionMessage(null), 3000);
+	}
 	}
 };
 
@@ -185,6 +216,18 @@ const handleBlockFriend = async () => {
 	setRemovingFriend(null);
 };
 
+// unblock user
+const handleUnblockUser = async (userId: string) => {
+	try {
+		await api.unblockUser(userId);
+		setBlockedUsers(prev => prev.filter(u => u.id !== userId));
+		setActionMessage(t('network.userUnblocked'));
+		setTimeout(() => setActionMessage(null), 3000);
+	} catch (error) {
+		console.error("Failed to unblock user:", error);
+	}
+};
+
 // get status color
 const getStatusColor = (status?: string) => {
 	switch (status) {
@@ -203,8 +246,17 @@ const handleGivenRequestPending = async (request: UserPreview) => {
 		);
 		setActionMessage(t('network.requestCancelled'));
 		setTimeout(() => setActionMessage(null), 3000);
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Failed to cancel friend request:", error);
+		const err = error as { statusCode?: number };
+		if (err.statusCode === 404) {
+			// already answered the request
+			setPendingRequests(prev => prev.filter(r => r.id !== request.id));
+			setActionMessage(t('network.requestNoLongerExists'));
+			// refresh to see new status
+			setRefreshKey(prev => prev + 1);
+			setTimeout(() => setActionMessage(null), 3000);
+		}
 	}
 };
 
@@ -335,6 +387,32 @@ return (
 						{t('network.givenRequestPending')}
 					</button>
 				</span>
+			</li>
+		))}
+		</ul>
+	</div>
+	)}
+
+	{/* BLOCKED USERS */}
+	{blockedUsers.length > 0 && (
+	<div className="mt-6 bg-white/10 p-4 rounded-md w-full max-w-2xl">
+		<h3 className="text-xl font-semibold mb-2">{t('network.blockedUsers')}</h3>
+		<ul>
+		{blockedUsers.map(blocked => (
+			<li
+			key={blocked.id}
+			className="mb-2 flex items-center justify-between bg-white/5 p-3 rounded-md"
+			>
+				<div className="flex items-center gap-3">
+					<div className="w-3 h-3 rounded-full bg-red-500" title={t('network.blocked')} />
+					<span className="font-medium">{blocked.username}</span>
+				</div>
+				<button
+					className="px-3 py-1 bg-green-600 rounded hover:bg-green-700 text-sm"
+					onClick={() => handleUnblockUser(blocked.id)}
+				>
+					{t('network.unblock')}
+				</button>
 			</li>
 		))}
 		</ul>

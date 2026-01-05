@@ -117,7 +117,11 @@
     "selectConversation": "Sélectionner une conversation",
     "selectPrompt": "Sélectionnez une conversation pour commencer à discuter",
     "loadMore": "Charger les messages précédents...",
-    "placeholder": "Écrire un message..."
+    "placeholder": "Écrire un message...",
+    "isTyping": "est en train d'écrire...",
+    "cannotMessage": "Impossible d'envoyer un message à cet utilisateur",
+    "userNotFound": "Utilisateur non trouvé",
+    "sendFailed": "Échec de l'envoi du message"
   },
     "clearAll": "Effacer",
     "read": "Lu"
@@ -141,6 +145,7 @@
     "sentRequests": "Demandes envoyées",
     "givenRequestPending": "Annuler la demande",
     "requestCancelled": "Demande d'ami annulée",
+    "requestNoLongerExists": "Cette demande n'existe plus",
     "accept": "Accepter",
     "decline": "Refuser",
     "block": "Bloquer",
@@ -151,6 +156,10 @@
     "blockUser": "Bloquer l'utilisateur",
     "friendRemoved": "Ami retiré avec succès",
     "userBlocked": "Utilisateur bloqué avec succès",
+    "userUnblocked": "Utilisateur débloqué avec succès",
+    "blockedUsers": "Utilisateurs bloqués",
+    "unblock": "Débloquer",
+    "blocked": "Bloqué",
     "friendRequestSent": "Demande d'ami envoyée",
     "failedToAddFriend": "Échec de l'ajout d'ami",
     "failedToBlockUser": "Échec du blocage de l'utilisateur",

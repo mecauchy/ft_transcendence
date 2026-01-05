@@ -1,5 +1,12 @@
 import {FastifyInstance} from 'fastify';
 import {prisma} from '../db';
+import Redis from 'ioredis';
+import {config} from '../config';
+
+const pubClient = new Redis({
+	host: config.redis.host,
+	port: config.redis.port,
+});
 
 export async function internalRoutes(fastify: FastifyInstance) {
 	// validate an API key
@@ -134,6 +141,19 @@ export async function internalRoutes(fastify: FastifyInstance) {
 				},
 			});
 
+			const payload = {
+				type: 'NOTIFICATION',
+				data: {
+					id: notification.id,
+					type: notification.type,
+					title: notification.title,
+					message: notification.message,
+					data: notification.data,
+					createdAt: notification.createdAt,
+				},
+			};
+			await pubClient.publish(`user:${userId}:notifications`, JSON.stringify(payload));
+
 			request.log.info({userId, achievement: achievement.code}, 'Achievement notification created');
 
 			return {
@@ -180,7 +200,21 @@ export async function internalRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			request.log.info({userId, newLevel}, 'Level up notification creatAed');
+
+			const payload = {
+				type: 'NOTIFICATION',
+				data: {
+					id: notification.id,
+					type: notification.type,
+					title: notification.title,
+					message: notification.message,
+					data: notification.data,
+					createdAt: notification.createdAt,
+				},
+			};
+			await pubClient.publish(`user:${userId}:notifications`, JSON.stringify(payload));
+
+			request.log.info({userId, newLevel}, 'Level up notification created');
 
 			return {
 				success: true,

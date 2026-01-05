@@ -59,3 +59,4 @@ GENERAL:
 EXTRAS:
 -add button on viewing other person's profile to view THEIR history in detail (just like in the history tab for yourself)
 -maybe add an invite button to the discussion to start a pong match between the two friends ? store that in lb properly to know who went against who
+-use the default profile picture as an avatar for everyone when they sign up to the site (in packages/front/public/default-avatar.png)

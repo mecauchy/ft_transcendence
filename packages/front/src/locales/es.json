@@ -126,7 +126,11 @@
     "selectConversation": "Seleccionar una conversación",
     "selectPrompt": "Selecciona una conversación para empezar a chatear",
     "loadMore": "Cargar mensajes anteriores...",
-    "placeholder": "Escribe un mensaje..."
+    "placeholder": "Escribe un mensaje...",
+    "isTyping": "está escribiendo...",
+    "cannotMessage": "No se puede enviar mensaje a este usuario",
+    "userNotFound": "Usuario no encontrado",
+    "sendFailed": "Error al enviar mensaje"
   },
   "home": {
     "title": "ft_transcendance",
@@ -147,6 +151,7 @@
     "noPendingRequests": "No hay solicitudes pendientes",
     "givenRequestPending": "Cancelar solicitud",
     "requestCancelled": "Solicitud de amistad cancelada",
+    "requestNoLongerExists": "Esta solicitud ya no existe",
     "accept": "Aceptar",
     "decline": "Rechazar",
     "block": "Bloquear",
@@ -157,6 +162,10 @@
     "blockUser": "Bloquear usuario",
     "friendRemoved": "Amigo eliminado con éxito",
     "userBlocked": "Usuario bloqueado con éxito",
+    "userUnblocked": "Usuario desbloqueado con éxito",
+    "blockedUsers": "Usuarios bloqueados",
+    "unblock": "Desbloquear",
+    "blocked": "Bloqueado",
     "friendRequestSent": "Solicitud de amistad enviada",
     "failedToAddFriend": "Error al agregar amigo",
     "failedToBlockUser": "Error al bloquear usuario",

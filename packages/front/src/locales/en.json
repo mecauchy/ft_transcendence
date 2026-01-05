@@ -120,7 +120,11 @@
     "selectConversation": "Select a conversation",
     "selectPrompt": "Select a conversation to start chatting",
     "loadMore": "Load earlier messages...",
-    "placeholder": "Type a message..."
+    "placeholder": "Type a message...",
+    "isTyping": "is typing...",
+    "cannotMessage": "Cannot send message to this user",
+    "userNotFound": "User not found",
+    "sendFailed": "Failed to send message"
   },
 	"stats": {
 		"level": "Level",
@@ -150,6 +154,7 @@
     "noPendingRequests": "No pending requests",
     "givenRequestPending": "Cancel Request",
     "requestCancelled": "Friend request cancelled",
+    "requestNoLongerExists": "This request no longer exists",
     "accept": "Accept",
     "decline": "Decline",
     "block": "Block",
@@ -160,6 +165,10 @@
     "blockUser": "Block User",
     "friendRemoved": "Friend removed successfully",
     "userBlocked": "User blocked successfully",
+    "userUnblocked": "User unblocked successfully",
+    "blockedUsers": "Blocked Users",
+    "unblock": "Unblock",
+    "blocked": "Blocked",
     "friendRequestSent": "Friend request sent",
     "failedToAddFriend": "Failed to add friend",
     "failedToBlockUser": "Failed to block user",

@@ -19,12 +19,6 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				include: {
 					settings: true,
 					oauth: true,
-					patientSessions: {
-						orderBy: {createdAt: 'desc'},
-					},
-					doctorSessions: {
-						orderBy: {createdAt: 'desc'},
-					},
 					friendsInitiated: true,
 					friendsReceived: true,
 				},
@@ -38,8 +32,16 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			// combine sessions
-			const allSessions = [...(user.patientSessions || []), ...(user.doctorSessions || [])];
+			// fetch game history
+			const pongGames = await prisma.gamePong.findMany({
+				where: {playerId: userId},
+				orderBy: {startedAt: 'desc'},
+			});
+
+			const breatheGames = await prisma.gameBreathe.findMany({
+				where: {playerId: userId},
+				orderBy: {startedAt: 'desc'},
+			});
 
 			// combine friends
 			const friends = [
@@ -72,15 +74,23 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					colour: user.settings.colour,
 					locale: user.settings.locale,
 				} : {},
-				sessions: allSessions.map((s) => ({
-					id: s.id.toString(),
-					scenarioId: s.scenarioId?.toString(),
-					mode: s.mode,
-					status: s.status,
-					createdAt: s.createdAt,
-					endedAt: s.endedAt,
-					metrics: s.finalMetrics,
-				})),
+				gameHistory: {
+					pong: pongGames.map((g) => ({
+						id: g.id.toString(),
+						mode: g.mode,
+						difficulty: g.difficulty,
+						score1: g.score1,
+						score2: g.score2,
+						winner: g.winner,
+						startedAt: g.startedAt,
+						endedAt: g.endedAt,
+					})),
+					breathe: breatheGames.map((g) => ({
+						id: g.id.toString(),
+						startedAt: g.startedAt,
+						endedAt: g.endedAt,
+					})),
+				},
 				friends,
 				oauthConnections: user.oauth ? [{
 					provider: user.oauth.provider,
@@ -103,29 +113,28 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 		}
 	});
 
-	// export userdata in csv
+	// export game history in csv
 	fastify.get('/export/csv', async (request: FastifyRequest, reply: FastifyReply) => {
 		const userId = BigInt(request.user!.userId);
 
 		try {
-			const sessions = await prisma.session.findMany({
-				where: {patientId: userId},
-				orderBy: {createdAt: 'desc'},
+			const pongGames = await prisma.gamePong.findMany({
+				where: {playerId: userId},
+				orderBy: {startedAt: 'desc'},
 			});
 
-			// generate CSV
-			const headers = ['Session ID', 'Scenario ID', 'Mode', 'Status', 'Created', 'Ended', 'Trust', 'Stress'];
-			const rows = sessions.map((s) => {
-				const metrics = s.finalMetrics as Record<string, unknown> | null;
+			// generate CSV for pong games
+			const headers = ['Game ID', 'Mode', 'Difficulty', 'Your Score', 'Opponent Score', 'Winner', 'Started', 'Ended'];
+			const rows = pongGames.map((g) => {
 				return [
-					s.id.toString(),
-					s.scenarioId?.toString() || '',
-					s.mode,
-					s.status,
-					s.createdAt.toISOString(),
-					s.endedAt?.toISOString() || '',
-					(metrics?.trust as string) || '',
-					(metrics?.stress as string) || '',
+					g.id.toString(),
+					g.mode,
+					g.difficulty,
+					g.score1.toString(),
+					g.score2.toString(),
+					g.winner,
+					g.startedAt?.toISOString() || '',
+					g.endedAt?.toISOString() || '',
 				];
 			});
 
@@ -135,7 +144,7 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 			].join('\n');
 
 			reply.header('Content-Type', 'text/csv');
-			reply.header('Content-Disposition', `attachment; filename="sessions_${userId}.csv"`);
+			reply.header('Content-Disposition', `attachment; filename="pong_history_${userId}.csv"`);
 
 			return csv;
 		} catch (error) {
@@ -159,12 +168,6 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				include: {
 					settings: true,
 					oauth: true,
-					patientSessions: {
-						orderBy: {createdAt: 'desc'},
-					},
-					doctorSessions: {
-						orderBy: {createdAt: 'desc'},
-					},
 					friendsInitiated: true,
 					friendsReceived: true,
 				},
@@ -178,8 +181,16 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			// combine sessions
-			const allSessions = [...(user.patientSessions || []), ...(user.doctorSessions || [])];
+			// fetch game history
+			const pongGames = await prisma.gamePong.findMany({
+				where: {playerId: userId},
+				orderBy: {startedAt: 'desc'},
+			});
+
+			const breatheGames = await prisma.gameBreathe.findMany({
+				where: {playerId: userId},
+				orderBy: {startedAt: 'desc'},
+			});
 
 			// combine friends
 			const friends = [
@@ -224,18 +235,31 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				xml += '  </settings>\n';
 			}
 			
-			xml += '  <sessions>\n';
-			for (const s of allSessions) {
-				xml += '    <session>\n';
-				xml += `      <id>${s.id.toString()}</id>\n`;
-				xml += `      <scenarioId>${s.scenarioId?.toString() || ''}</scenarioId>\n`;
-				xml += `      <mode>${s.mode}</mode>\n`;
-				xml += `      <status>${s.status}</status>\n`;
-				xml += `      <createdAt>${s.createdAt.toISOString()}</createdAt>\n`;
-				xml += `      <endedAt>${s.endedAt?.toISOString() || ''}</endedAt>\n`;
-				xml += '    </session>\n';
+			xml += '  <gameHistory>\n';
+			xml += '    <pongGames>\n';
+			for (const g of pongGames) {
+				xml += '      <game>\n';
+				xml += `        <id>${g.id.toString()}</id>\n`;
+				xml += `        <mode>${g.mode}</mode>\n`;
+				xml += `        <difficulty>${g.difficulty}</difficulty>\n`;
+				xml += `        <score1>${g.score1}</score1>\n`;
+				xml += `        <score2>${g.score2}</score2>\n`;
+				xml += `        <winner>${g.winner}</winner>\n`;
+				xml += `        <startedAt>${g.startedAt?.toISOString() || ''}</startedAt>\n`;
+				xml += `        <endedAt>${g.endedAt?.toISOString() || ''}</endedAt>\n`;
+				xml += '      </game>\n';
 			}
-			xml += '  </sessions>\n';
+			xml += '    </pongGames>\n';
+			xml += '    <breatheGames>\n';
+			for (const g of breatheGames) {
+				xml += '      <game>\n';
+				xml += `        <id>${g.id.toString()}</id>\n`;
+				xml += `        <startedAt>${g.startedAt?.toISOString() || ''}</startedAt>\n`;
+				xml += `        <endedAt>${g.endedAt?.toISOString() || ''}</endedAt>\n`;
+				xml += '      </game>\n';
+			}
+			xml += '    </breatheGames>\n';
+			xml += '  </gameHistory>\n';
 			
 			xml += '  <friends>\n';
 			for (const f of friends) {
