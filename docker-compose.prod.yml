@@ -28,7 +28,6 @@ services:
   postgres:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
-      POSTGRES_INITDB_ARGS: "-c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key"
     volumes:
       - ./infra/secret:/run/secrets:ro
       - postgres_data:/var/lib/postgresql/data
