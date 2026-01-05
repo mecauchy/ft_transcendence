@@ -146,10 +146,6 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 		setErrorMessage('');
 	}
 
-	const handleGithubLogin = () => {
-		loginWithOAuth('github');
-	}
-
 	const handle42Login = () => {
 		loginWithOAuth('42');
 	}
@@ -290,12 +286,6 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	  <div className='login_api'>
 		<p>{t('auth.loginWith')}</p>
 		<div className='login_api_buttons'>
-			<button className='login_api_button_github'
-			onClick={handleGithubLogin}
-			disabled={isLoading}
-			type="button">
-				<img src='/github_logo.png' alt='GitHub Logo' className='login_api_button_github_logo' />
-			</button>
 			<button className='login_api_button_42'
 			onClick={handle42Login}
 			disabled={isLoading}
