@@ -1,14 +1,61 @@
+WEBSOCKET:
 -fix achievements STILL NOT WORKING
 -fix levelup still not notifying
 -notifications delete all doesnt work (XHRDELETE
 https://localhost:8443/api/users/notifications/all
 [HTTP/1.1 404 Not Found 6ms]
-
 Uncaught (in promise) 
 Object { statusCode: 404, error: "Not Found", message: "Notification not found" })
-
 -notification bubble for the number of notifs doesnt update properly (when receiving a notif or when clicking a notif to go to the tab)
+
+
+FRIEND REQUESTS:
+-fix accepting/declining friend request AFTER sender cancels the request
+api/users/friends/1:1  Failed to load resource: the server responded with a status of 404 (Not Found)Understand this error
+index-JU5CyOjr.js:76 Failed to accept friend request: Object
+-fix cancelling the request AFTER receiver accepts/rejects it
+index-JU5CyOjr.js:9  DELETE https://localhost:8443/api/users/friends/2 404 (Not Found)
+request @ index-JU5CyOjr.js:9
+removeFriend @ index-JU5CyOjr.js:9
+cancelFriendRequest @ index-JU5CyOjr.js:9
+w @ index-JU5CyOjr.js:76
+onClick @ index-JU5CyOjr.js:76
+yd @ index-JU5CyOjr.js:8
+(anonymous) @ index-JU5CyOjr.js:8
+Ah @ index-JU5CyOjr.js:8
+Ml @ index-JU5CyOjr.js:8
+Ul @ index-JU5CyOjr.js:9
+Qp @ index-JU5CyOjr.js:9Understand this error
+index-JU5CyOjr.js:76 Failed to cancel friend request: {statusCode: 404, error: 'Not Foun
+-show list of blocked users in network tab with option to unblock (for the person that blocked the other)
+
+
+FRIEND REQUESTS:
+-fix accepting/declining friend request AFTER sender cancels the request
+api/users/friends/1:1  Failed to load resource: the server responded with a status of 404 (Not Found)Understand this error
+
+
+MESSAGES:
+-fix typing indicator not showing
+-fix messages loading backwards on reload (oldest appears at bottom instead of top)
+-fix sending message to blocked user (display an error msg on the chat like can't contact this user for blocked or invalid users) returning a: 
+index-JU5CyOjr.js:9  POST https://localhost:8443/api/users/chat/messages 403 (Forbidden)
+request @ index-JU5CyOjr.js:9
+sendMessage @ index-JU5CyOjr.js:9
+O @ index-JU5CyOjr.js:76
+yd @ index-JU5CyOjr.js:8
+(anonymous) @ index-JU5CyOjr.js:8
+Ah @ index-JU5CyOjr.js:8
+Ml @ index-JU5CyOjr.js:8
+Ul @ index-JU5CyOjr.js:9
+Qp @ index-JU5CyOjr.js:9Understand this error
+index-JU5CyOjr.js:76 Failed to send message: {statusCode: 403, error: 'Forbidden', message: 'Cannot send message to this user'}
+
+
+GENERAL:
 -make sure everything the user sees in the UI is translatable and follows the i18n
 -change the data exported by the export/import to be relevant (so ignore sessions and scenarios, but put the logs data for the games)
--maybe add an invite button to the discussion to start a pong match between the two friends ? store that in lb properly to know who went against who
+
+EXTRAS:
 -add button on viewing other person's profile to view THEIR history in detail (just like in the history tab for yourself)
+-maybe add an invite button to the discussion to start a pong match between the two friends ? store that in lb properly to know who went against who
