@@ -1,6 +1,3 @@
-PROJECT VALIDATION:
--add translations to privacy policy
-
 WEBSOCKET:
 -fix achievements STILL NOT WORKING
 
@@ -10,16 +7,13 @@ MESSAGES:
 GENERAL:
 -make sure everything the user sees in the UI is translatable and follows the i18n
 
-EXTRAS:
--add button on viewing other person's profile to view THEIR history in detail (just like in the history tab for yourself)
--use the default profile picture as an avatar for everyone when they sign up to the site (in packages/front/public/default-avatar.png)
--maybe add an invite button to the discussion to start a pong match between the two friends ? store that in lb properly to know who went against who
-
--Connect hospital to the data, make it have a minimum to select and lowers  confidence and highers stress, link it to achievement
--Connect the data from the coffee shop to add some confidence and reduce stress, make it save the stats and be viewed somewhere?
+-add achievement for hospital visits and coffeescene
 -mel -> privacy policy text update 
--fix UI bugs (text buildup on firefox, ui for the 2fa, etc..)
+-fix UI bugs (text buildup on firefox????)
 -HTTPS backend to audit
--add oauth api key somewhere somehow
+-maxime add oauth api key somewhere somehow
 -logs management mel -> everyone
 -CTRL + F TODO in the code
+
+
+-fix avatar issues

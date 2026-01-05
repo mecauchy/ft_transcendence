@@ -64,6 +64,8 @@ export async function internalRoutes(fastify: FastifyInstance) {
 
 		const { userId, eventType, eventData } = request.body || ({} as any);
 
+		request.log.info({ userId, eventType, eventData }, 'Received achievement event');
+
 		if (!userId || !eventType) {
 			return reply.status(400).send({
 				statusCode: 400,
@@ -74,6 +76,7 @@ export async function internalRoutes(fastify: FastifyInstance) {
 
 		try {
 			const newlyUnlocked = await checkAchievements(userId, eventType, eventData || {});
+			request.log.info({ userId, eventType, unlockedCount: newlyUnlocked.length }, 'Achievement check complete');
 			return {
 				ok: true,
 				newlyUnlocked: newlyUnlocked.map((a) => ({

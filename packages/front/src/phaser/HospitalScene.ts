@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
 import { t } from "./i18nHelper";
+import { api } from "../api/client";
 
 export default class HospitalScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -222,7 +223,29 @@ export default class HospitalScene extends Phaser.Scene {
 		);
 	}
 
+	private async updateStressConfidence() {
+		// Placeholder for updating stress and confidence values
+		try {
+			const stressIncrease = 20; // Example value
+			const confidenceDecrease = 20; // Example value
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+			const newConfidence = Math.min(100, currentConfidence - confidenceDecrease);
+			const newStress = Math.max(0, currentStress + stressIncrease);
+
+			await api.updateProfile({
+				stressLevel: newStress,
+				confidenceLevel: newConfidence
+			});
+			console.log(`Hospital visit: increased stress by ${stressIncrease} (${currentStress} -> ${newStress}), decreased confidence by ${confidenceDecrease} (${currentConfidence} -> ${newConfidence})`);
+		} catch (error) {
+			console.error('Failed to update stress/confidence levels:', error);
+		}
+	}
+
 	private end_game() {
+		this.updateStressConfidence();
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(

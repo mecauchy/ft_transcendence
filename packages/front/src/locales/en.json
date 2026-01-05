@@ -245,6 +245,7 @@
     "worldMap": {
       "shop": "Shop",
       "hospital": "Hospital",
+	  "hospitalWarning": "Warning: Your stress or confidence levels may affect your experience at the {{location}}.",
       "house": "House",
       "parking": "Parking",
       "coffee": "Coffee",
@@ -315,6 +316,144 @@
   },
   "legal": {
     "privacyPolicyLink": "Privacy Policy",
-    "termsOfServiceLink": "Terms of Service"
+    "termsOfServiceLink": "Terms of Service",
+    "privacyPolicy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last Updated",
+      "introduction": {
+        "title": "1. Introduction",
+        "content": "Welcome to ft_transcendence. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you use our gaming platform."
+      },
+      "dataCollection": {
+        "title": "2. Data We Collect",
+        "intro": "We collect the following types of data:",
+        "account": "Account Information:",
+        "accountDesc": "Username, email address, hashed password, and profile avatar.",
+        "game": "Game Data:",
+        "gameDesc": "Match history, scores, wins/losses, achievements, and XP progression.",
+        "social": "Social Data:",
+        "socialDesc": "Friends list, chat messages, and blocked users.",
+        "technical": "Technical Data:",
+        "technicalDesc": "IP address, browser type, and device information for security purposes."
+      },
+      "dataUse": {
+        "title": "3. How We Use Your Data",
+        "provide": "To provide and maintain our gaming service",
+        "account": "To manage your account and enable game features",
+        "matchmaking": "To enable matchmaking and leaderboards",
+        "communicate": "To communicate with you about your account",
+        "security": "To ensure security and prevent abuse"
+      },
+      "dataStorage": {
+        "title": "4. Data Storage and Security",
+        "content": "Your data is stored securely using industry-standard encryption. Passwords are hashed and salted. We use HTTPS for all communications and implement rate limiting to prevent abuse."
+      },
+      "gdpr": {
+        "title": "5. Your Rights (GDPR)",
+        "intro": "Under GDPR regulations, you have the following rights:",
+        "access": "Right of Access:",
+        "accessDesc": "Request a copy of your personal data.",
+        "rectification": "Right to Rectification:",
+        "rectificationDesc": "Update or correct your personal data.",
+        "erasure": "Right to Erasure:",
+        "erasureDesc": "Request deletion of your account and data.",
+        "portability": "Right to Data Portability:",
+        "portabilityDesc": "Export your data in JSON, CSV, or XML format.",
+        "howTo": "You can exercise these rights through the Settings page in your account."
+      },
+      "cookies": {
+        "title": "6. Cookies and Local Storage",
+        "content": "We use essential cookies and local storage to maintain your session and preferences. These are necessary for the application to function properly."
+      },
+      "thirdParty": {
+        "title": "7. Third-Party Services",
+        "content": "We may integrate with OAuth providers (such as 42) for authentication. When using third-party authentication, their respective privacy policies also apply."
+      },
+      "children": {
+        "title": "8. Children's Privacy",
+        "content": "Our service is not directed to children under 13. We do not knowingly collect personal data from children under 13."
+      },
+      "changes": {
+        "title": "9. Changes to This Policy",
+        "content": "We may update this privacy policy from time to time. We will notify you of any changes by posting the new policy on this page."
+      },
+      "contact": {
+        "title": "10. Contact Us",
+        "content": "If you have any questions about this privacy policy or our data practices, please contact us through the platform."
+      },
+      "footer": "This privacy policy is compliant with GDPR and other applicable data protection regulations."
+    },
+    "termsOfService": {
+      "title": "Terms of Service",
+      "lastUpdated": "Last Updated",
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing and using ft_transcendence, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the service."
+      },
+      "description": {
+        "title": "2. Service Description",
+        "content": "ft_transcendence is a web-based multiplayer gaming platform featuring Pong and other games. The service includes real-time gameplay, chat functionality, friend systems, leaderboards, and gamification features."
+      },
+      "accounts": {
+        "title": "3. User Accounts",
+        "accurate": "You must provide accurate and complete registration information.",
+        "secure": "You are responsible for maintaining the security of your account credentials.",
+        "activity": "You are responsible for all activities that occur under your account.",
+        "notify": "You must notify us immediately of any unauthorized use of your account.",
+        "age": "You must be at least 13 years old to create an account."
+      },
+      "conduct": {
+        "title": "4. Acceptable Use",
+        "intro": "You agree not to:",
+        "abuse": "Harass, abuse, or harm other users",
+        "cheat": "Use cheats, exploits, or automation software",
+        "impersonate": "Impersonate other users or 42 staff",
+        "spam": "Send spam or unsolicited messages",
+        "interfere": "Attempt to interfere with the service's security or functionality",
+        "illegal": "Use the service for any illegal purpose",
+        "offensive": "Post offensive, discriminatory, or inappropriate content"
+      },
+      "content": {
+        "title": "5. User Content",
+        "content": "You retain ownership of content you create (avatars, chat messages). However, you grant us a license to display this content within the service. We reserve the right to remove content that violates these terms."
+      },
+      "gameplay": {
+        "title": "6. Game Rules and Fair Play",
+        "fair": "All games must be played fairly and in good faith.",
+        "disconnect": "Intentionally disconnecting to avoid losses may result in penalties.",
+        "rankings": "Rankings and leaderboards are determined by legitimate gameplay only.",
+        "manipulation": "Score manipulation or match-fixing is prohibited."
+      },
+      "privacy": {
+        "title": "7. Privacy",
+        "content": "Your use of the service is also governed by our Privacy Policy. Please review it to understand how we collect, use, and protect your data."
+      },
+      "termination": {
+        "title": "8. Account Termination",
+        "content": "We may suspend or terminate your account if you violate these terms. You may also delete your account at any time through the Settings page.",
+        "data": "Upon account deletion, your personal data will be removed in accordance with our Privacy Policy and GDPR requirements."
+      },
+      "disclaimer": {
+        "title": "9. Disclaimer of Warranties",
+        "content": "The service is provided \"as is\" without warranties of any kind. We do not guarantee uninterrupted or error-free service. This is an educational project developed as part of the 42 curriculum."
+      },
+      "liability": {
+        "title": "10. Limitation of Liability",
+        "content": "We shall not be liable for any indirect, incidental, or consequential damages arising from your use of the service."
+      },
+      "changes": {
+        "title": "11. Changes to Terms",
+        "content": "We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms."
+      },
+      "governing": {
+        "title": "12. Governing Law",
+        "content": "These terms shall be governed by and construed in accordance with applicable laws. Any disputes shall be resolved through appropriate legal channels."
+      },
+      "contact": {
+        "title": "13. Contact",
+        "content": "If you have any questions about these Terms of Service, please contact us through the platform."
+      },
+      "footer": "By using ft_transcendence, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service."
+    }
   }
 }

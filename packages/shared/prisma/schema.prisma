@@ -205,15 +205,15 @@ model Friend {
 }
 
 model GamePong {
-	id			BigInt		@id @default(autoincrement()) @map("game_pong_id")
-	playerId	BigInt?		@map("game_pong_player_id")
-	mode		PongMode
-	difficulty	PongDifficulty
-	score1		Int			@map("game_pong_score_1")
-	score2		Int			@map("game_pong_score_2")
-	winner		PongWinner
-	startedAt	DateTime?	@map("game_pong_started_at") @db.Timestamptz
-	endedAt		DateTime?	@map("game_pong_ended_at") @db.Timestamptz
+	id			BigInt			@id @default(autoincrement()) @map("game_pong_id")
+	playerId	BigInt?			@map("game_pong_player_id")
+	mode		PongMode		@map("game_pong_mode")
+	difficulty	PongDifficulty	@map("game_pong_difficulty")
+	score1		Int				@map("game_pong_score_1")
+	score2		Int				@map("game_pong_score_2")
+	winner		PongWinner		@map("game_pong_winner")
+	startedAt	DateTime?		@map("game_pong_started_at") @db.Timestamptz
+	endedAt		DateTime?		@map("game_pong_ended_at") @db.Timestamptz
 
 	@@index([playerId], map: "game_pong_player_id")
 }

@@ -22,11 +22,13 @@ async function triggerAchievementEvent(
 	const gamificationServiceUrl = process.env.GAMIFICATION_SERVICE_INTERNAL_URL || 'http://gamification-service:3004';
 
 	if (!internalKey) {
+		console.warn('[Achievement] INTERNAL_SERVICE_KEY not set, skipping achievement event:', eventType);
 		return;
 	}
 
 	try {
-		await fetch(`${gamificationServiceUrl}/internal/events`, {
+		console.log('[Achievement] Triggering event:', eventType, 'for user:', userId);
+		const response = await fetch(`${gamificationServiceUrl}/internal/events`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -38,8 +40,10 @@ async function triggerAchievementEvent(
 				eventData: eventData || {},
 			}),
 		});
+		const result = await response.json();
+		console.log('[Achievement] Event response:', response.status, result);
 	} catch (error) {
-		console.error('Failed to trigger achievement event:', error);
+		console.error('[Achievement] Failed to trigger achievement event:', error);
 	}
 }
 

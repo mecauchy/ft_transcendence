@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
 import { t } from "./i18nHelper";
+import { api } from "../api/client";
+
+type ThoughtCategory = "IMPORTANT" | "NOT_IMPORTANT" | "NEUTRAL";
 
 type CardData = {
 	container: Phaser.GameObjects.Container;
@@ -9,6 +12,105 @@ type CardData = {
 	nx: number;
 	ny: number;
 };
+
+
+export const THOUGHT_COEFFICIENT_KEYS: Record<string, number> = {
+	"scenes.coffee.thoughts.timeChanges": 0.6,
+	"scenes.coffee.thoughts.peopleDisappoint": 1.3,
+	"scenes.coffee.thoughts.effortMatters": 0.7,
+	"scenes.coffee.thoughts.feelingsFade": 1.0,
+	"scenes.coffee.thoughts.silenceHeavy": 1.1,
+	"scenes.coffee.thoughts.trustBreaks": 1.4,
+	"scenes.coffee.thoughts.nothingLasts": 1.0,
+	"scenes.coffee.thoughts.memoriesLie": 1.2,
+	"scenes.coffee.thoughts.wordsScars": 1.4,
+	"scenes.coffee.thoughts.choicesConsequences": 0.8,
+	"scenes.coffee.thoughts.loveRisky": 1.1,
+	"scenes.coffee.thoughts.regretLate": 1.2,
+	"scenes.coffee.thoughts.painTeaches": 0.7,
+	"scenes.coffee.thoughts.comfortKills": 0.8,
+	"scenes.coffee.thoughts.fearLimits": 1.2,
+	"scenes.coffee.thoughts.happinessTemporary": 1.0,
+	"scenes.coffee.thoughts.lonelinessFamiliar": 1.3,
+	"scenes.coffee.thoughts.attentionAddictive": 1.6,
+	"scenes.coffee.thoughts.controlIllusion": 1.0,
+	"scenes.coffee.thoughts.meaningPersonal": 0.7,
+};
+
+export function getThoughtCoefficients(): Record<string, number> {
+	const result: Record<string, number> = {};
+	for (const [key, coeff] of Object.entries(THOUGHT_COEFFICIENT_KEYS)) {
+		result[t(key)] = coeff;
+	}
+	return result;
+}
+
+const clamp0to100 = (v: number) => Math.max(0, Math.min(100, v));
+
+const DEFAULT_MAX_TOTAL_SWING = 25;
+
+
+type NeutralDirection = "TINY_IMPORTANT" | "RELIEF";
+const NEUTRAL_DIRECTION: NeutralDirection = "TINY_IMPORTANT";
+const NEUTRAL_FACTOR = 0.1; // 10% of the weighted effect
+
+function sumCoefficients(sentences: string[], coefficients: Record<string, number>): number {
+	let sum = 0;
+	for (const s of sentences) {
+		const c = coefficients[s];
+		// Safety: if missing, treat as 1.0
+		sum += Number.isFinite(c) ? c : 1.0;
+	}
+		return sum;
+}
+
+function getScale(sentences: string[], maxTotalSwing = DEFAULT_MAX_TOTAL_SWING): number {
+  const coefficients = getThoughtCoefficients();
+  const sum = sumCoefficients(sentences, coefficients);
+  if (sum <= 0) return 0;
+  return maxTotalSwing / sum;
+}
+
+/**
+ * Returns the per-sentence delta for a category, using coefficient + normalization.
+ */
+export function getThoughtDelta(
+  sentence: string,
+  category: ThoughtCategory,
+  options?: {
+    maxTotalSwing?: number;
+    neutralFactor?: number;
+  }
+): { stress: number; confidence: number } {
+  const coefficients = getThoughtCoefficients();
+  const allSentences = Object.values(coefficients);
+  const scale = getScale(Object.keys(coefficients), options?.maxTotalSwing ?? DEFAULT_MAX_TOTAL_SWING);
+
+  const coeffRaw = coefficients[sentence];
+  const coeff = Number.isFinite(coeffRaw) ? coeffRaw : 1.0;
+
+  const base = coeff * scale;
+
+  if (category === "IMPORTANT") {
+    return { stress: +base, confidence: -base };
+  }
+
+  if (category === "NOT_IMPORTANT") {
+    return { stress: -base, confidence: +base };
+  }
+
+  // NEUTRAL
+  const nf = options?.neutralFactor ?? NEUTRAL_FACTOR;
+  const tiny = base * nf;
+
+  if (NEUTRAL_DIRECTION === "RELIEF") {
+    return { stress: -tiny, confidence: +tiny };
+  }
+
+  // "TINY_IMPORTANT"
+  return { stress: +tiny, confidence: -tiny };
+}
+
 
 export default class CoffeeScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -31,7 +133,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	private game_started = false;
 
 	constructor() {
-		super({key: "CoffeeScene"});
+		super({ key: "CoffeeScene" });
 	}
 
 	preload() {
@@ -109,8 +211,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	}
 
 
-	private buttonOverEffect(buttonObject: Phaser.GameObjects.Image)
-		{
+	private buttonOverEffect(buttonObject: Phaser.GameObjects.Image) {
 		buttonObject.setInteractive();
 		buttonObject.on("pointerover", () => {
 			this.tweens.add({
@@ -130,7 +231,7 @@ export default class CoffeeScene extends Phaser.Scene {
 		});
 		if (buttonObject === this.forgiveButton) {
 			buttonObject.on("pointerdown", () => {
-				
+
 				this.scene.start("WorldMapScene");
 				console.log("Forgive button clicked");
 			});
@@ -143,8 +244,22 @@ export default class CoffeeScene extends Phaser.Scene {
 		}
 	}
 
-	private endGame() {
-		// Logic to end the game or return to main menu
+	private buildClassifications(
+		important: string[],
+		notImportant: string[],
+		neutral: string[]
+	): Partial<Record<string, ThoughtCategory>> {
+		const map: Partial<Record<string, ThoughtCategory>> = {};
+
+		for (const s of important) map[s] = "IMPORTANT";
+		for (const s of notImportant) map[s] = "NOT_IMPORTANT";
+		for (const s of neutral) map[s] = "NEUTRAL";
+
+		return map;
+	}
+
+	private async endGame() {
+		// Classify thoughts based on card positions
 		for (const card of this.cards) {
 			if (card.nx > 0.5 && card.nx < 0.95 && card.ny > 0.3 && card.ny < 0.8) {
 				this.notImportantThoughts.push(card.text.text);
@@ -159,7 +274,51 @@ export default class CoffeeScene extends Phaser.Scene {
 		console.log("Important Thoughts:", this.importantThoughts);
 		console.log("Not Important Thoughts:", this.notImportantThoughts);
 		console.log("Neutral Thoughts:", this.neutralThoughts);
+
+		await this.updateStressConfidence();
+
 		this.scene.start("WorldMapScene");
+	}
+
+	private async updateStressConfidence() {
+		try {
+			let totalStressChange = 0;
+			let totalConfidenceChange = 0;
+
+			for (const thought of this.importantThoughts) {
+				const delta = getThoughtDelta(thought, "IMPORTANT");
+				totalStressChange += delta.stress;
+				totalConfidenceChange += delta.confidence;
+			}
+
+			for (const thought of this.notImportantThoughts) {
+				const delta = getThoughtDelta(thought, "NOT_IMPORTANT");
+				totalStressChange += delta.stress;
+				totalConfidenceChange += delta.confidence;
+			}
+
+			for (const thought of this.neutralThoughts) {
+				const delta = getThoughtDelta(thought, "NEUTRAL");
+				totalStressChange += delta.stress;
+				totalConfidenceChange += delta.confidence;
+			}
+
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+
+			const newStress = clamp0to100(currentStress + totalStressChange);
+			const newConfidence = clamp0to100(currentConfidence + totalConfidenceChange);
+
+			await api.updateProfile({
+				stressLevel: Math.round(newStress),
+				confidenceLevel: Math.round(newConfidence)
+			});
+
+			console.log(`Coffee reflection: stress changed by ${totalStressChange.toFixed(2)} (${currentStress} -> ${newStress.toFixed(2)}), confidence changed by ${totalConfidenceChange.toFixed(2)} (${currentConfidence} -> ${newConfidence.toFixed(2)})`);
+		} catch (error) {
+			console.error('Failed to update stress/confidence levels:', error);
+		}
 	}
 
 	// --------------------------------------------------
@@ -174,7 +333,7 @@ export default class CoffeeScene extends Phaser.Scene {
 			fontSize: `${baseFontSize}px`,
 			color: "#000000",
 			align: "center",
-			wordWrap: {width: bg.width * 0.8}
+			wordWrap: { width: bg.width * 0.8 }
 		}).setOrigin(0.5);
 
 		const container = this.add.container(0, 0, [bg, txt]);
@@ -183,7 +342,7 @@ export default class CoffeeScene extends Phaser.Scene {
 		const nx = Phaser.Math.FloatBetween(0.2, 0.8);
 		const ny = Phaser.Math.FloatBetween(0.2, 0.8);
 
-		const card: CardData = {container, bg, text: txt, nx, ny};
+		const card: CardData = { container, bg, text: txt, nx, ny };
 		this.cards.push(card);
 
 		container.setInteractive(

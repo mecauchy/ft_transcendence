@@ -82,7 +82,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				// hash password
 				const hashedPassword = await bcrypt.hash(password, 12);
 
-				// create user
+				// create user with default avatar
 				const user = await prisma.user.create({
 					data: {
 						username,
@@ -90,9 +90,11 @@ export async function authRoutes(fastify: FastifyInstance) {
 						password:	hashedPassword,
 						dob:		new Date(dob),
 						role:		'PATIENT',
+						avatarUrl:	'/default-avatar.png',
 						settings: {
 							create: {
 								locale: 'fr',
+								avatar: '/default-avatar.png',
 							},
 						},
 					},
@@ -270,6 +272,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 							email:		userInfo.email,
 							dob:		new Date('2000-01-01'),
 							role:		'PATIENT',
+							avatarUrl:	userInfo.image?.link || '/default-avatar.png',
 							oauth: {
 								create: {
 									provider:		'42',
@@ -278,7 +281,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 								},
 							settings: {
 								create: {
-									avatar:	userInfo.image?.link || null,
+									avatar:	userInfo.image?.link || '/default-avatar.png',
 									locale:	'en',
 								},
 							},

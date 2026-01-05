@@ -489,6 +489,22 @@ export default class WorldMapScene extends Phaser.Scene {
 		}
 	}
 
+	private showHospitalWarning(locationName: string) {
+		const translatedLocation = t(`scenes.worldMap.${locationName.toLowerCase()}`);
+		this.popup.show(
+			t("scenes.worldMap.hospitalWarning", { location: translatedLocation }),
+			[
+				{
+					label: t("common.ok"),
+					onClick: () => {
+						this.popup.hide();
+						this.moveToCenter();
+					},
+				},
+			]
+		);
+	}
+
 	private goPopup(target: {x: number; y: number}) {
 		let locationName = "";
 		if (target === this.waypoints.shop) locationName = "Shop";
@@ -498,6 +514,15 @@ export default class WorldMapScene extends Phaser.Scene {
 		else if (target === this.waypoints.coffee) locationName = "Coffee";
 
 		if (locationName === "") return;
+
+		if (locationName === "Hospital")
+		{
+			this.fetchStressConfidence();
+			if (this.stressValue > 40 || this.confidenceValue < 60) {
+				this.showHospitalWarning(locationName);
+				return;
+			}
+		}
 
 		const translatedLocation = t(`scenes.worldMap.${locationName.toLowerCase()}`);
 		

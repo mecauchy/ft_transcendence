@@ -314,13 +314,13 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 	  
 	  {/* 2FA Verification Modal */}
 	  {show2FAModal && (
-		<div className="modal-overlay" onClick={() => setShow2FAModal(false)}>
-			<div className="modal-content" onClick={(e) => e.stopPropagation()}>
-				<h2 className="modal-title">{t('auth.enter2FACode')}</h2>
+		<div className="p-4 bg-gray-800 bg-opacity-75 fixed inset-0 flex items-center justify-center" onClick={() => setShow2FAModal(false)}>
+			<div className="bg-white p-6 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
+				<h2 className="text-lg font-semibold mb-4">{t('auth.enter2FACode')}</h2>
 				<form onSubmit={handle2FASubmit}>
 					<input
 						type="text"
-						className="modal-input"
+						className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
 						placeholder={t('auth.2faCodePlaceholder')}
 						value={twoFACode}
 						onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -328,11 +328,11 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 						autoFocus
 						disabled={isLoading}
 					/>
-					{errorMessage && <p className="error-message">{errorMessage}</p>}
-					<div className="modal-buttons">
+					{errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+					<div className="flex justify-end space-x-4">
 						<button
 							type="button"
-							className="modal-button-cancel"
+							className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
 							onClick={() => {
 								setShow2FAModal(false);
 								setTwoFACode('');
@@ -344,7 +344,7 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 						</button>
 						<button
 							type="submit"
-							className="modal-button-confirm"
+							className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
 							disabled={isLoading || twoFACode.length !== 6}
 						>
 							{isLoading ? t('auth.verifying') : t('auth.verify')}
