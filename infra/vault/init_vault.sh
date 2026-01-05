@@ -122,6 +122,17 @@ vault kv put secret/kuma \
 	echo -e "${GREEN}✓ Uptime-Kuma credentials stored${NC}" || \
 	echo -e "${YELLOW}⚠ Uptime-Kuma credentials already exist${NC}"
 
+# Alertmanager webhook
+if [ -f "/tmp/vault-secrets/alertmanager_webhook.txt" ]; then
+	ALERTMANAGER_WEBHOOK=$(cat /tmp/vault-secrets/alertmanager_webhook.txt)
+	vault kv put secret/alertmanager \
+		discord_webhook_url="${ALERTMANAGER_WEBHOOK}" 2>/dev/null && \
+		echo -e "${GREEN}✓ Alertmanager webhook stored${NC}" || \
+		echo -e "${YELLOW}⚠ Alertmanager webhook already exists${NC}"
+else
+	echo -e "${YELLOW}⚠ Alertmanager webhook file not found${NC}"
+fi
+
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
 	password="${POSTGRES_PASS}" \

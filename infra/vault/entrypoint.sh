@@ -41,7 +41,7 @@ export VAULT_TOKEN="$DEV_ROOT_TOKEN"
 sleep 1
 i=1
 while [ $i -le 60 ]; do
-  if curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
+  if wget -q -O /dev/null http://127.0.0.1:8200/v1/sys/health 2>&1; then
     echo "✓ Vault started successfully" 2>&1
     break
   fi
