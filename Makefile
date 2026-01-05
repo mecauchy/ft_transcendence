@@ -64,7 +64,7 @@ help:
 # RUNTIME
 # ============================================================================
 
-up: prod
+up: build-docker prod
 	@echo "$(GREEN)✓ Production stack started$(NC)"
 
 dev: secrets

@@ -22,18 +22,20 @@ echo -e "${GREEN}║           Initializing Vault for Development               
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Wait for Vault to be ready
+# Wait for Vault to be ready using curl instead of vault CLI
 echo -e "${YELLOW} Waiting for Vault to be ready...${NC}"
-for i in {1..30}; do
-    if vault status > /dev/null 2>&1; then
+i=1
+while [ $i -le 30 ]; do
+    if curl -s -k http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Vault is ready!${NC}"
         break
     fi
     if [ $i -eq 30 ]; then
-        echo -e "${RED}✗ Vault failed to start!${NC}"
-        exit 1
+        echo -e "${RED}✗ Vault failed to start after 30 attempts!${NC}"
+        echo "Continuing anyway with initialization..." >&2
     fi
     sleep 1
+    i=$((i+1))
 done
 
 echo ""
@@ -196,17 +198,22 @@ vault write database/roles/auth-role \
 	echo -e "${GREEN}✓ Auth role created${NC}" || \
 	echo -e "${YELLOW}⚠ Auth role already exists${NC}"
 
-# Create token with all policies attached
-vault token create -policy="auth-policy" -id="auth-token"
-vault token create -policy="chat-policy" -id="chat-token"
-vault token create -policy="game-policy" -id="game-token"
-vault token create -policy="user-policy" -id="user-token"
-vault token create -policy="postgres-policy" -id="postgres-token"
-vault token create -policy="grafana-policy" -id="grafana-token"
-echo -e "${GREEN}✓ Service tokens created${NC}"
+# Create token with all policies attached (idempotent - check if token exists first)
+vault token lookup -format=json "auth-token" >/dev/null 2>&1 || \
+	(vault token create -policy="auth-policy" -id="auth-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ auth-token created${NC}" || echo -e "${YELLOW}⚠ auth-token already exists${NC}")
+vault token lookup -format=json "chat-token" >/dev/null 2>&1 || \
+	(vault token create -policy="chat-policy" -id="chat-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ chat-token created${NC}" || echo -e "${YELLOW}⚠ chat-token already exists${NC}")
+vault token lookup -format=json "game-token" >/dev/null 2>&1 || \
+	(vault token create -policy="game-policy" -id="game-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ game-token created${NC}" || echo -e "${YELLOW}⚠ game-token already exists${NC}")
+vault token lookup -format=json "user-token" >/dev/null 2>&1 || \
+	(vault token create -policy="user-policy" -id="user-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ user-token created${NC}" || echo -e "${YELLOW}⚠ user-token already exists${NC}")
+vault token lookup -format=json "postgres-token" >/dev/null 2>&1 || \
+	(vault token create -policy="postgres-policy" -id="postgres-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ postgres-token created${NC}" || echo -e "${YELLOW}⚠ postgres-token already exists${NC}")
+vault token lookup -format=json "grafana-token" >/dev/null 2>&1 || \
+	(vault token create -policy="grafana-policy" -id="grafana-token" >/dev/null 2>&1 && echo -e "${GREEN}✓ grafana-token created${NC}" || echo -e "${YELLOW}⚠ grafana-token already exists${NC}")
 
-# Enable APProle
-vault auth enable approle
+# Enable APProle (idempotent)
+vault auth enable approle 2>/dev/null || echo -e "${YELLOW}⚠ AppRole auth already enabled${NC}"
 
 # --------------------------------------------------------------------------
 # CREATE APPROLES WITH GRANULAR POLICIES (LEAST PRIVILEGE)
@@ -280,24 +287,32 @@ echo ""
 echo -e "${YELLOW}🔑 Extracting AppRole credentials for services...${NC}"
 
 # Process api-gateway service (NEW: uses api-gateway-role with granular policy)
-echo -e "${YELLOW}  Processing api-gateway (role: api-gateway-role)...${NC}"
-ROLE_ID=$(vault read -field=role_id auth/approle/role/api-gateway-role/role-id 2>/dev/null)
-SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/api-gateway-role/secret-id 2>/dev/null)
+echo -e "${YELLOW}  Processing api-gateway (role: api-gateway-role)...${NC}" >&2
+echo "[DEBUG] VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=$VAULT_TOKEN" >&2
+vault read -field=role_id auth/approle/role/api-gateway-role/role-id 2>&1 | tee /tmp/role_id.log >&2
+ROLE_ID=$(cat /tmp/role_id.log 2>/dev/null)
+vault write -f -field=secret_id auth/approle/role/api-gateway-role/secret-id 2>&1 | tee /tmp/secret_id.log >&2
+SECRET_ID=$(cat /tmp/secret_id.log 2>/dev/null)
+
+echo "[DEBUG] ROLE_ID='$ROLE_ID' SECRET_ID='$SECRET_ID'" >&2
 
 # Fallback to legacy auth-role if new role doesn't exist
 if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
-	echo -e "${YELLOW}  ⚠ api-gateway-role not found, falling back to auth-role (legacy)${NC}"
-	ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-role/role-id 2>/dev/null)
-	SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>/dev/null)
+	echo -e "${YELLOW}  ⚠ api-gateway-role not found or empty, falling back to auth-role (legacy)${NC}" >&2
+	vault read -field=role_id auth/approle/role/auth-role/role-id 2>&1 | tee /tmp/role_id_legacy.log >&2
+	ROLE_ID=$(cat /tmp/role_id_legacy.log 2>/dev/null)
+	vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>&1 | tee /tmp/secret_id_legacy.log >&2
+	SECRET_ID=$(cat /tmp/secret_id_legacy.log 2>/dev/null)
+	echo "[DEBUG] After fallback - ROLE_ID='$ROLE_ID' | SECRET_ID='$SECRET_ID'" >&2
 fi
 
 if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
-	echo -n "$ROLE_ID" > "/run/secrets/api-gateway_role_id"
-	echo -n "$SECRET_ID" > "/run/secrets/api-gateway_secret_id"
-	chmod 600 "/run/secrets/api-gateway_role_id" "/run/secrets/api-gateway_secret_id" 2>/dev/null || true
+	echo -n "$ROLE_ID" > "/tmp/vault-secrets/api-gateway_role_id"
+	echo -n "$SECRET_ID" > "/tmp/vault-secrets/api-gateway_secret_id"
+	chmod 600 "/tmp/vault-secrets/api-gateway_role_id" "/tmp/vault-secrets/api-gateway_secret_id" 2>/dev/null || true
 	echo -e "${GREEN}✓ api-gateway: RoleID and SecretID saved${NC}"
 else
-	echo -e "${RED}✗ Failed to extract credentials for api-gateway${NC}"
+	echo -e "${RED}✗ Failed to extract credentials for api-gateway (ROLE_ID='$ROLE_ID' SECRET_ID='$SECRET_ID')${NC}"
 fi
 
 # Process auth-service (NEW: uses auth-service-role with granular policy)
@@ -313,9 +328,9 @@ if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
 fi
 
 if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
-	echo -n "$ROLE_ID" > "/run/secrets/auth-service_role_id"
-	echo -n "$SECRET_ID" > "/run/secrets/auth-service_secret_id"
-	chmod 600 "/run/secrets/auth-service_role_id" "/run/secrets/auth-service_secret_id" 2>/dev/null || true
+	echo -n "$ROLE_ID" > "/tmp/vault-secrets/auth-service_role_id"
+	echo -n "$SECRET_ID" > "/tmp/vault-secrets/auth-service_secret_id"
+	chmod 600 "/tmp/vault-secrets/auth-service_role_id" "/tmp/vault-secrets/auth-service_secret_id" 2>/dev/null || true
 	echo -e "${GREEN}✓ auth-service: RoleID and SecretID saved${NC}"
 else
 	echo -e "${RED}✗ Failed to extract credentials for auth-service${NC}"
@@ -325,9 +340,9 @@ ROLE_ID=$(vault read -field=role_id auth/approle/role/auth-role/role-id 2>/dev/n
 SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/auth-role/secret-id 2>/dev/null)
 
 if [ -n "$ROLE_ID" ] && [ -n "$SECRET_ID" ]; then
-	echo -n "$ROLE_ID" > "/run/secrets/auth-service_role_id"
-	echo -n "$SECRET_ID" > "/run/secrets/auth-service_secret_id"
-	chmod 600 "/run/secrets/auth-service_role_id" "/run/secrets/auth-service_secret_id" 2>/dev/null || true
+	echo -n "$ROLE_ID" > "/tmp/vault-secrets/auth-service_role_id"
+	echo -n "$SECRET_ID" > "/tmp/vault-secrets/auth-service_secret_id"
+	chmod 600 "/tmp/vault-secrets/auth-service_role_id" "/tmp/vault-secrets/auth-service_secret_id" 2>/dev/null || true
 	echo -e "${GREEN}✓ auth-service: RoleID and SecretID saved${NC}"
 else
 	echo -e "${RED}✗ Failed to extract credentials for auth-service${NC}"

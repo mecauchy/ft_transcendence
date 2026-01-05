@@ -5,7 +5,9 @@
 
 set -e
 
-SECRETS_DIR="$(dirname "$0")"
+SECRETS_DIR="$(dirname "$0")" # append ../../infra/secret to get full path
+SECRETS_DIR="$(realpath "$SECRETS_DIR/../infra/secret")"
+mkdir -p "$SECRETS_DIR"
 cd "$SECRETS_DIR"
 
 # Colors
@@ -33,6 +35,7 @@ REQUIRED_SECRETS=(
 	"postgres_db_pass.txt"
 	"redis_password.txt"
 	"jwt_secret.txt"
+	"session_secret.txt"
 )
 
 # Counter for generated secrets

@@ -21,8 +21,8 @@ services:
     image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "80"     # Access HTTP traffic (container 80)
-      - "443"   # Access HTTPS traffic (container 443)
+      - "8080:80"     # Access HTTP traffic (container 80)
+      - "8443:443"   # Access HTTPS traffic (container 443)
     volumes:
       - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
@@ -72,7 +72,6 @@ services:
         target: /run/secrets/vault_secret_id
       - source: vault_token
         target: /run/secrets/vault_token.txt
-    command: ["node", "dist/index.js"]
 
   # AUTH SERVICE - Provides token issuance and auth endpoints
   auth-service:
@@ -101,7 +100,6 @@ services:
         target: /run/secrets/vault_secret_id
       - source: vault_token
         target: /run/secrets/vault_token.txt
-    command: ["node", "dist/index.js"]
 
   vault:
     image: hashicorp/vault:1.13.3
@@ -117,6 +115,7 @@ services:
       - ./infra/vault/policies:/policies:ro
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
       - ./infra/certs:/vault/tls:ro
+      - ./infra/secret:/tmp/vault-secrets:rw
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
@@ -134,9 +133,11 @@ services:
     container_name: postgres
     environment:
       - POSTGRES_USER=root_admin
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
     volumes:
       - postgres_data:/var/lib/postgres/data
       - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/secret:/run/secrets:ro
     networks:
       - service_mesh
       - logging_net
@@ -176,9 +177,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
     volumes:
       - redis_data:/data
+      - ./infra/secret:/run/secrets:ro
     networks:
       - service_mesh
       - logging_net
