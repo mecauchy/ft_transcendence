@@ -433,6 +433,10 @@ class ApiClient {
 		});
 	}
 
+	async cancelFriendRequest(targetUserId: string) {
+		return this.removeFriend(targetUserId);
+	}
+
 	async searchUser(username: string) {
 		return this.request<{id: string; username: string}>(`/users/search?username=${encodeURIComponent(username)}`);
 	}

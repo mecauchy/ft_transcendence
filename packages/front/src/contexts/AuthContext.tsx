@@ -72,39 +72,37 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	}, []);
 
 	const login = async (login: string, password: string) => {
+		const response = await api.login({ login, password });
+
+		if (response.require2FA || response.requires2FA) {
+			if (response.userId) {
+			localStorage.setItem('pending2FAUserId', response.userId);
+			}
+			throw new Error('2FA_REQUIRED');
+		}
+
+		if (response.accessToken) {
+			localStorage.setItem('accessToken', response.accessToken);
+		}
+
+		if (response.user) {
+			setUser({
+			...response.user,
+			displayName: response.user.username,
+			});
+		}
+
+		// optional / non-blocking
 		try {
-			const response = await api.login({login, password});
-			
-			// check if 2FA is required
-			if (response.require2FA || response.requires2FA) {
-				// store userId for 2FA login flow (no token yet)
-				if (response.userId) {
-					localStorage.setItem('pending2FAUserId', response.userId);
-				}
-				throw new Error('2FA_REQUIRED');
+			const profile = await api.getProfile();
+			if (
+			profile.preferences?.language &&
+			['en', 'fr', 'es'].includes(profile.preferences.language)
+			) {
+			i18n.changeLanguage(profile.preferences.language);
 			}
-			
-			if (response.accessToken) {
-				localStorage.setItem('accessToken', response.accessToken);
-			}
-			if (response.user) {
-				setUser({
-					...response.user,
-					displayName: response.user.username,
-				});
-			}
-			// Fetch profile to get language preference after login
-			try {
-				const profile = await api.getProfile();
-				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
-					i18n.changeLanguage(profile.preferences.language);
-				}
-			} catch {
-				// Ignore if profile fetch fails
-			}
-		} catch (error) {
-			const apiError = error as ApiError;
-			throw error;
+		} catch {
+			// volontairement ignoré
 		}
 	};
 

@@ -66,16 +66,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
 	// autoconnect when user is logged in
 	useEffect(() => {
-		if (autoConnect && user) {
-			connect();
-		}
+		if (!autoConnect || !user) return;
+
+		let cancelled = false;
+
+		(async () => {
+			if (cancelled) return;
+			await connect();
+		})();
 
 		return () => {
-			// cleanup for subscriptions
-			subscriptionsRef.current.forEach((unsub) => unsub());
-			subscriptionsRef.current = [];
+			cancelled = true;
 		};
 	}, [autoConnect, user, connect]);
+
 
 	// listen for connection state change
 	useEffect(() => {

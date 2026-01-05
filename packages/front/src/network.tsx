@@ -19,6 +19,7 @@ const { t } = useTranslation();
 const [targetUsername, settargetUsername] = useState("");
 const [friends, setFriends] = useState<UserPreview[]>([]);
 const [friendRequests, setFriendRequests] = useState<UserPreview[]>([]);
+const [pendingRequests, setPendingRequests] = useState<UserPreview[]>([]);
 const [refreshKey, setRefreshKey] = useState(0);
 const [searchError, setSearchError] = useState<string | null>(null);
 const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -42,7 +43,8 @@ const handleAddFriend = async () => {
 		setRefreshKey(prev => prev + 1);
 		settargetUsername("");
 		setTimeout(() => setActionMessage(null), 3000);
-	} catch (error: any) {
+	} catch (error: unknown) {
+		if (error instanceof Error)
 		setSearchError(error.message || t('network.failedToAddFriend'));
 	}
 	};
@@ -62,7 +64,8 @@ const handleAddFriend = async () => {
 		setRefreshKey(prev => prev + 1);
 		setTimeout(() => setActionMessage(null), 3000);
 		}
-	} catch (error: any) {
+	} catch (error: unknown) {
+		if (error instanceof Error)
 		setSearchError(error.message || t('network.failedToBlockUser'));
 	}
 };
@@ -85,6 +88,12 @@ useEffect(() => {
 
 		setFriendRequests(
 		response.pendingRequests.map((r: {id: string; username: string}) => ({
+			id: r.id,
+			username: r.username,
+		}))
+		);
+		setPendingRequests(
+		response.sentRequests.map((r: {id: string; username: string}) => ({
 			id: r.id,
 			username: r.username,
 		}))
@@ -185,6 +194,20 @@ const getStatusColor = (status?: string) => {
 	}
 };
 
+// handle given request pending (cancel)
+const handleGivenRequestPending = async (request: UserPreview) => {
+	try {
+		await api.cancelFriendRequest(request.id);
+		setPendingRequests(prev =>
+			prev.filter(r => r.id !== request.id)
+		);
+		setActionMessage(t('network.requestCancelled'));
+		setTimeout(() => setActionMessage(null), 3000);
+	} catch (error) {
+		console.error("Failed to cancel friend request:", error);
+	}
+};
+
 // render
 return (
 	<div className="pt-20 pl-10 text-white">
@@ -266,7 +289,7 @@ return (
 	</div>
 
 	{/* FRIEND REQUESTS */}
-	<div className="bg-white/10 p-4 rounded-md w-full max-w-2xl">
+	<div className="mb-6 bg-white/10 p-4 rounded-md w-full max-w-2xl">
 		<h3 className="text-xl font-semibold mb-2">{t('network.friendRequests')}</h3>
 		<ul>
 		{friendRequests.length === 0 && (
@@ -296,6 +319,27 @@ return (
 		))}
 		</ul>
 	</div>
+	{/* PENDING FRIEND REQUESTS */}
+	{pendingRequests.length > 0 && (
+	<div className="bg-white/10 p-4 rounded-md w-full max-w-2xl">
+		<h3 className="text-xl font-semibold mb-2">{t('network.sentRequests')}</h3>
+		<ul>
+		{pendingRequests.map(request => (
+			<li
+			key={request.id}
+			className="mb-2 flex items-center justify-between"
+			>
+				<span>{request.username}
+					<button className="px-2 py-1 bg-gray-500 rounded cursor-default hover:bg-gray-600 ml-2"
+					onClick={() => handleGivenRequestPending(request)}>
+						{t('network.givenRequestPending')}
+					</button>
+				</span>
+			</li>
+		))}
+		</ul>
+	</div>
+	)}
 
 	{/* Remove Friend Modal */}
 	{showRemoveModal && removingFriend && (

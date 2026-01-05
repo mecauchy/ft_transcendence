@@ -7,7 +7,7 @@ type NotificationItem = {
 	type: string;
 	title: string;
 	message: string;
-	data: any;
+	data: unknown;
 	isRead: boolean;
 	createdAt: string;
 };

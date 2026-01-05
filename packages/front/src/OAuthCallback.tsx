@@ -20,7 +20,8 @@ function OAuthCallback() {
 				api.setToken(token);
 
 				// Fetch user profile to verify token works
-				const profile = await api.getProfile();
+				// COMMENTED FOR NOW BECAUSE NOT USED
+				// const profile = await api.getProfile();
 				
 				// Store token in localStorage for persistence
 				localStorage.setItem('accessToken', token);

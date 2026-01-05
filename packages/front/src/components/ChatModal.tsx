@@ -186,6 +186,9 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 								},
 								unreadCount: 0,
 							});
+							setMessages([]);
+							setCursor(null);
+							setHasMore(false);
 						} catch {
 							setSelectedConversation({
 								id: 'new',
@@ -210,7 +213,8 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	// load convo on select
 	useEffect(() => {
 		if (!selectedConversation || selectedConversation.id === 'new') {
-			setMessages([]);
+			// COMMENTED FOR NOW FOR ESLINT
+			// setMessages([]);
 			return;
 		}
 
@@ -345,7 +349,12 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 							conversations.map((conv) => (
 								<button
 									key={conv.id}
-									onClick={() => setSelectedConversation(conv)}
+									onClick={() => {
+										setSelectedConversation(conv);
+										setMessages([]);
+										setCursor(null);
+										setHasMore(false);
+									}}
 									className={`w-full p-3 flex items-center gap-3 hover:bg-gray-800 transition-colors ${
 										selectedConversation?.id === conv.id ? 'bg-gray-800' : ''
 									}`}
