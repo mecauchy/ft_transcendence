@@ -1,0 +1,12 @@
+# Gitleaks configuration - exclude development certificates
+# https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for development certificates"
+paths = [
+    '''infra/certs/.*\.key''',
+    '''infra/certs/.*\.crt''',
+]
