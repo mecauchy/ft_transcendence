@@ -52,6 +52,7 @@ services:
     restart: unless-stopped
     environment:
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - PORT=3000
       - HOST=0.0.0.0
     networks:
@@ -72,6 +73,8 @@ services:
         target: /run/secrets/vault_secret_id
       - source: vault_token
         target: /run/secrets/vault_token.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
 
   # AUTH SERVICE - Provides token issuance and auth endpoints
   auth-service:
@@ -119,6 +122,9 @@ services:
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
+    secrets:
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
     healthcheck:
       # Dev mode uses HTTP, prod uses HTTPS via override file
       test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
@@ -185,7 +191,7 @@ services:
       - service_mesh
       - logging_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a \"$(cat /run/secrets/redis_password.txt)\" ping 2>/dev/null | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -331,6 +337,8 @@ secrets:
     file: ./infra/secret/jwt_secret.txt
   session_secret:
     file: ./infra/secret/session_secret.txt
+  redis_password:
+    file: ./infra/secret/redis_password.txt
   api_gateway_role_id:
     file: ./infra/secret/api-gateway_role_id
   api_gateway_secret_id:

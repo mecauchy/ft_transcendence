@@ -1,12 +1,26 @@
 // packages/backend/api-gateway/src/config.ts
+import * as fs from 'fs';
+
+function readSecretFile(envVar: string, filePath: string): string | undefined {
+  const fileEnv = process.env[envVar];
+  if (fileEnv && fs.existsSync(fileEnv)) {
+    return fs.readFileSync(fileEnv, 'utf8').trim();
+  }
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, 'utf8').trim();
+  }
+  return undefined;
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   host: process.env.HOST || '0.0.0.0',
   logLevel: (process.env.LOG_LEVEL || 'info') as 'info' | 'debug' | 'warn' | 'error',
-  
+
   redis: {
     host: process.env.REDIS_HOST || 'redis',
     port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || readSecretFile('REDIS_PASSWORD_FILE', '/run/secrets/redis_password.txt'),
   },
 
   vault: {
