@@ -93,7 +93,7 @@ prod: secrets
 
 secrets:
 	@echo "$(BLUE)→ Generating development secrets...$(NC)"
-	@./infra/secret/generate_dev_secrets.sh
+	@./scripts/generate_dev_secrets.sh
 	@echo "$(BLUE)→ Creating AppRole credential placeholders...$(NC)"
 	@touch infra/secret/api-gateway_role_id infra/secret/api-gateway_secret_id infra/secret/auth-service_role_id infra/secret/auth-service_secret_id 2>/dev/null || true
 	@chmod 600 infra/secret/api-gateway_* infra/secret/auth-service_* 2>/dev/null || true
