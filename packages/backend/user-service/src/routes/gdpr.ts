@@ -386,8 +386,6 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					timestamp: new Date().toISOString(),
 				}, 'GDPR data request received');
 
-				// here usually it would send a mail or open a ticket, we can log it perhaps and simulate (TODO)
-
 				return {
 					success: true,
 					message:	`Your ${type} request has been received. You will receive a confirmation email within 30 days as required by GDPR.`,

@@ -194,7 +194,6 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TR
 CREATE INDEX IF NOT EXISTS idx_users_xp ON users (total_xp DESC);
 CREATE INDEX IF NOT EXISTS idx_users_level ON users (current_level DESC);
 
--- TODO: fill this with real achievements, current aislop
 INSERT INTO achievements (code, name, description, xp_reward, rarity, category, condition_json) VALUES
 	-- ('FIRST_SESSION', 'First Steps', 'Complete your first therapy session', 500, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 1}'),
 	-- ('SESSION_5', 'Getting Started', 'Complete 5 therapy sessions', 200, 'COMMON', 'progression', '{"type": "SESSION_COUNT", "eventType": "SESSION_COMPLETE", "count": 5}'),
@@ -224,6 +223,21 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('BREATHE_1_MIN', 'One Minute Calm', 'Accumulate 1 minute of breathing sessions.', 50, 'COMMON', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
 	('BREATHE_10_MIN', 'Ten Minutes Calm', 'Accumulate 10 minutes of breathing sessions.', 150, 'UNCOMMON', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 600}'),
 	('BREATHE_1_HOUR', 'Hour of Peace', 'Accumulate 1 hour of breathing sessions.', 500, 'EPIC', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 3600}'),
+
+-- TODO: UNCOMMENT THIS AND FILL PROPERLY LATER (connect to the games aswell)
+	-- -- Coffee achievements
+	-- ('COFFEE_DONT_CARE', 'Dont Care', 'You clearly dont care about coffee.', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	-- ('COFFEE_EVERYTHING_IMPORTANT', 'Everything Is Important', 'EVERYTHING IS IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	-- ('COFFEE_SWITZERLAND', 'Switzerland Thoughts', 'You have to be more decisive sometimes...', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+
+	-- -- Shop achievements
+	-- ('SHOP_FIRST_PURCHASE', 'First Purchase', 'Make your first purchase in the shop.', 50, 'COMMON', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 1}'),
+	-- ('SHOP_BIG_SPENDER', 'Big Spender', 'Make 10 purchases in the shop.', 150, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 10}'),
+	-- ('SHOP_ADDICT', 'Shopping Addict', 'Only purchase addictive products in the shop.', 50, 'RARE', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 10}'),
+
+	-- -- Hospital achievements
+	-- ('PATIENT_SAVED', 'Patient Saved', 'Save your first patient.', 500, 'EPIC', 'HOSPITAL', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	-- ('PATIENT_THREE', 'I Can Save Them All', 'Save all the patients.', 500, 'LEGENDARY', 'HOSPITAL', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
 
 	-- Social achievements
 	('FRIEND_FIRST', 'Hello Friend', 'Make your first friend.', 50, 'COMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 1}'),
