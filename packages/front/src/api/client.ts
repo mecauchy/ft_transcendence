@@ -270,7 +270,7 @@ class ApiClient {
 	}
 
 	async deleteAllNotifications() {
-		return this.request<{success: boolean}>('/users/notifications/all', {
+		return this.request<{success: boolean}>('/users/notifications', {
 			method: 'DELETE',
 		});
 	}
@@ -451,6 +451,18 @@ class ApiClient {
 		return this.request<{message: string}>(`/users/friends/${userId}/unblock`, {
 			method: 'POST',
 		});
+	}
+
+	async getBlockedUsers() {
+		return this.request<{
+			blockedUsers: Array<{
+				id: string;
+				username: string;
+				displayName?: string;
+				avatarUrl?: string;
+				blockedAt: string;
+			}>;
+		}>('/users/friends/blocked');
 	}
 
 	// chat endpoints

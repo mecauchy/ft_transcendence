@@ -46,6 +46,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	const [hasMore, setHasMore] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 	const [otherUserTyping, setOtherUserTyping] = useState(false);
+	const [sendError, setSendError] = useState<string | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,12 +84,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 
 	// listen for typing indicators from other users
 	useEffect(() => {
-		if (!selectedConversation || selectedConversation.id === 'new') return;
+		if (!selectedConversation) return;
 
 		const unsubscribe = wsService.on('TYPING', (message) => {
 			const data = message.data as { conversationId: string; userId: string };
-			if (data.conversationId === selectedConversation.id && 
-				data.userId === selectedConversation.otherUser.id) {
+			if (data.userId === selectedConversation.otherUser.id) {
 				setOtherUserTyping(true);
 				setTimeout(() => setOtherUserTyping(false), 3000);
 			}
@@ -221,7 +221,8 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		const loadMessages = async () => {
 			try {
 				const res = await api.getMessages(selectedConversation.id);
-				setMessages(res.messages || []);
+				// reverse messages when loading them
+				setMessages((res.messages || []).reverse());
 				setCursor(res.nextCursor);
 				setHasMore(!!res.nextCursor);
 			} catch (e) {
@@ -250,7 +251,8 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 
 		try {
 			const res = await api.getMessages(selectedConversation.id, cursor);
-			setMessages((prev) => [...(res.messages || []), ...prev]);
+			// reverse messages from load more
+			setMessages((prev) => [...(res.messages || []).reverse(), ...prev]);
 			setCursor(res.nextCursor);
 			setHasMore(!!res.nextCursor);
 		} catch (e) {
@@ -264,6 +266,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		if (!newMessage.trim() || !selectedConversation || sending) return;
 
 		setSending(true);
+		setSendError(null);
 		try {
 			const res = await api.sendMessage(selectedConversation.otherUser.id, newMessage.trim());
 
@@ -300,8 +303,16 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					prev ? {...prev, id: res.conversationId} : prev
 				);
 			}
-		} catch (e) {
+		} catch (e: unknown) {
 			console.error('Failed to send message:', e);
+			const error = e as { statusCode?: number; message?: string };
+			if (error.statusCode === 403) {
+				setSendError(t('chat.cannotMessage', 'Cannot send message to this user'));
+			} else if (error.statusCode === 404) {
+				setSendError(t('chat.userNotFound', 'User not found'));
+			} else {
+				setSendError(t('chat.sendFailed', 'Failed to send message'));
+			}
 		}
 		setSending(false);
 	};
@@ -480,6 +491,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 
 							{/* Input */}
 							<form onSubmit={handleSend} className="p-4 border-t border-gray-700">
+								{sendError && (
+									<div className="mb-2 px-3 py-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+										{sendError}
+									</div>
+								)}
 								<div className="flex gap-2">
 									<input
 										ref={inputRef}

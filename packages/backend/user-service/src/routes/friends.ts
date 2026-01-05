@@ -505,4 +505,45 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 			});
 		}
 	});
+
+	// get blocked users list
+	fastify.get('/blocked', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+
+		try {
+			const blockedUsers = await prisma.friend.findMany({
+				where: {
+					initiatorId: userId,
+					status: 'BLOCKED',
+				},
+				include: {
+					receiver: {
+						select: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+						},
+					},
+				},
+			});
+
+			return {
+				blockedUsers: blockedUsers.map((b) => ({
+					id: b.receiver.id.toString(),
+					username: b.receiver.username,
+					displayName: b.receiver.displayName,
+					avatarUrl: b.receiver.avatarUrl,
+					blockedAt: b.createdAt,
+				})),
+			};
+		} catch (error) {
+			request.log.error({error}, 'Failed to fetch blocked users');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to fetch blocked users',
+			});
+		}
+	});
 }

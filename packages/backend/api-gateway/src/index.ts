@@ -394,9 +394,9 @@ async function	start() {
 								break;
 
 							case 'TYPING':
-								// broadcast typing state
-								if (data.conversationId) {
-									await redis.publish(`conversation:${data.conversationId}`, JSON.stringify({
+								// broadcast typing state to recipient
+								if (data.recipientId && data.conversationId) {
+									await redis.publish(`user:${data.recipientId}:messages`, JSON.stringify({
 										type: 'TYPING',
 										data: { userId, conversationId: data.conversationId },
 										timestamp: Date.now(),
