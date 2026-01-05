@@ -1,18 +1,20 @@
 import {useState, useEffect} from "react";
 import Navbar from "./components/navbar.tsx";
+import Footer from "./components/Footer.tsx";
 import Game from "./game.tsx";
 import Network from "./network.tsx";
 import Settings from "./settings.tsx";
 import Profile from "./profile.tsx";
 import MatchHistory from "./history.tsx";
 import Leaderboard from "./leaderboard.tsx";
+import { PrivacyPolicy, TermsOfService } from "./legal";
 
 function Home({username, onLogout}: {username: string | null, onLogout: () => void}) {
 	//state
 	const getInitialPage = (): string => {
 		const path = window.location.pathname;
 		const current = path.replace("/", "");
-		if (["tournament", "game", "network", "settings", "profile", "history", "leaderboard"].includes(current)) {
+		if (["tournament", "game", "network", "settings", "profile", "history", "leaderboard", "privacy", "terms"].includes(current)) {
 			return current;
 		}
 		if (path.startsWith('/profile/')) {
@@ -67,7 +69,7 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 
 	//render
 	  return (
-	<div className='home_container'>
+	<div className='home_container pb-14'>
 		<Navbar setPage={changePage} username={username} />
 		{page === 'game' && <Game />}
 		{page === 'network' && <Network />}
@@ -75,6 +77,9 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		{page === 'profile' && <Profile userId={viewingUserId} />}
 		{page === 'history' && <MatchHistory />}
 		{page === 'leaderboard' && <Leaderboard />}
+		{page === 'privacy' && <PrivacyPolicy />}
+		{page === 'terms' && <TermsOfService />}
+		<Footer setPage={changePage} />
 	</div>
   	)
 }

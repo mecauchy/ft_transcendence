@@ -302,5 +302,9 @@
       "confirmReview": "Vous avez sélectionné le dossier médical de {{name}}. Continuer ?",
       "thankYou": "Merci d'avoir examiné les dossiers médicaux. Votre expertise est précieuse pour offrir les meilleurs soins à nos patients."
     }
+  },
+  "legal": {
+    "privacyPolicyLink": "Politique de confidentialité",
+    "termsOfServiceLink": "Conditions d'utilisation"
   }
 }

@@ -308,5 +308,9 @@
       "confirmReview": "Has seleccionado el expediente médico de {{name}}. ¿Continuar?",
       "thankYou": "Gracias por revisar los expedientes médicos. Tu experiencia es valiosa para brindar la mejor atención a nuestros pacientes."
     }
+  },
+  "legal": {
+    "privacyPolicyLink": "Política de privacidad",
+    "termsOfServiceLink": "Términos de servicio"
   }
 }

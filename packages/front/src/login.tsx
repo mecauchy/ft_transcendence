@@ -3,7 +3,7 @@ import './styles/login.css'
 import {useAuth} from './contexts/AuthContext'
 import {useTranslation} from 'react-i18next'
 
-function Login({onLogin}: {onLogin: (username: string) => void}) {
+function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => void, onNavigateToLegal?: (page: string) => void}) {
 	const {login, verify2FALogin, register, loginWithOAuth} = useAuth();
 	const {t} = useTranslation();
 
@@ -354,6 +354,25 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			</div>
 		</div>
 	  )}
+	  
+	  {/* Legal links */}
+	  <div className="login-footer">
+		<a 
+			href="/privacy" 
+			onClick={(e) => { e.preventDefault(); onNavigateToLegal?.('privacy'); }}
+			className="legal-link"
+		>
+			{t('legal.privacyPolicyLink', 'Privacy Policy')}
+		</a>
+		<span className="legal-separator">•</span>
+		<a 
+			href="/terms" 
+			onClick={(e) => { e.preventDefault(); onNavigateToLegal?.('terms'); }}
+			className="legal-link"
+		>
+			{t('legal.termsOfServiceLink', 'Terms of Service')}
+		</a>
+	  </div>
 	</div>
   )
 }

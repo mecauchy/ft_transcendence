@@ -312,5 +312,9 @@
       "confirmReview": "You have selected {{name}}'s medical records for review. Proceed?",
       "thankYou": "Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients."
     }
+  },
+  "legal": {
+    "privacyPolicyLink": "Privacy Policy",
+    "termsOfServiceLink": "Terms of Service"
   }
 }
