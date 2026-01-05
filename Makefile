@@ -28,7 +28,8 @@ help:
 	@echo "$(GREEN)🔨 Build (Development):$(NC)"
 	@echo "  make build                - Build TypeScript locally (for volume mounting)"
 	@echo "  make build-local          - Same as 'make build'"
-	@echo "  make build-docker         - Rebuild Docker images"
+	@echo "  make build-docker         - Build Docker images (uses cache)"
+	@echo "  make rebuild              - Force rebuild all images (no cache, slower)"
 	@echo "  make secrets              - Generate missing development secrets"
 	@echo ""
 	@echo "$(GREEN)🔐 Secrets & Webhooks:$(NC)"
@@ -64,7 +65,12 @@ help:
 # RUNTIME
 # ============================================================================
 
-up: build-docker prod
+up: secrets
+	@echo "$(BLUE)→ Checking if images need to be built...$(NC)"
+	@docker-compose build
+	@echo "$(BLUE)→ Starting production stack (idempotent)...$(NC)"
+	@docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@docker-compose ps
 	@echo "$(GREEN)✓ Production stack started$(NC)"
 
 dev: secrets
@@ -178,8 +184,13 @@ build-local:
 
 build-docker:
 	@echo "$(BLUE)→ Building Docker images...$(NC)"
-	@docker-compose build --no-cache
+	@docker-compose build
 	@echo "$(GREEN)✓ Docker images built$(NC)"
+
+rebuild:
+	@echo "$(BLUE)→ Forcing rebuild of all Docker images (no cache)...$(NC)"
+	@docker-compose build --no-cache
+	@echo "$(GREEN)✓ Docker images rebuilt from scratch$(NC)"
 
 # ============================================================================
 # UPTIME-KUMA SETUP
