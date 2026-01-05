@@ -1,0 +1,12 @@
+# Development SSL certificates - self-signed for local development only
+# These are NOT production secrets and are safe to commit
+
+# Gitleaks fingerprints for allowed dev certificates
+/repo/infra/certs/nginx.key:private-key:1
+/repo/infra/certs/vite.key:private-key:1
+/repo/infra/certs/localhost.key:private-key:1
+
+# Also match without /repo/ prefix for different scan contexts
+infra/certs/nginx.key:private-key:1
+infra/certs/vite.key:private-key:1
+infra/certs/localhost.key:private-key:1
