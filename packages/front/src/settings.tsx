@@ -17,6 +17,13 @@ function Settings() {
 	const [avatarUploading, setAvatarUploading] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl || null);
 
+	// sync avatar preview
+	useEffect(() => {
+		if (user?.avatarUrl && !avatarUploading) {
+			setAvatarPreview(user.avatarUrl);
+		}
+	}, [user?.avatarUrl, avatarUploading]);
+
 	const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
@@ -44,7 +51,9 @@ function Settings() {
 
 		try {
 			const res = await api.uploadAvatar(file);
-			setAvatarPreview(res.url);
+			// forcerefresh
+			const cacheBustedUrl = `${res.url}?t=${Date.now()}`;
+			setAvatarPreview(cacheBustedUrl);
 			setMessage({type: 'success', text: t('settings.avatar.uploadSuccess')});
 			await refreshUser();
 		} catch (error: unknown) {
@@ -333,6 +342,24 @@ function Settings() {
 		e.preventDefault();
 		setIsLoading(true);
 		setMessage(null);
+
+		// front end validation
+		if (username && username !== user?.username) {
+			if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+				setMessage({type: 'error', text: t('settings.usernameRequirements', 'Username must be 3-32 alphanumeric characters or underscores')});
+				setIsLoading(false);
+				return;
+			}
+		}
+
+		if (email && email !== user?.email) {
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(email)) {
+				setMessage({type: 'error', text: t('settings.invalidEmail', 'Invalid email format')});
+				setIsLoading(false);
+				return;
+			}
+		}
 
 		try {
 			await api.updateProfile({

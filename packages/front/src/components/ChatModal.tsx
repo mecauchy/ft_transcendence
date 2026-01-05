@@ -3,6 +3,13 @@ import {api} from '../api/client';
 import {useTranslation} from 'react-i18next';
 import {wsService} from '../services/websocket';
 
+// click on user to view profile
+const navigateToProfile = (userId: string, onClose: () => void) => {
+	onClose();
+	window.history.pushState({page: 'profile', userId}, '', `/profile/${userId}`);
+	window.dispatchEvent(new PopStateEvent('popstate', {state: {page: 'profile', userId}}));
+};
+
 type Conversation = {
 	id: string;
 	otherUser: {
@@ -370,15 +377,22 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 										selectedConversation?.id === conv.id ? 'bg-gray-800' : ''
 									}`}
 								>
-									<div className="relative">
+									<div
+										className="relative cursor-pointer"
+										onClick={(e) => {
+											e.stopPropagation();
+											navigateToProfile(conv.otherUser.id, onClose);
+										}}
+										title={t('chat.viewProfile', 'View profile')}
+									>
 										{conv.otherUser.avatarUrl ? (
 											<img
 												src={conv.otherUser.avatarUrl}
 												alt=""
-												className="w-10 h-10 rounded-full"
+												className="w-10 h-10 rounded-full hover:ring-2 hover:ring-blue-500 transition-all"
 											/>
 										) : (
-											<div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+											<div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold hover:ring-2 hover:ring-blue-500 transition-all">
 												{conv.otherUser.username[0].toUpperCase()}
 											</div>
 										)}
@@ -413,18 +427,29 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					<div className="p-4 border-b border-gray-700 flex items-center justify-between">
 						{selectedConversation ? (
 							<div className="flex items-center gap-3">
+								<div
+									className="cursor-pointer"
+									onClick={() => navigateToProfile(selectedConversation.otherUser.id, onClose)}
+									title={t('chat.viewProfile', 'View profile')}
+								>
 									{selectedConversation.otherUser.avatarUrl ? (
 										<img
 											src={selectedConversation.otherUser.avatarUrl}
-										alt=""
-										className="w-8 h-8 rounded-full"
-									/>
-								) : (
-									<div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-										{selectedConversation.otherUser.username[0].toUpperCase()}
-									</div>
-								)}
-								<span className="font-medium">{selectedConversation.otherUser.username}</span>
+											alt=""
+											className="w-8 h-8 rounded-full hover:ring-2 hover:ring-blue-500 transition-all"
+										/>
+									) : (
+										<div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm hover:ring-2 hover:ring-blue-500 transition-all">
+											{selectedConversation.otherUser.username[0].toUpperCase()}
+										</div>
+									)}
+								</div>
+								<span
+									className="font-medium cursor-pointer hover:text-blue-400 transition-colors"
+									onClick={() => navigateToProfile(selectedConversation.otherUser.id, onClose)}
+								>
+									{selectedConversation.otherUser.username}
+								</span>
 							</div>
 						) : (
 							<span className="text-gray-400">{t('chat.selectConversation', 'Select a conversation')}</span>

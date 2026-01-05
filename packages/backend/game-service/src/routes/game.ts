@@ -645,5 +645,107 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+
+	// coffee scene completion
+	fastify.post<{Body: {
+		importantCount: number;
+		notImportantCount: number;
+		neutralCount: number;
+		outcome: 'BALANCED' | 'ALL_IMPORTANT' | 'ALL_NOT_IMPORTANT' | 'MIXED' | 'NEUTRAL';
+	}}>('/minigame/coffee', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = request.user!.userId;
+		const { importantCount, notImportantCount, neutralCount, outcome } = request.body as {
+			importantCount: number;
+			notImportantCount: number;
+			neutralCount: number;
+			outcome: string;
+		};
+
+		try {
+			// trigger special achievements
+			await triggerAchievementEvent(userId, 'COFFEE_SCENE_COMPLETE', {
+				importantCount,
+				notImportantCount,
+				neutralCount,
+				outcome,
+			});
+
+			// xp based on outcome
+			let xpAmount = 20;
+			let xpReason = 'Coffee scene completed';
+
+			if (outcome === 'BALANCED') {
+				xpAmount = 50;
+				xpReason = 'Coffee scene - Balanced perspective';
+			} else if (outcome === 'ALL_NOT_IMPORTANT') {
+				xpAmount = 30;
+				xpReason = 'Coffee scene - Letting go';
+			}
+
+			await awardXpInternal(userId, xpAmount, xpReason);
+
+			return reply.send({
+				success: true,
+				xpAwarded: xpAmount,
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to log coffee minigame');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to log coffee minigame',
+			});
+		}
+	});
+
+	// hospital scene
+	fastify.post<{Body: {
+		patientsSaved: number;
+		totalPatients: number;
+	}}>('/minigame/hospital', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = request.user!.userId;
+		const { patientsSaved, totalPatients } = request.body as {
+			patientsSaved: number;
+			totalPatients: number;
+		};
+
+		try {
+			// achievement for saving everyone
+			await triggerAchievementEvent(userId, 'HOSPITAL_SCENE_COMPLETE', {
+				patientsSaved,
+				totalPatients,
+				allSaved: patientsSaved >= totalPatients,
+			});
+
+			// award xp
+			let xpAmount = 30;
+			let xpReason = 'Hospital scene completed';
+
+			if (patientsSaved >= totalPatients) {
+				xpAmount = 100;
+				xpReason = 'Hospital scene - All patients saved!';
+			} else if (patientsSaved > 0) {
+				xpAmount = 30 + (patientsSaved * 20);
+				xpReason = `Hospital scene - ${patientsSaved} patient(s) saved`;
+			}
+
+			await awardXpInternal(userId, xpAmount, xpReason);
+
+			return reply.send({
+				success: true,
+				xpAwarded: xpAmount,
+				patientsSaved,
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to log hospital minigame');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to log hospital minigame',
+			});
+		}
+	});
+
 }
+
 

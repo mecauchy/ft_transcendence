@@ -210,6 +210,64 @@ const achievements = [
 		category: 'progress',
 		conditionJson: {eventType: 'LEVEL_UP', type: 'LEVEL_REACHED', level: 50},
 	},
+
+	// coffee achievements
+	{
+		code: 'COFFEE_DONT_CARE',
+		name: 'Don\'t Care',
+		description: 'Mark all thoughts as NOT IMPORTANT',
+		xpReward: 200,
+		rarity: 'RARE' as const,
+		category: 'coffee',
+		conditionJson: {eventType: 'COFFEE_SCENE_COMPLETE', type: 'COFFEE_OUTCOME', outcome: 'ALL_NOT_IMPORTANT'},
+	},
+	{
+		code: 'COFFEE_EVERYTHING_IMPORTANT',
+		name: 'Everything Is Important',
+		description: 'Mark all thoughts as IMPORTANT',
+		xpReward: 200,
+		rarity: 'RARE' as const,
+		category: 'coffee',
+		conditionJson: {eventType: 'COFFEE_SCENE_COMPLETE', type: 'COFFEE_OUTCOME', outcome: 'ALL_IMPORTANT'},
+	},
+	{
+		code: 'COFFEE_BALANCED',
+		name: 'Balanced Thoughts',
+		description: 'Find balance',
+		xpReward: 150,
+		rarity: 'UNCOMMON' as const,
+		category: 'coffee',
+		conditionJson: {eventType: 'COFFEE_SCENE_COMPLETE', type: 'COFFEE_OUTCOME', outcome: 'BALANCED'},
+	},
+	{
+		code: 'COFFEE_SWITZERLAND',
+		name: 'Switzerland Thoughts',
+		description: 'You can always be neutral',
+		xpReward: 200,
+		rarity: 'RARE' as const,
+		category: 'coffee',
+		conditionJson: {eventType: 'COFFEE_SCENE_COMPLETE', type: 'COFFEE_OUTCOME', outcome: 'NEUTRAL'},
+	},
+
+	// Hospital achievements
+	{
+		code: 'PATIENT_SAVED',
+		name: 'Patient Saved',
+		description: 'Save your first patient',
+		xpReward: 200,
+		rarity: 'UNCOMMON' as const,
+		category: 'hospital',
+		conditionJson: {eventType: 'HOSPITAL_SCENE_COMPLETE', type: 'HOSPITAL_PATIENTS_SAVED', count: 1},
+	},
+	{
+		code: 'PATIENT_THREE',
+		name: 'I Can Save Them All',
+		description: 'Save all the patients',
+		xpReward: 500,
+		rarity: 'LEGENDARY' as const,
+		category: 'hospital',
+		conditionJson: {eventType: 'HOSPITAL_SCENE_COMPLETE', type: 'HOSPITAL_ALL_SAVED'},
+	},
 ];
 
 async function main() {

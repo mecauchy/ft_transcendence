@@ -396,6 +396,7 @@ class ApiClient {
 			friends: Array<{
 				id: string;
 				username: string;
+				avatarUrl?: string;
 				status: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 			}>;
 			pendingRequests: Array<{
@@ -540,6 +541,29 @@ class ApiClient {
 
 	async sendBreathe(payload: IBreatheGame) {
 		return this.request<{success: boolean; gameId: string}>('/game/breathe', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+		});
+	}
+
+	// minigame endpoints
+	async sendCoffeeResult(payload: {
+		importantCount: number;
+		notImportantCount: number;
+		neutralCount: number;
+		outcome: 'BALANCED' | 'ALL_IMPORTANT' | 'ALL_NOT_IMPORTANT' | 'NEUTRAL' | 'MIXED';
+	}) {
+		return this.request<{success: boolean; xpAwarded: number}>('/game/minigame/coffee', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+		});
+	}
+
+	async sendHospitalResult(payload: {
+		patientsSaved: number;
+		totalPatients: number;
+	}) {
+		return this.request<{success: boolean; xpAwarded: number; patientsSaved: number}>('/game/minigame/hospital', {
 			method: 'POST',
 			body: JSON.stringify(payload),
 		});

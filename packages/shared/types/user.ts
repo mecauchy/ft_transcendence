@@ -39,6 +39,7 @@ export interface IUserProfile {
 export interface IFriend {
 	id:	string;
 	username: string;
+	avatarUrl?: string;
 	status: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 	lastSeen: number;
 }

@@ -9,6 +9,7 @@ import ChatModal from "./components/ChatModal";
 type UserPreview = {
 id: string;
 username: string;
+avatarUrl?: string;
 status?: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
 };
 
@@ -88,9 +89,10 @@ useEffect(() => {
 		const response = await api.getFriends();
 
 		setFriends(
-			response.friends.map((f: {id: string; username: string; status?: 'ONLINE' | 'OFFLINE' | 'IN_SESSION'}) => ({
+			response.friends.map((f: {id: string; username: string; avatarUrl?: string; status?: 'ONLINE' | 'OFFLINE' | 'IN_SESSION'}) => ({
 			id: f.id,
 			username: f.username,
+			avatarUrl: f.avatarUrl,
 			status: f.status,
 		}))
 		);
@@ -312,7 +314,25 @@ return (
 		{friends.map(friend => (
 			<li key={friend.id} className="mb-2 flex items-center justify-between bg-white/5 p-3 rounded-md">
 			<div className="flex items-center gap-3">
-				<div className={`w-3 h-3 rounded-full ${getStatusColor(friend.status)}`} title={friend.status || 'OFFLINE'} />
+				{/* Avatar with status indicator */}
+				<div className="relative">
+					{friend.avatarUrl ? (
+						<img
+							src={friend.avatarUrl}
+							alt={friend.username}
+							className="w-10 h-10 rounded-full object-cover"
+						/>
+					) : (
+						<div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+							{friend.username[0].toUpperCase()}
+						</div>
+					)}
+					{/* Status indicator circle */}
+					<div
+						className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-800 ${getStatusColor(friend.status)}`}
+						title={friend.status || 'OFFLINE'}
+					/>
+				</div>
 				<span className="font-medium">{friend.username}</span>
 			</div>
 			<div className="flex gap-2">

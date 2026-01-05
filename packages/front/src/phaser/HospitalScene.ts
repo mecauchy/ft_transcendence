@@ -13,6 +13,9 @@ export default class HospitalScene extends Phaser.Scene {
 
 	private game_started: boolean = false;
 
+	private patientsSaved: number = 0;
+	private readonly TOTAL_PATIENTS = 3;
+
 	private readonly DROP_ZONE = {
 		x: 0.5,
 		y: 0.15,
@@ -244,8 +247,21 @@ export default class HospitalScene extends Phaser.Scene {
 		}
 	}
 
-	private end_game() {
-		this.updateStressConfidence();
+	private async end_game() {
+		this.patientsSaved++;
+		await this.updateStressConfidence();
+
+		// send result to backend for achievements
+		try {
+			await api.sendHospitalResult({
+				patientsSaved: this.patientsSaved,
+				totalPatients: this.TOTAL_PATIENTS,
+			});
+			console.log('Hospital result sent to backend:', this.patientsSaved, '/', this.TOTAL_PATIENTS);
+		} catch (error) {
+			console.error('Failed to send hospital result:', error);
+		}
+
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(

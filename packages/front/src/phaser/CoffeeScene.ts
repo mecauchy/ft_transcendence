@@ -52,63 +52,61 @@ const DEFAULT_MAX_TOTAL_SWING = 25;
 
 type NeutralDirection = "TINY_IMPORTANT" | "RELIEF";
 const NEUTRAL_DIRECTION: NeutralDirection = "TINY_IMPORTANT";
-const NEUTRAL_FACTOR = 0.1; // 10% of the weighted effect
+const NEUTRAL_FACTOR = 0.15; // 15% of the weighted effect
 
 function sumCoefficients(sentences: string[], coefficients: Record<string, number>): number {
 	let sum = 0;
 	for (const s of sentences) {
 		const c = coefficients[s];
-		// Safety: if missing, treat as 1.0
 		sum += Number.isFinite(c) ? c : 1.0;
 	}
 		return sum;
 }
 
 function getScale(sentences: string[], maxTotalSwing = DEFAULT_MAX_TOTAL_SWING): number {
-  const coefficients = getThoughtCoefficients();
-  const sum = sumCoefficients(sentences, coefficients);
-  if (sum <= 0) return 0;
-  return maxTotalSwing / sum;
+	const coefficients = getThoughtCoefficients();
+	const sum = sumCoefficients(sentences, coefficients);
+	if (sum <= 0)
+		return 0;
+	return maxTotalSwing / sum;
 }
 
-/**
- * Returns the per-sentence delta for a category, using coefficient + normalization.
- */
+
 export function getThoughtDelta(
-  sentence: string,
-  category: ThoughtCategory,
-  options?: {
-    maxTotalSwing?: number;
-    neutralFactor?: number;
-  }
-): { stress: number; confidence: number } {
-  const coefficients = getThoughtCoefficients();
-  const allSentences = Object.values(coefficients);
-  const scale = getScale(Object.keys(coefficients), options?.maxTotalSwing ?? DEFAULT_MAX_TOTAL_SWING);
+	sentence: string,
+	category: ThoughtCategory,
+	options?: {
+		maxTotalSwing?: number;
+		neutralFactor?: number;
+	}
+	): { stress: number; confidence: number } {
+	const coefficients = getThoughtCoefficients();
+	const allSentences = Object.values(coefficients);
+	const scale = getScale(Object.keys(coefficients), options?.maxTotalSwing ?? DEFAULT_MAX_TOTAL_SWING);
 
-  const coeffRaw = coefficients[sentence];
-  const coeff = Number.isFinite(coeffRaw) ? coeffRaw : 1.0;
+	const coeffRaw = coefficients[sentence];
+	const coeff = Number.isFinite(coeffRaw) ? coeffRaw : 1.0;
 
-  const base = coeff * scale;
+	const base = coeff * scale;
 
-  if (category === "IMPORTANT") {
-    return { stress: +base, confidence: -base };
-  }
+	if (category === "IMPORTANT") {
+		return { stress: +base, confidence: -base };
+	}
 
-  if (category === "NOT_IMPORTANT") {
-    return { stress: -base, confidence: +base };
-  }
+	if (category === "NOT_IMPORTANT") {
+		return { stress: -base, confidence: +base };
+	}
 
-  // NEUTRAL
-  const nf = options?.neutralFactor ?? NEUTRAL_FACTOR;
-  const tiny = base * nf;
+	// NEUTRAL
+	const nf = options?.neutralFactor ?? NEUTRAL_FACTOR;
+	const tiny = base * nf;
 
-  if (NEUTRAL_DIRECTION === "RELIEF") {
-    return { stress: -tiny, confidence: +tiny };
-  }
+	if (NEUTRAL_DIRECTION === "RELIEF") {
+		return { stress: -tiny, confidence: +tiny };
+	}
 
-  // "TINY_IMPORTANT"
-  return { stress: +tiny, confidence: -tiny };
+	// "TINY_IMPORTANT"
+	return { stress: +tiny, confidence: -tiny };
 }
 
 
@@ -259,7 +257,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	}
 
 	private async endGame() {
-		// Classify thoughts based on card positions
+		// classify thoughts based on card positions
 		for (const card of this.cards) {
 			if (card.nx > 0.5 && card.nx < 0.95 && card.ny > 0.3 && card.ny < 0.8) {
 				this.notImportantThoughts.push(card.text.text);
@@ -276,6 +274,36 @@ export default class CoffeeScene extends Phaser.Scene {
 		console.log("Neutral Thoughts:", this.neutralThoughts);
 
 		await this.updateStressConfidence();
+
+		// determine outcome and send to backend for achievements
+		const total = this.importantThoughts.length + this.notImportantThoughts.length + this.neutralThoughts.length;
+		let outcome: 'BALANCED' | 'ALL_IMPORTANT' | 'ALL_NOT_IMPORTANT' | 'NEUTRAL' | 'MIXED' = 'MIXED';
+
+		if (this.notImportantThoughts.length === total && total > 0) {
+			outcome = 'ALL_NOT_IMPORTANT';
+		} else if (this.importantThoughts.length === total && total > 0) {
+			outcome = 'ALL_IMPORTANT';
+		} else if (this.neutralThoughts.length === total && total > 0) {
+			outcome = 'NEUTRAL';
+		} else if (
+			this.importantThoughts.length > 0 &&
+			this.notImportantThoughts.length > 0 &&
+			Math.abs(this.importantThoughts.length - this.notImportantThoughts.length) <= 3
+		) {
+			outcome = 'BALANCED';
+		}
+
+		try {
+			await api.sendCoffeeResult({
+				importantCount: this.importantThoughts.length,
+				notImportantCount: this.notImportantThoughts.length,
+				neutralCount: this.neutralThoughts.length,
+				outcome,
+			});
+			console.log('Coffee result sent to backend:', outcome);
+		} catch (error) {
+			console.error('Failed to send coffee result:', error);
+		}
 
 		this.scene.start("WorldMapScene");
 	}

@@ -225,19 +225,15 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('BREATHE_1_HOUR', 'Hour of Peace', 'Accumulate 1 hour of breathing sessions.', 500, 'EPIC', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 3600}'),
 
 -- TODO: UNCOMMENT THIS AND FILL PROPERLY LATER (connect to the games aswell)
-	-- -- Coffee achievements
-	-- ('COFFEE_DONT_CARE', 'Dont Care', 'You clearly dont care about coffee.', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
-	-- ('COFFEE_EVERYTHING_IMPORTANT', 'Everything Is Important', 'EVERYTHING IS IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
-	-- ('COFFEE_SWITZERLAND', 'Switzerland Thoughts', 'You have to be more decisive sometimes...', 200, 'RARE', 'COFFEE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	-- Coffee achievements
+	('COFFEE_DONT_CARE', 'Dont Care', 'Mark all thoughts as NOT IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "ALL_NOT_IMPORTANT"}'),
+	('COFFEE_EVERYTHING_IMPORTANT', 'Everything Is Important', 'Mark all thoughts as IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "ALL_IMPORTANT"}'),
+	('COFFEE_BALANCED', 'Balanced Thoughts', 'Find balance.', 150, 'UNCOMMON', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "BALANCED"}'),
+	('COFFEE_SWITZERLAND', 'Switzerland Thoughts', 'You can always be neutral.', 200, 'RARE', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "NEUTRAL"}'),
 
-	-- -- Shop achievements
-	-- ('SHOP_FIRST_PURCHASE', 'First Purchase', 'Make your first purchase in the shop.', 50, 'COMMON', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 1}'),
-	-- ('SHOP_BIG_SPENDER', 'Big Spender', 'Make 10 purchases in the shop.', 150, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 10}'),
-	-- ('SHOP_ADDICT', 'Shopping Addict', 'Only purchase addictive products in the shop.', 50, 'RARE', 'SHOP', '{"eventType": "SHOP_PURCHASE", "type": "SHOP_PURCHASE_COUNT", "count": 10}'),
-
-	-- -- Hospital achievements
-	-- ('PATIENT_SAVED', 'Patient Saved', 'Save your first patient.', 500, 'EPIC', 'HOSPITAL', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
-	-- ('PATIENT_THREE', 'I Can Save Them All', 'Save all the patients.', 500, 'LEGENDARY', 'HOSPITAL', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 60}'),
+	-- Hospital achievements
+	('PATIENT_SAVED', 'Patient Saved', 'Save your first patient.', 200, 'UNCOMMON', 'HOSPITAL', '{"eventType": "HOSPITAL_SCENE_COMPLETE", "type": "HOSPITAL_PATIENTS_SAVED", "count": 1}'),
+	('PATIENT_THREE', 'I Can Save Them All', 'Save all the patients.', 500, 'LEGENDARY', 'HOSPITAL', '{"eventType": "HOSPITAL_SCENE_COMPLETE", "type": "HOSPITAL_ALL_SAVED"}'),
 
 	-- Social achievements
 	('FRIEND_FIRST', 'Hello Friend', 'Make your first friend.', 50, 'COMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 1}'),

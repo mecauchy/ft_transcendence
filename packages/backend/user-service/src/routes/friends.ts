@@ -156,6 +156,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					return {
 						id: friendUser.id.toString(),
 						username: friendUser.username,
+						avatarUrl: friendUser.settings?.avatar ?? undefined,
 						status: (inSession ? 'IN_SESSION' : (onlineStatus ? 'ONLINE' : 'OFFLINE')) as IFriend['status'],
 						lastSeen: Date.now(),
 					};
@@ -167,6 +168,7 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 					return {
 						id: friendUser.id.toString(),
 						username: friendUser.username,
+						avatarUrl: friendUser.settings?.avatar ?? undefined,
 						status: (inSession ? 'IN_SESSION' : (onlineStatus ? 'ONLINE' : 'OFFLINE')) as IFriend['status'],
 						lastSeen: Date.now(),
 					};

@@ -389,6 +389,25 @@ async function evaluateCondition(
 			return count >= requiredBlocks;
 		}
 
+		case 'COFFEE_OUTCOME': {
+			const requiredOutcome = condition.outcome as string;
+			const outcome = eventData.outcome as string | undefined;
+			if (!outcome) return false;
+			return outcome === requiredOutcome;
+		}
+
+		case 'HOSPITAL_PATIENTS_SAVED': {
+			const requiredCount = condition.count as number;
+			const patientsSaved = eventData.patientsSaved as number | undefined;
+			if (patientsSaved === undefined) return false;
+			return patientsSaved >= requiredCount;
+		}
+
+		case 'HOSPITAL_ALL_SAVED': {
+			const allSaved = eventData.allSaved as boolean | undefined;
+			return allSaved === true;
+		}
+
 		default:
 			return false;
 	}
