@@ -234,6 +234,11 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('PATIENT_SAVED', 'Patient Saved', 'Save your first patient.', 200, 'UNCOMMON', 'HOSPITAL', '{"eventType": "HOSPITAL_SCENE_COMPLETE", "type": "HOSPITAL_PATIENTS_SAVED", "count": 1}'),
 	('PATIENT_THREE', 'I Can Save Them All', 'Save all the patients.', 500, 'LEGENDARY', 'HOSPITAL', '{"eventType": "HOSPITAL_SCENE_COMPLETE", "type": "HOSPITAL_ALL_SAVED"}'),
 
+	-- Shop achievments
+	('SHOPPING_ADDICT', 'Shopping Addict', 'Buy 5 items.', 200, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_6_ITEMS"}'),
+	('SHOPPING_JUST_ADDICT', 'Just An Addict', 'Maybe reconsider your choices while shopping to improve your mental health.', 200, 'RARE', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_ADDICTION"}'),
+
+
 	-- Social achievements
 	('FRIEND_FIRST', 'Hello Friend', 'Make your first friend.', 50, 'COMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 1}'),
 	('FRIEND_5', 'Friendly', 'Make 5 friends.', 150, 'UNCOMMON', 'SOCIAL', '{"eventType": "FRIEND_ACCEPTED", "type": "FRIEND_COUNT", "count": 5}'),

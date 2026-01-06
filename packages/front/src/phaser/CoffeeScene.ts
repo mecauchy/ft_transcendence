@@ -373,7 +373,8 @@ export default class CoffeeScene extends Phaser.Scene {
 		const card: CardData = { container, bg, text: txt, nx, ny };
 		this.cards.push(card);
 
-		bg.setInteractive({ useHandCursor: true });
+		container.setSize(bg.width, bg.height);
+		container.setInteractive({ useHandCursor: true });
 
 		this.input.setDraggable(container);
 

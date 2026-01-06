@@ -10,7 +10,7 @@ WEBSOCKET:
 
 MANDATORY:
 - No warnings or errors should appear in the browser console.
-- A frontend that is clear, responsive, and accessible across all devices. (need to add compaitibility for mobile on network tab chatting, add padding to the bottom of settings (or across the app with the footer), responsive game, responsive navbar)
+- A frontend that is clear, responsive, and accessible across all devices.
 - All forms and user inputs must be properly validated in both the frontend and backend.
 - For the backend, HTTPS must be used everywhere.
 
@@ -19,44 +19,9 @@ MANDATORY:
 
 I need you to apply some fixes to the following issues:
 
-- conversation doesnt appear on mobile
+- can't open a conversation on the chat modal
 - make the navbar retract on mobile for the fields on the right (so you can access it via a small menu)
 - fix typing indicator not showing
-- Add a small 10px~ margin to the footer's top
-- add text translation for the go back button on mobile
-- fix the drag and drop hitbox for the coffeescene sentences and make sentences fit properly on the paper
 
+-fix blocking someone (keep both user's blocked state to each other) because now when user1 blocks user2, and user2 blocks user1, both users have the option to unblock BUT it unblocks both ways instead of unblocking only for one side (need to relations: user1 blocks user2 and user2 blocks user1)
 
-also because mandatory:
-- For the backend, HTTPS must be used everywhere.
-Check my codebase to verify that all my backend uses HTTPS
-
-- No warnings or errors should appear in the browser console.
-
-Fix this set of warnings and make sure there aren't other possible warnings:
-index-DS63xYkc.js:9 AnimationManager key already exists: nurse-down
-create @ index-DS63xYkc.js:9 (...)
-index-DS63xYkc.js:11Understand this warning
-index-DS63xYkc.js:9 AnimationManager key already exists: nurse-left
-create @ index-DS63xYkc.js:9
-createNurseAnimations @ index-DS63xYkc.js:76
-create @ index-DS63xYkc.js:76
-create @ index-DS63xYkc.js:71
-loadComplete @ index-DS63xYkc.js:71
-K.50792.n.emit @ index-DS63xYkc.js:9
-loadComplete @ index-DS63xYkc.js:26
-start @ index-DS63xYkc.js:26
-bootScene @ index-DS63xYkc.js:71
-(...)
-e @ index-DS63xYkc.js:11Understand this warning
-index-DS63xYkc.js:9 AnimationManager key already exists: nurse-right
-create @ index-DS63xYkc.js:9
-createNurseAnimations @ index-DS63xYkc.js:76
-create @ index-DS63xYkc.js:76
-create @ index-DS63xYkc.js:71
-loadComplete @ index-DS63xYkc.js:71
-K.50792.n.emit @ index-DS63xYkc.js:9
-loadComplete @ index-DS63xYkc.js:26
-(...)
-e @ index-DS63xYkc.js:11Understand this warning
-index-DS63xYkc.js:9 AnimationManager key already exists: nurse-up

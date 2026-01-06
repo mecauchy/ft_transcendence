@@ -95,9 +95,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		if (!selectedConversation || selectedConversation.id === 'new') return;
 
 		const unsubscribe = wsService.on('TYPING', (message) => {
+			console.log('[Chat] Received TYPING event:', message);
 			const data = message.data as { conversationId: string; userId: string };
-			if (data.conversationId === selectedConversation.id && 
+			if (data && data.conversationId === selectedConversation.id && 
 				data.userId === selectedConversation.otherUser.id) {
+				console.log('[Chat] Setting typing indicator for user:', data.userId);
 				setOtherUserTyping(true);
 				setTimeout(() => setOtherUserTyping(false), 3000);
 			}
@@ -351,8 +353,6 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	if (!isOpen) return null;
 
 	const handleSelectConversation = (conv: Conversation) => {
-		if (selectedConversation?.id === conv.id) return;
-		
 		setSelectedConversation(conv);
 		setMessages([]);
 		setCursor(null);

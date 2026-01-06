@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import Navbar from "./components/navbar.tsx";
 import Footer from "./components/Footer.tsx";
+import AchievementPopup from "./components/AchievementPopup.tsx";
 import Game from "./game.tsx";
 import Network from "./network.tsx";
 import Settings from "./settings.tsx";
@@ -79,6 +80,7 @@ function Home({username, onLogout}: {username: string | null, onLogout: () => vo
 		{page === 'leaderboard' && <Leaderboard />}
 		{page === 'privacy' && <PrivacyPolicy />}
 		{page === 'terms' && <TermsOfService />}
+		<AchievementPopup />
 		<Footer setPage={changePage} />
 	</div>
   	)

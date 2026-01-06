@@ -396,15 +396,17 @@ async function	start() {
 
 							case 'TYPING':
 								// broadcast typing state to recipient
-								if (data.recipientId && data.conversationId) {
-									await redis.publish(`user:${data.recipientId}:messages`, JSON.stringify({
+
+								const typingData = data.data || data;
+								if (typingData.recipientId && typingData.conversationId) {
+									await redis.publish(`user:${typingData.recipientId}:messages`, JSON.stringify({
 										type: 'TYPING',
-										data: { userId, conversationId: data.conversationId },
+										data: { userId, conversationId: typingData.conversationId },
 										timestamp: Date.now(),
 									}));
+									request.log.info({userId, recipientId: typingData.recipientId}, 'Typing indicator sent');
 								}
 								break;
-
 							default:
 								socket.send(JSON.stringify({
 									type: 'ACK',

@@ -408,6 +408,18 @@ async function evaluateCondition(
 			return allSaved === true;
 		}
 
+		case 'SHOP_6_ITEMS': {
+			const itemsBought = eventData.itemsBought as number | undefined;
+			if (itemsBought === undefined) return false;
+			return itemsBought >= 5;
+		}
+
+		case 'SHOP_ADDICTION': {
+			// (when player buys wine, sleeping pills and anxiety pills in one purchase)
+			const addiction = eventData.addiction as boolean | undefined;
+			return addiction === true;
+		}
+
 		default:
 			return false;
 	}

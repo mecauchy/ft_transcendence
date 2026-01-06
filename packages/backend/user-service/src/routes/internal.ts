@@ -141,7 +141,8 @@ export async function internalRoutes(fastify: FastifyInstance) {
 				},
 			});
 
-			const payload = {
+
+			const notificationPayload = {
 				type: 'NOTIFICATION',
 				data: {
 					id: notification.id,
@@ -152,7 +153,21 @@ export async function internalRoutes(fastify: FastifyInstance) {
 					createdAt: notification.createdAt,
 				},
 			};
-			await pubClient.publish(`user:${userId}:notifications`, JSON.stringify(payload));
+			await pubClient.publish(`user:${userId}:notifications`, JSON.stringify(notificationPayload));
+
+			// send ACHIEVEMENT_UNLOCKED type for popup display
+			const achievementPayload = {
+				type: 'ACHIEVEMENT_UNLOCKED',
+				data: {
+					code: achievement.code,
+					name: achievement.name,
+					description: achievement.description,
+					xpReward: achievement.xpReward,
+					rarity: achievement.rarity,
+				},
+				timestamp: Date.now(),
+			};
+			await pubClient.publish(`user:${userId}:notifications`, JSON.stringify(achievementPayload));
 
 			request.log.info({userId, achievement: achievement.code}, 'Achievement notification created');
 
