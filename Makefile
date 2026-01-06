@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-studio setup
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-seed prisma-studio setup
 
 # Colors for output
 BLUE := \033[0;34m
@@ -158,6 +158,18 @@ prisma-migrate:
 	fi
 	@cd $(PRISMA_DIR) && npm install && ./node_modules/.bin/prisma db push
 	@echo "$(GREEN)✓ Database schema synced successfully$(NC)"
+	@echo "$(BLUE)→ Seeding database with initial data...$(NC)"
+	@cd $(PRISMA_DIR) && ./node_modules/.bin/tsx seed.ts
+	@echo "$(GREEN)✓ Database seeded successfully$(NC)"
+
+prisma-seed:
+	@echo "$(BLUE)→ Seeding database...$(NC)"
+	@if [ ! -f $(PRISMA_DIR)/.env ]; then \
+		echo "$(YELLOW)→ Prisma .env not found, generating...$(NC)"; \
+		$(MAKE) -s prisma-env; \
+	fi
+	@cd $(PRISMA_DIR) && ./node_modules/.bin/tsx seed.ts
+	@echo "$(GREEN)✓ Database seeded successfully$(NC)"
 
 prisma-studio:
 	@echo "$(BLUE)→ Starting Prisma Studio...$(NC)"

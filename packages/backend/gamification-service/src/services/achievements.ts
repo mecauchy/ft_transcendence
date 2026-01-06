@@ -67,14 +67,18 @@ async function notifyAchievementUnlocked(userId: string, achievement: Achievemen
 export async function getAllAchievements(): Promise<Achievement[]> {
 	const cached = await redis.get('achievements:all');
 	if (cached) {
-		return JSON.parse(cached);
+		const parsed = JSON.parse(cached);
+		console.log(`[Achievement] Loaded ${parsed.length} achievements from cache`);
+		return parsed;
 	}
 
+	console.log(`[Achievement] Cache miss - loading achievements from database`);
 	const rows = await prisma.achievement.findMany({
 		orderBy: [{category: 'asc'}, {rarity: 'asc'}],
 	});
 
 	const achievements = rows.map(mapAchievement);
+	console.log(`[Achievement] Loaded ${achievements.length} achievements from database`);
 
 	// redis cache for 10m
 	await redis.setex('achievements:all', 600, JSON.stringify(achievements));
@@ -108,10 +112,12 @@ export async function checkAchievements(
 
 	// get all achievements
 	const allAchievements = await getAllAchievements();
+	console.log(`[Achievement] Total achievements loaded: ${allAchievements.length}`);
 
 	// get already unlocked
 	const userAchievements = await getUserAchievements(userId);
 	const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
+	console.log(`[Achievement] User ${userId} has ${userAchievements.length} unlocked achievements`);
 
 	// check each achievement
 	for (const achievement of allAchievements) {
@@ -126,12 +132,17 @@ export async function checkAchievements(
 			continue;
 		}
 
+		console.log(`[Achievement] Checking "${achievement.code}" for event "${eventType}"`);
+		console.log(`[Achievement] Condition:`, JSON.stringify(condition));
+
 		// check condition
 		const isUnlocked = await evaluateCondition(userId, condition, eventData);
+		console.log(`[Achievement] "${achievement.code}" evaluation result: ${isUnlocked}`);
 
 		if (isUnlocked) {
 			await unlockAchievement(userId, achievement);
 			unlockedAchievements.push(achievement);
+			console.log(`[Achievement] UNLOCKED: "${achievement.code}" for user ${userId}`);
 		}
 	}
 
@@ -180,6 +191,7 @@ async function evaluateCondition(
 			const count = await prisma.gamePong.count({
 				where: { playerId: userIdBigInt },
 			});
+			console.log(`[Achievement] PONG_MATCH_COUNT: user ${userId} has ${count} matches, required: ${requiredCount}`);
 			return count >= requiredCount;
 		}
 
