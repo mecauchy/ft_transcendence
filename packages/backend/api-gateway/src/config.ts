@@ -20,7 +20,7 @@ export const config = {
   redis: {
     host: process.env.REDIS_HOST || 'redis',
     port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || readSecretFile('REDIS_PASSWORD_FILE', '/run/secrets/redis_password.txt'),
+    password: process.env.REDIS_PASSWORD, // Set by entrypoint.sh from /run/secrets
   },
 
   vault: {

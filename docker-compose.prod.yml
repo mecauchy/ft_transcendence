@@ -12,17 +12,18 @@ services:
       - ./infra/secret:/run/secrets:ro
     environment:
       VAULT_ADDR: http://vault:8200
+      VAULT_CACERT:  # Unset VAULT_CACERT for dev mode (HTTP only)
       VAULT_LOG_LEVEL: info
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
     # Don't expose ports in production, use ingress/load balancer
     ports: []
     # Simple health check for dev mode
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8200/v1/sys/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
 
   # PostgreSQL SERVICE - PRODUCTION MODE
   postgres:
@@ -88,5 +89,8 @@ services:
   uptime-kuma:
     environment:
       - VAULT_ADDR=http://vault:8200
-      
+
+  alertmanager:
+    environment:
+      - VAULT_ADDR=http://vault:8200
 
