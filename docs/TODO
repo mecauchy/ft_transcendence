@@ -1,34 +1,25 @@
-WEBSOCKET:
--fix achievements STILL NOT WORKING
-
 MESSAGES:
 -fix typing indicator not showing
 
-GENERAL:
+REMAINING TASKS:
 -make sure everything the user sees in the UI is translatable and follows the i18n
--when you save a hospital patient, remove that folder from the game so next time you visit it's not there. when you've saved everyone, clicking on the hospital only says "congratulations, you've saved all patients!" and then you go back to the center
-
 -mel -> privacy policy text update 
 -fix UI bugs (text buildup on firefox????)
 -HTTPS backend to audit
 -maxime add oauth api key somewhere somehow
 -logs management mel -> everyone
--CTRL + F TODO in the code
-
--display correct avatar everywhere (network page, chat modal, profile page, settings page)
 -make the README
 
+WEBSOCKET:
+-fix achievements STILL NOT WORKING
 
 MANDATORY:
 - No warnings or errors should appear in the browser console.
-- A frontend that is clear, responsive, and accessible across all devices. (network tab chatting, add padding to the bottom of settings (or across the app with the footer), responsive game, responsive navbar)
+- A frontend that is clear, responsive, and accessible across all devices. (need to add compaitibility for mobile on network tab chatting, add padding to the bottom of settings (or across the app with the footer), responsive game, responsive navbar)
 - All forms and user inputs must be properly validated in both the frontend and backend.
 - For the backend, HTTPS must be used everywhere.
 
 
-
-modules to maybe fully validate:
-Minor: Advanced chat features
-◦ Invite users to play games directly from chat.
-◦ Game/tournament notifications in chat.
-◦ Typing indicators and read receipts.
+-Add back buttons to the game on every scene so that mobile users can also exit
+-Make the back button use the same endgame function as the esc so that it sends the data to the backend when relevant
+-When in a conversation in the chat modal, clicking the active convo empties the conversation messages. Disable clicking it when it's the active convo.

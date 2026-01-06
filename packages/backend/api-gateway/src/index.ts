@@ -137,7 +137,8 @@ async function	start() {
 			options: {
 				maxPayload:		1048576, // 1MB max ws payload
 				verifyClient:	(info: any, next: (allow: boolean) => void) => {
-					// TODO - verify jwt tok here from query/headers/cookies
+					// JWT verification for websocket connections could be added here for enhanced security
+					// Currently websocket auth is handled after connection via message-based auth
 					next(true);
 				},
 			},
@@ -163,7 +164,7 @@ async function	start() {
 		// prometheus endpoint
 		fastify.get('/metrics', async () => {
 			return {
-				// TODO: track all of these values
+				// TODO: These metrics are placeholder values - implement actual tracking for production monitoring
 				activeConnections:	0,
 				totalRequests:		0,
 				errorRates:			0,

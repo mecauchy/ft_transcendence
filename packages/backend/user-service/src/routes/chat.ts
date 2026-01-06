@@ -100,6 +100,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 							username:		true,
 							displayName:	true,
 							avatarUrl:		true,
+							settings: {select: {avatar: true}},
 						},
 					},
 					user2: {
@@ -108,6 +109,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 							username:		true,
 							displayName:	true,
 							avatarUrl:		true,
+							settings: {select: {avatar: true}},
 						},
 					},
 					messages: {
@@ -129,7 +131,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 						id:				otherUser.id.toString(),
 						username:		otherUser.username,
 						displayName:	otherUser.displayName,
-						avatarUrl:		otherUser.avatarUrl,
+						avatarUrl:		otherUser.avatarUrl || otherUser.settings?.avatar || null,
 					},
 					lastMessage: lastMessage ? {
 						id:			lastMessage.id,

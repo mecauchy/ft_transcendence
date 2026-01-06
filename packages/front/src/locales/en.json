@@ -311,7 +311,8 @@
       "folder2": "Folder 2",
       "folder3": "Folder 3",
       "confirmReview": "You have selected {{name}}'s medical records for review. Proceed?",
-      "thankYou": "Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients."
+      "thankYou": "Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients.",
+      "allSaved": "Congratulations! You have reviewed all patients' medical records. Your dedication to patient care is commendable."
     }
   },
   "legal": {

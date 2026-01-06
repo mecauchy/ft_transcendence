@@ -91,11 +91,12 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 
 	// listen for typing indicators from other users
 	useEffect(() => {
-		if (!selectedConversation) return;
+		if (!selectedConversation || selectedConversation.id === 'new') return;
 
 		const unsubscribe = wsService.on('TYPING', (message) => {
 			const data = message.data as { conversationId: string; userId: string };
-			if (data.userId === selectedConversation.otherUser.id) {
+			if (data.conversationId === selectedConversation.id && 
+				data.userId === selectedConversation.otherUser.id) {
 				setOtherUserTyping(true);
 				setTimeout(() => setOtherUserTyping(false), 3000);
 			}

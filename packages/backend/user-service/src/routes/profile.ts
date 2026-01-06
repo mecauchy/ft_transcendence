@@ -378,6 +378,10 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
 			// update DB
 			const avatarUrl = `/uploads/avatars/${newFilename}`;
+			await prisma.user.update({
+				where: {id: userId},
+				data: {avatarUrl},
+			});
 			await prisma.settings.upsert({
 				where: {userId},
 				update: {avatar: avatarUrl},

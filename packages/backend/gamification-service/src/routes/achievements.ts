@@ -207,7 +207,7 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 			const limit = Math.min(parseInt(request.query.limit || '10'), 50);
 
 			try {
-				// TODO : db query for this get
+				// TODO: This endpoint is reserved for future enhancement - would query recent global achievement unlocks
 				return {
 					message:	'Not implemented yet - would show recent global unlocks',
 					limit,

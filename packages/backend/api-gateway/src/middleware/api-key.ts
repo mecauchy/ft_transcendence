@@ -15,7 +15,7 @@ function hashApiKey(key: string): string {
 // validate api
 async function validateApiKey(keyHash: string): Promise<ApiKeyPayload | null> {
 	// requests to user service to validate
-	// TODO: cache this or use a shared db connection
+	// TODO: For production, consider adding caching or a shared db connection to reduce latency
 	try {
 		const response = await fetch('http://user-service:3002/internal/validate-api-key', {
 			method:		'POST',

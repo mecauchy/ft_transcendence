@@ -224,7 +224,6 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('BREATHE_10_MIN', 'Ten Minutes Calm', 'Accumulate 10 minutes of breathing sessions.', 150, 'UNCOMMON', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 600}'),
 	('BREATHE_1_HOUR', 'Hour of Peace', 'Accumulate 1 hour of breathing sessions.', 500, 'EPIC', 'BREATHE', '{"eventType": "BREATHE_SESSION_SAVED", "type": "BREATHE_TOTAL_SECONDS", "seconds": 3600}'),
 
--- TODO: UNCOMMENT THIS AND FILL PROPERLY LATER (connect to the games aswell)
 	-- Coffee achievements
 	('COFFEE_DONT_CARE', 'Dont Care', 'Mark all thoughts as NOT IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "ALL_NOT_IMPORTANT"}'),
 	('COFFEE_EVERYTHING_IMPORTANT', 'Everything Is Important', 'Mark all thoughts as IMPORTANT.', 200, 'RARE', 'COFFEE', '{"eventType": "COFFEE_SCENE_COMPLETE", "type": "COFFEE_OUTCOME", "outcome": "ALL_IMPORTANT"}'),

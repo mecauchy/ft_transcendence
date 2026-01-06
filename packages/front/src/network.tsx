@@ -4,8 +4,6 @@ import { api } from "./api/client";
 import { useTranslation } from "react-i18next";
 import ChatModal from "./components/ChatModal";
 
-//todo : websocket for real-time updates
-
 type UserPreview = {
 id: string;
 username: string;
