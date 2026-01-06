@@ -17,7 +17,11 @@ export default function Game() {
 	const [gameInPlay, setGameInPlay] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
-	const ORIGINAL_SIZE = "600px";
+	// Responsive game size
+	const getGameSize = () => {
+		const vwSize = window.innerWidth * 0.9;
+		return Math.min(600, vwSize);
+	};
 
 	useEffect(() => {
 		return () => {
@@ -31,8 +35,9 @@ export default function Game() {
 		if (phaserRef.current) return;
 
 		const container = gameContainerRef.current;
-		container.style.width = ORIGINAL_SIZE;
-		container.style.height = ORIGINAL_SIZE;
+		const size = getGameSize();
+		container.style.width = `${size}px`;
+		container.style.height = `${size}px`;
 
 		phaserRef.current = new Phaser.Game({
 			type: Phaser.WEBGL,
@@ -64,12 +69,14 @@ export default function Game() {
 		const el = gameContainerRef.current;
 		if (el) {
 			el.classList.remove("fullscreen");
-			el.style.width = ORIGINAL_SIZE;
-			el.style.height = ORIGINAL_SIZE;
+			const size = getGameSize();
+			el.style.width = `${size}px`;
+			el.style.height = `${size}px`;
 		}
 
 		setTimeout(() => {
-			scale.setParentSize(600, 600);
+			const size = getGameSize();
+			scale.setParentSize(size, size);
 			scale.refresh();
 		}, 0);
 	};

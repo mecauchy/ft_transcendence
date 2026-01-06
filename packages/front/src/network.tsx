@@ -262,7 +262,7 @@ const handleGivenRequestPending = async (request: UserPreview) => {
 
 // render
 return (
-	<div className="pt-20 pl-10 text-white">
+	<div className="pt-20 px-4 md:pl-10 text-white">
 	<h2 className="text-2xl font-bold mb-4">{t('network.title')}</h2>
 
 	{/* Action message */}
@@ -280,26 +280,28 @@ return (
 	)}
 
 	{/* ADD FRIEND / BLOCK */}
-	<div className="mb-6">
+	<div className="mb-6 flex flex-col sm:flex-row gap-2">
 		<input
 		type="text"
 		placeholder={t('network.enterFriendUsername')}
-		className="border border-gray-300 rounded-md p-2 w-64 text-white bg-transparent focus:bg-purple-600 focus:outline-none"
+		className="border border-gray-300 rounded-md p-2 w-full sm:w-64 text-white bg-transparent focus:bg-purple-600 focus:outline-none"
 		value={targetUsername}
 		onChange={e => settargetUsername(e.target.value)}
 		/>
+		<div className="flex gap-2">
 		<button
-		className="ml-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
+		className="flex-1 sm:flex-none px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
 		onClick={handleAddFriend}
 		>
 		{t('network.addFriend')}
 		</button>
 		<button
-		className="ml-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+		className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
 		onClick={handleBlockUser}
 		>
 		{t('network.block')}
 		</button>
+		</div>
 	</div>
 
 	{/* FRIEND LIST */}
@@ -310,7 +312,7 @@ return (
 			<li className="text-white/60">{t('network.noFriends')}</li>
 		)}
 		{friends.map(friend => (
-			<li key={friend.id} className="mb-2 flex items-center justify-between bg-white/5 p-3 rounded-md">
+			<li key={friend.id} className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between bg-white/5 p-3 rounded-md gap-3">
 			<div className="flex items-center gap-3">
 				{/* Avatar with status indicator */}
 				<div className="relative">
@@ -333,7 +335,7 @@ return (
 				</div>
 				<span className="font-medium">{friend.username}</span>
 			</div>
-			<div className="flex gap-2">
+			<div className="flex flex-wrap gap-2">
 				<button
 				className="px-3 py-1 bg-blue-500 rounded hover:bg-blue-600 text-sm"
 				onClick={() => handleViewProfile(friend.id)}
@@ -368,18 +370,18 @@ return (
 		{friendRequests.map(request => (
 			<li
 			key={request.id}
-			className="mb-2 flex items-center justify-between"
+			className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white/5 p-3 rounded-md"
 			>
 				<span>{request.username}</span>
 				<div className="flex gap-2">
 				<button
-				className="px-2 py-1 bg-green-500 rounded hover:bg-green-600"
+				className="flex-1 sm:flex-none px-2 py-1 bg-green-500 rounded hover:bg-green-600"
 				onClick={() => handleAcceptFriend(request)}
 				>
 					{t('network.accept')}
 				</button>
 				<button
-					className="px-2 py-1 bg-red-500 rounded hover:bg-red-600"
+					className="flex-1 sm:flex-none px-2 py-1 bg-red-500 rounded hover:bg-red-600"
 					onClick={() => handleDeclineFriend(request)}
 				>
 				{t('network.decline')}
@@ -439,8 +441,8 @@ return (
 
 	{/* Remove Friend Modal */}
 	{showRemoveModal && removingFriend && (
-		<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-		<div className="bg-gray-800 p-6 rounded-lg w-96">
+		<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+		<div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
 			<h3 className="text-xl font-bold mb-4">{t('network.removeFriend')}</h3>
 			<p className="mb-4">{t('network.removeFriendConfirm', { username: removingFriend.username })}</p>
 			<div className="flex flex-col gap-2">

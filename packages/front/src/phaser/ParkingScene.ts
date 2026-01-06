@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import BackButton from "./ui/BackButton";
 import { t } from "./i18nHelper";
 import { api } from "../api/client";
 
@@ -15,6 +16,7 @@ export default class ParkingScene extends Phaser.Scene {
 	private session_start_time: number | null = null;
 
 	private popup!: Popup;
+	private backButton!: BackButton;
 
 	constructor() {
 		super("ParkingScene");
@@ -28,6 +30,14 @@ export default class ParkingScene extends Phaser.Scene {
 		this.bg = this.add.image(0, 0, "parking_bg").setOrigin(0.5);
 
 		this.popup = new Popup(this);
+		this.backButton = new BackButton(this, async () => {
+			if (this.session_start_time !== null) {
+				await this.sendBreatheStats();
+			}
+			this.backButton?.destroy();
+			this.popup.destroy();
+			this.scene.start("WorldMapScene");
+		});
 
 		if (!this.game_started) {
 			this.popup.show(

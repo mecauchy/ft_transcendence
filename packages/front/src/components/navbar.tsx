@@ -72,34 +72,101 @@ import { useRealtimeNotifications } from '../hooks/useWebSocket';
 
 	function Navbar({setPage, username}: {setPage: (page: string, userId?: string) => void, username: string | null}) {
 		const {t} = useTranslation();
+		const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+		const handleNavClick = (page: string) => {
+			setMobileMenuOpen(false);
+			setPage(page);
+		};
+
+		useEffect(() => {
+			const handleClickOutside = (e: MouseEvent) => {
+				const target = e.target as HTMLElement;
+				if (!target.closest('.mobile-menu') && !target.closest('.hamburger-btn')) {
+					setMobileMenuOpen(false);
+				}
+			};
+			if (mobileMenuOpen) {
+				document.addEventListener('click', handleClickOutside);
+			}
+			return () => document.removeEventListener('click', handleClickOutside);
+		}, [mobileMenuOpen]);
 		
 		return (
 			<nav className="navbar">
-				<div className="flex">
+				<div className="flex items-center">
 					<img src="/controler.png" alt="Logo" className="logo_image" />
-					<p className="mt-5 text-white">
+					<p className="hidden sm:block mt-5 text-white">
 						ft_transcendance
 					</p>
 				</div>
 
-				<div className="nav_left">
-				<button className="nav_button tournament_box" onClick={() => setPage("game")}>
-					{t('nav.play')}
-				</button>
-
+				{/* Desktop Navigation */}
+				<div className="nav_left hidden md:flex">
+					<button className="nav_button tournament_box" onClick={() => setPage("game")}>
+						{t('nav.play')}
+					</button>
 				</div>
 
-				<div className="nav_right">
-				<button className="nav_button" onClick={() => setPage("profile")}>{t('nav.profile')}</button>
-				<button className="nav_button" onClick={() => setPage("history")}>{t('nav.history')}</button>
-				<button className="nav_button" onClick={() => setPage("network")}>{t('nav.network')}</button>
-				<button className="nav_button" onClick={() => setPage("settings")}>{t('nav.settings')}</button>
-				<button className="nav_button" onClick={() => setPage("leaderboard")}>{t('nav.leaderboard')}</button>
-				<NotificationsBell onNavigate={setPage} />
-				<button className="nav_button logout" onClick={() => setPage("logout")}>
-					{t('nav.logout')} ({username})
-				</button>
+				<div className="nav_right hidden md:flex">
+					<button className="nav_button" onClick={() => setPage("profile")}>{t('nav.profile')}</button>
+					<button className="nav_button" onClick={() => setPage("history")}>{t('nav.history')}</button>
+					<button className="nav_button" onClick={() => setPage("network")}>{t('nav.network')}</button>
+					<button className="nav_button" onClick={() => setPage("settings")}>{t('nav.settings')}</button>
+					<button className="nav_button" onClick={() => setPage("leaderboard")}>{t('nav.leaderboard')}</button>
+					<NotificationsBell onNavigate={setPage} />
+					<button className="nav_button logout" onClick={() => setPage("logout")}>
+						{t('nav.logout')} ({username})
+					</button>
 				</div>
+
+				{/* Mobile Navigation */}
+				<div className="flex md:hidden items-center gap-2">
+					<NotificationsBell onNavigate={setPage} />
+					<button 
+						className="hamburger-btn p-2 text-white hover:bg-white/10 rounded-md"
+						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+						aria-label="Menu"
+					>
+						<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							{mobileMenuOpen ? (
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							) : (
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+							)}
+						</svg>
+					</button>
+				</div>
+
+				{/* Mobile Menu Dropdown */}
+				{mobileMenuOpen && (
+					<div className="mobile-menu absolute top-full left-0 right-0 bg-[rgba(38,0,58,0.98)] backdrop-blur-lg border-t border-white/10 md:hidden z-50 shadow-xl">
+						<div className="flex flex-col p-4 gap-1">
+							<button className="mobile-nav-btn play-btn" onClick={() => handleNavClick("game")}>
+								🎮 {t('nav.play')}
+							</button>
+							<button className="mobile-nav-btn" onClick={() => handleNavClick("profile")}>
+								👤 {t('nav.profile')}
+							</button>
+							<button className="mobile-nav-btn" onClick={() => handleNavClick("history")}>
+								📜 {t('nav.history')}
+							</button>
+							<button className="mobile-nav-btn" onClick={() => handleNavClick("network")}>
+								🌐 {t('nav.network')}
+							</button>
+							<button className="mobile-nav-btn" onClick={() => handleNavClick("settings")}>
+								⚙️ {t('nav.settings')}
+							</button>
+							<button className="mobile-nav-btn" onClick={() => handleNavClick("leaderboard")}>
+								🏆 {t('nav.leaderboard')}
+							</button>
+							<div className="border-t border-white/10 my-2"></div>
+							<button className="mobile-nav-btn logout-btn" onClick={() => handleNavClick("logout")}>
+								🚪 {t('nav.logout')} ({username})
+							</button>
+						</div>
+					</div>
+				)}
 			</nav>
 
 	)

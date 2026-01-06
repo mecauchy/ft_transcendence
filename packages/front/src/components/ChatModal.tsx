@@ -54,6 +54,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	const [isTyping, setIsTyping] = useState(false);
 	const [otherUserTyping, setOtherUserTyping] = useState(false);
 	const [sendError, setSendError] = useState<string | null>(null);
+	const [showMobileChat, setShowMobileChat] = useState(false);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -346,13 +347,33 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 
 	if (!isOpen) return null;
 
+	const handleSelectConversation = (conv: Conversation) => {
+		if (selectedConversation?.id === conv.id) return;
+		
+		setSelectedConversation(conv);
+		setMessages([]);
+		setCursor(null);
+		setHasMore(false);
+		setShowMobileChat(true);
+	};
+
+	const handleMobileBack = () => {
+		setShowMobileChat(false);
+	};
+
 	return (
-		<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-			<div className="bg-gray-900 rounded-lg w-full max-w-4xl h-[600px] flex overflow-hidden">
+		<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:p-4">
+			<div className="bg-gray-900 rounded-lg w-full max-w-4xl h-[90vh] md:h-[600px] flex overflow-hidden">
 				{/* Conversation List */}
-				<div className="w-80 border-r border-gray-700 flex flex-col">
-					<div className="p-4 border-b border-gray-700">
+				<div className={`w-full md:w-80 border-r border-gray-700 flex flex-col ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
+					<div className="p-4 border-b border-gray-700 flex items-center justify-between">
 						<h2 className="text-lg font-semibold">{t('chat.title', 'Messages')}</h2>
+						<button
+							onClick={onClose}
+							className="text-gray-400 hover:text-white transition-colors md:hidden"
+						>
+							✕
+						</button>
 					</div>
 
 					<div className="flex-1 overflow-y-auto">
@@ -368,12 +389,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 							conversations.map((conv) => (
 								<button
 									key={conv.id}
-									onClick={() => {
-										setSelectedConversation(conv);
-										setMessages([]);
-										setCursor(null);
-										setHasMore(false);
-									}}
+									onClick={() => handleSelectConversation(conv)}
 									className={`w-full p-3 flex items-center gap-3 hover:bg-gray-800 transition-colors ${
 										selectedConversation?.id === conv.id ? 'bg-gray-800' : ''
 									}`}
@@ -423,11 +439,18 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 				</div>
 
 				{/* Chat Area */}
-				<div className="flex-1 flex flex-col">
+				<div className={`flex-1 flex flex-col ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
 					{/* Header */}
 					<div className="p-4 border-b border-gray-700 flex items-center justify-between">
 						{selectedConversation ? (
 							<div className="flex items-center gap-3">
+								{/* Mobile back button */}
+								<button
+									onClick={handleMobileBack}
+									className="text-gray-400 hover:text-white transition-colors md:hidden mr-2"
+								>
+									←
+								</button>
 								<div
 									className="cursor-pointer"
 									onClick={() => navigateToProfile(selectedConversation.otherUser.id, onClose)}
@@ -508,8 +531,10 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 								{/* Typing indicator */}
 								{otherUserTyping && (
 									<div className="flex justify-start">
-										<div className="bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm italic">
-											{selectedConversation.otherUser.username} {t('chat.isTyping', 'is typing...')}
+										<div className="bg-gray-700 px-4 py-3 rounded-lg flex items-center gap-1">
+											<span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
+											<span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
+											<span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
 										</div>
 									</div>
 								)}

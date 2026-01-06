@@ -1,6 +1,3 @@
-MESSAGES:
--fix typing indicator not showing
-
 REMAINING TASKS:
 -make sure everything the user sees in the UI is translatable and follows the i18n
 -mel -> privacy policy text update 
@@ -20,6 +17,250 @@ MANDATORY:
 - For the backend, HTTPS must be used everywhere.
 
 
--Add back buttons to the game on every scene so that mobile users can also exit
--Make the back button use the same endgame function as the esc so that it sends the data to the backend when relevant
--When in a conversation in the chat modal, clicking the active convo empties the conversation messages. Disable clicking it when it's the active convo.
+-conversation doesnt appear on mobile
+-navbar doesnt retract on mobile
+-fix typing indicator not showing
+-Add a padding to the footer
+
+Fix this set of warnings:
+index-DS63xYkc.js:9 AnimationManager key already exists: nurse-down
+create @ index-DS63xYkc.js:9
+createNurseAnimations @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:71
+loadComplete @ index-DS63xYkc.js:71
+K.50792.n.emit @ index-DS63xYkc.js:9
+loadComplete @ index-DS63xYkc.js:26
+start @ index-DS63xYkc.js:26
+bootScene @ index-DS63xYkc.js:71
+start @ index-DS63xYkc.js:71
+processQueue @ index-DS63xYkc.js:71
+update @ index-DS63xYkc.js:71
+step @ index-DS63xYkc.js:9
+step @ index-DS63xYkc.js:9
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11Understand this warning
+index-DS63xYkc.js:9 AnimationManager key already exists: nurse-left
+create @ index-DS63xYkc.js:9
+createNurseAnimations @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:71
+loadComplete @ index-DS63xYkc.js:71
+K.50792.n.emit @ index-DS63xYkc.js:9
+loadComplete @ index-DS63xYkc.js:26
+start @ index-DS63xYkc.js:26
+bootScene @ index-DS63xYkc.js:71
+start @ index-DS63xYkc.js:71
+processQueue @ index-DS63xYkc.js:71
+update @ index-DS63xYkc.js:71
+step @ index-DS63xYkc.js:9
+step @ index-DS63xYkc.js:9
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11Understand this warning
+index-DS63xYkc.js:9 AnimationManager key already exists: nurse-right
+create @ index-DS63xYkc.js:9
+createNurseAnimations @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:76
+create @ index-DS63xYkc.js:71
+loadComplete @ index-DS63xYkc.js:71
+K.50792.n.emit @ index-DS63xYkc.js:9
+loadComplete @ index-DS63xYkc.js:26
+start @ index-DS63xYkc.js:26
+bootScene @ index-DS63xYkc.js:71
+start @ index-DS63xYkc.js:71
+processQueue @ index-DS63xYkc.js:71
+update @ index-DS63xYkc.js:71
+step @ index-DS63xYkc.js:9
+step @ index-DS63xYkc.js:9
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11
+requestAnimationFrame
+e @ index-DS63xYkc.js:11Understand this warning
+index-DS63xYkc.js:9 AnimationManager key already exists: nurse-up

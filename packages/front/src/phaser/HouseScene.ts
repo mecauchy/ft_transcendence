@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import BackButton from "./ui/BackButton";
 import { api } from "../api/client";
 import { t } from "./i18nHelper";
 
@@ -33,6 +34,7 @@ export default class HouseScene extends Phaser.Scene {
 	private scoreText2!: Phaser.GameObjects.Text;
 
 	private popup!: Popup;
+	private backButton!: BackButton;
 
 	private gameSize = 0;
 	private offsetX = 0;
@@ -54,6 +56,16 @@ export default class HouseScene extends Phaser.Scene {
 	private keyW!: Phaser.Input.Keyboard.Key;
 	private keyS!: Phaser.Input.Keyboard.Key;
 
+	// Touch controls
+	private touchUpBtn1!: Phaser.GameObjects.Container;
+	private touchDownBtn1!: Phaser.GameObjects.Container;
+	private touchUpBtn2!: Phaser.GameObjects.Container;
+	private touchDownBtn2!: Phaser.GameObjects.Container;
+	private touchUp1Pressed = false;
+	private touchDown1Pressed = false;
+	private touchUp2Pressed = false;
+	private touchDown2Pressed = false;
+
 	constructor() {
 		super({key: "HouseScene"});
 	}
@@ -72,6 +84,10 @@ export default class HouseScene extends Phaser.Scene {
 		this.renderScore();
 
 		this.popup = new Popup(this);
+		this.backButton = new BackButton(this, () => {
+			this.endGame();
+		});
+		this.createTouchControls();
 		this.centerScene();
 
 		this.scale.on("resize", this.onResize, this);
@@ -116,6 +132,9 @@ export default class HouseScene extends Phaser.Scene {
 						]);
 						this.keyW.destroy();
 						this.keyS.destroy();
+						// hide mobile controls on ai mode
+						this.touchUpBtn1?.setVisible(false);
+						this.touchDownBtn1?.setVisible(false);
 						this.ia_popup();
 					}
 				},
@@ -190,6 +209,7 @@ export default class HouseScene extends Phaser.Scene {
 	private onResize() {
 		if (!this.scene.isActive()) return;
 		this.centerScene();
+		this.updateTouchControlPositions();
 	}
 
 	private listenKeys() {
@@ -203,6 +223,92 @@ export default class HouseScene extends Phaser.Scene {
 		this.cursors = keyboard.createCursorKeys();
 		this.keyW = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
 		this.keyS = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+	}
+
+	private createTouchButton(label: string, x: number, y: number, onPress: () => void, onRelease: () => void): Phaser.GameObjects.Container {
+		const btnSize = 50;
+		const bg = this.add.rectangle(0, 0, btnSize, btnSize, 0x333333, 0.8)
+			.setStrokeStyle(2, 0xffffff);
+		const text = this.add.text(0, 0, label, {
+			fontSize: '24px',
+			color: '#ffffff',
+		}).setOrigin(0.5);
+
+		const container = this.add.container(x, y, [bg, text]);
+		container.setDepth(998);
+
+		bg.setInteractive({ useHandCursor: true });
+		bg.on('pointerdown', () => {
+			bg.setFillStyle(0x555555, 0.9);
+			onPress();
+		});
+		bg.on('pointerup', () => {
+			bg.setFillStyle(0x333333, 0.8);
+			onRelease();
+		});
+		bg.on('pointerout', () => {
+			bg.setFillStyle(0x333333, 0.8);
+			onRelease();
+		});
+
+		return container;
+	}
+
+	private createTouchControls() {
+		const screenW = this.scale.width;
+		const screenH = this.scale.height;
+		const padding = 20;
+		const btnSpacing = 60;
+
+		this.touchUpBtn1 = this.createTouchButton(
+			'▲',
+			padding + 25,
+			screenH - padding - btnSpacing - 25,
+			() => { this.touchUp1Pressed = true; },
+			() => { this.touchUp1Pressed = false; }
+		);
+		this.touchDownBtn1 = this.createTouchButton(
+			'▼',
+			padding + 25,
+			screenH - padding - 25,
+			() => { this.touchDown1Pressed = true; },
+			() => { this.touchDown1Pressed = false; }
+		);
+
+		this.touchUpBtn2 = this.createTouchButton(
+			'▲',
+			screenW - padding - 25,
+			screenH - padding - btnSpacing - 25,
+			() => { this.touchUp2Pressed = true; },
+			() => { this.touchUp2Pressed = false; }
+		);
+		this.touchDownBtn2 = this.createTouchButton(
+			'▼',
+			screenW - padding - 25,
+			screenH - padding - 25,
+			() => { this.touchDown2Pressed = true; },
+			() => { this.touchDown2Pressed = false; }
+		);
+	}
+
+	private updateTouchControlPositions() {
+		const screenW = this.scale.width;
+		const screenH = this.scale.height;
+		const padding = 20;
+		const btnSpacing = 60;
+
+		if (this.touchUpBtn1) {
+			this.touchUpBtn1.setPosition(padding + 25, screenH - padding - btnSpacing - 25);
+		}
+		if (this.touchDownBtn1) {
+			this.touchDownBtn1.setPosition(padding + 25, screenH - padding - 25);
+		}
+		if (this.touchUpBtn2) {
+			this.touchUpBtn2.setPosition(screenW - padding - 25, screenH - padding - btnSpacing - 25);
+		}
+		if (this.touchDownBtn2) {
+			this.touchDownBtn2.setPosition(screenW - padding - 25, screenH - padding - 25);
+		}
 	}
 
 	private centerScene() {
@@ -307,16 +413,16 @@ export default class HouseScene extends Phaser.Scene {
 	}
 
 	private checkMovement() {
-		if (this.cursors.up?.isDown) {
+		if (this.cursors.up?.isDown || this.touchUp2Pressed) {
 			this.paddle2y_n -= this.PADDLE_SPEED_N;
 		}
-		if (this.cursors.down?.isDown) {
+		if (this.cursors.down?.isDown || this.touchDown2Pressed) {
 			this.paddle2y_n += this.PADDLE_SPEED_N;
 		}
-		if ((this.keyW?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_up)) {
+		if ((this.keyW?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_up) || (!this.ia_mode && this.touchUp1Pressed)) {
 			this.paddle1y_n -= this.PADDLE_SPEED_N;
 		}
-		if ((this.keyS?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_down)) {
+		if ((this.keyS?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_down) || (!this.ia_mode && this.touchDown1Pressed)) {
 			this.paddle1y_n += this.PADDLE_SPEED_N;
 		}
 		const halfH1 = (this.paddle1.height / this.gameSize) / 2;
@@ -523,5 +629,13 @@ export default class HouseScene extends Phaser.Scene {
 				)
 			}
 		}
+	}
+
+	private endGame() {
+		this.game_started = false;
+		this.score1 = 0;
+		this.score2 = 0;
+		this.backButton?.destroy();
+		this.scene.start("WorldMapScene");
 	}
 }

@@ -94,6 +94,7 @@ export default class ShopScene extends Phaser.Scene {
 		this.items.water = this.add.sprite(0, 0, "water")
 		this.items.wine = this.add.sprite(0, 0, "wine")
 		this.popup = new Popup(this);
+
 		this.items_picks = [];
 
 		if (!this.game_started) {
