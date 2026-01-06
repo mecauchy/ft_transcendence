@@ -361,9 +361,9 @@ secrets:
     ports:
       - "9200:9200"
     environment:
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root_token_dev_only
+      - ES_JAVA_OPTS:-Xms512m -Xmx512m
+      - VAULT_ADDR:http://vault:8200
+      - VAULT_TOKEN:root_token_dev_only
     networks:
       - logging_net
       - service_mesh
@@ -477,9 +477,3 @@ secrets:
       timeout: 10s
       retries: 5
       start_period: 60s
-
-# ==================== SECRETS ====================
-
-secrets:
-  vault_token:
-    file: ./infra/secret/vault_token.txt
