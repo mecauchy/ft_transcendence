@@ -271,6 +271,9 @@ export default class WorldMapScene extends Phaser.Scene {
 	}
 
 	private createNurseAnimations() {
+		// fixes warnings for animations
+		if (this.anims.exists('nurse-down')) return;
+
 		this.anims.create({
 			key: "nurse-down",
 			frames: [

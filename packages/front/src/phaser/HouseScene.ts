@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
-import BackButton from "./ui/BackButton";
 import { api } from "../api/client";
 import { t } from "./i18nHelper";
 
@@ -34,7 +33,6 @@ export default class HouseScene extends Phaser.Scene {
 	private scoreText2!: Phaser.GameObjects.Text;
 
 	private popup!: Popup;
-	private backButton!: BackButton;
 
 	private gameSize = 0;
 	private offsetX = 0;
@@ -84,9 +82,6 @@ export default class HouseScene extends Phaser.Scene {
 		this.renderScore();
 
 		this.popup = new Popup(this);
-		this.backButton = new BackButton(this, () => {
-			this.endGame();
-		});
 		this.createTouchControls();
 		this.centerScene();
 
@@ -635,7 +630,6 @@ export default class HouseScene extends Phaser.Scene {
 		this.game_started = false;
 		this.score1 = 0;
 		this.score2 = 0;
-		this.backButton?.destroy();
 		this.scene.start("WorldMapScene");
 	}
 }

@@ -356,12 +356,12 @@ export default class CoffeeScene extends Phaser.Scene {
 	private createCard(text: string) {
 		const bg = this.add.image(0, 0, "card_bg");
 
-		const baseFontSize = 8;
+		const baseFontSize = 10;
 		const txt = this.add.text(0, 0, text, {
 			fontSize: `${baseFontSize}px`,
 			color: "#000000",
 			align: "center",
-			wordWrap: { width: bg.width * 0.8 }
+			wordWrap: { width: bg.width * 0.75 }
 		}).setOrigin(0.5);
 
 		const container = this.add.container(0, 0, [bg, txt]);
@@ -373,19 +373,11 @@ export default class CoffeeScene extends Phaser.Scene {
 		const card: CardData = { container, bg, text: txt, nx, ny };
 		this.cards.push(card);
 
-		container.setInteractive(
-			new Phaser.Geom.Rectangle(
-				-bg.width / 2,
-				-bg.height / 2,
-				bg.width,
-				bg.height
-			),
-			Phaser.Geom.Rectangle.Contains
-		);
+		bg.setInteractive({ useHandCursor: true });
 
 		this.input.setDraggable(container);
 
-		this.input.on("drag", (_p, obj, x, y) => {
+		this.input.on("drag", (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container, x: number, y: number) => {
 			if (obj !== container) return;
 
 			const cx = this.scale.width / 2;
@@ -454,8 +446,10 @@ export default class CoffeeScene extends Phaser.Scene {
 
 		for (const card of this.cards) {
 			card.bg.setScale(scaleFactor);
-			card.text.setFontSize(Math.round(8 * scaleFactor));
-			card.text.setWordWrapWidth(card.bg.width * scaleFactor * 0.8);
+
+			const fontSize = Math.round(10 * scaleFactor);
+			card.text.setFontSize(fontSize);
+			card.text.setWordWrapWidth(card.bg.width * scaleFactor * 0.75);
 			card.container.setScale(1);
 
 			this.updateSingleCardPosition(card);

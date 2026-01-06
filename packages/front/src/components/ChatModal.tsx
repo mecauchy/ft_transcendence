@@ -182,6 +182,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					);
 					if (existing) {
 						setSelectedConversation(existing);
+						setShowMobileChat(true); // Show chat on mobile when opening with user
 					} else {
 						// fetch user profile to get avatar
 						try {
@@ -198,6 +199,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 							setMessages([]);
 							setCursor(null);
 							setHasMore(false);
+							setShowMobileChat(true);
 						} catch {
 							setSelectedConversation({
 								id: 'new',
@@ -207,6 +209,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 								},
 								unreadCount: 0,
 							});
+							setShowMobileChat(true);
 						}
 					}
 				}

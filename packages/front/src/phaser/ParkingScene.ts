@@ -16,7 +16,7 @@ export default class ParkingScene extends Phaser.Scene {
 	private session_start_time: number | null = null;
 
 	private popup!: Popup;
-	private backButton!: BackButton;
+	private tton!: BackButton;
 
 	constructor() {
 		super("ParkingScene");

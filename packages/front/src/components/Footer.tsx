@@ -13,7 +13,7 @@ export default function Footer({ setPage }: FooterProps) {
 	};
 
 	return (
-		<footer className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur border-t border-white/10 py-3 px-4 z-40">
+		<footer className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur border-t border-white/10 py-3 px-4 z-40 mt-[10px]">
 			<div className="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400">
 				<span>© {new Date().getFullYear()} ft_transcendence</span>
 				<span className="hidden sm:inline">•</span>
