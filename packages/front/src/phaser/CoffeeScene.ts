@@ -356,7 +356,7 @@ export default class CoffeeScene extends Phaser.Scene {
 	private createCard(text: string) {
 		const bg = this.add.image(0, 0, "card_bg");
 
-		const baseFontSize = 10;
+		const baseFontSize = 8;
 		const txt = this.add.text(0, 0, text, {
 			fontSize: `${baseFontSize}px`,
 			color: "#000000",
@@ -448,7 +448,7 @@ export default class CoffeeScene extends Phaser.Scene {
 		for (const card of this.cards) {
 			card.bg.setScale(scaleFactor);
 
-			const fontSize = Math.round(10 * scaleFactor);
+			const fontSize = Math.round(8 * scaleFactor);
 			card.text.setFontSize(fontSize);
 			card.text.setWordWrapWidth(card.bg.width * scaleFactor * 0.75);
 			card.container.setScale(1);
