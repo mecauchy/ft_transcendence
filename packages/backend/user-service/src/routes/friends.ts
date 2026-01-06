@@ -445,13 +445,32 @@ export async function friendsRoutes(fastify: FastifyInstance) {
 		const targetId = BigInt(request.params.id);
 
 		try {
-			// remove existing friendship
+			const existingBlock = await prisma.friend.findFirst({
+				where: {
+					initiatorId: userId,
+					receiverId: targetId,
+					status: 'BLOCKED',
+				},
+			});
+
+			if (existingBlock) {
+				return {success: true, message: 'User already blocked'};
+			}
+
+			// fix the unblock bug
 			await prisma.friend.deleteMany({
 				where: {
-					OR: [
-						{initiatorId: userId, receiverId: targetId},
-						{initiatorId: targetId, receiverId: userId},
-					],
+					initiatorId: userId,
+					receiverId: targetId,
+					status: {not: 'BLOCKED'},
+				},
+			});
+
+			await prisma.friend.deleteMany({
+				where: {
+					initiatorId: targetId,
+					receiverId: userId,
+					status: {notIn: ['BLOCKED']},
 				},
 			});
 

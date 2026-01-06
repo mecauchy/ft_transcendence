@@ -657,6 +657,15 @@ class ApiClient {
 			achievementsUnlocked: number;
 		}>('/gamification/stats/me');
 	}
+
+	async getMyAchievements() {
+		return this.request<{
+			unlocked: Array<{
+				achievementId: string;
+				unlockedAt: string;
+			}>;
+		}>('/gamification/achievements/me');
+	}
 }
 
 // exporting instance

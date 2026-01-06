@@ -353,10 +353,13 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	if (!isOpen) return null;
 
 	const handleSelectConversation = (conv: Conversation) => {
-		setSelectedConversation(conv);
-		setMessages([]);
-		setCursor(null);
-		setHasMore(false);
+
+		if (selectedConversation?.id !== conv.id) {
+			setSelectedConversation(conv);
+			setMessages([]);
+			setCursor(null);
+			setHasMore(false);
+		}
 		setShowMobileChat(true);
 	};
 

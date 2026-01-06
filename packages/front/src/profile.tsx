@@ -127,14 +127,20 @@ function AchievementBadge({achievement}: {achievement: Achievement}) {
 	return (
 		<div
 			className={`p-3 rounded-lg border-2 ${borderColor} ${
-				isUnlocked ? '' : 'opacity-40 grayscale'
-			}`}
-			title={achievement.description}
+				isUnlocked ? 'cursor-help' : 'opacity-40 grayscale'
+			} transition-all hover:scale-105 group relative`}
+			title={isUnlocked ? achievement.description : `🔒 ${achievement.name}`}
 		>
 			<div className="text-xs font-semibold truncate">{achievement.name}</div>
 			{isUnlocked && (
 				<div className="text-[10px] text-gray-400 mt-1">
 					{new Date(achievement.unlockedAt!).toLocaleDateString()}
+				</div>
+			)}
+			{/* Hover tooltip for unlocked achievements */}
+			{isUnlocked && (
+				<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 w-48 text-center shadow-lg">
+					{achievement.description}
 				</div>
 			)}
 		</div>
@@ -163,10 +169,25 @@ export default function Profile({userId}: {userId?: string | null}) {
 				const profileData = await api.getProfile(isOwnProfile ? undefined : userId!);
 				setProfile(profileData);
 
-				// load achievements
+				// load achievements - get all and user's unlocked
 				try {
-					const achievementsData = await api.getAchievements();
-					setAchievements(achievementsData.achievements || []);
+					const [allAchievements, userAchievements] = await Promise.all([
+						api.getAchievements(),
+						api.getMyAchievements()
+					]);
+
+					const unlockedMap = new Map(
+						(userAchievements.unlocked || []).map((ua: {achievementId: string; unlockedAt: string}) => 
+							[ua.achievementId, ua.unlockedAt]
+						)
+					);
+					
+					const mergedAchievements = (allAchievements.achievements || []).map((a: Achievement) => ({
+						...a,
+						unlockedAt: unlockedMap.get(a.id) as string | undefined
+					}));
+					
+					setAchievements(mergedAchievements);
 				} catch {
 					// gamification service may not be available
 				}
@@ -394,8 +415,8 @@ export default function Profile({userId}: {userId?: string | null}) {
 					{t('profile.achievements', 'Achievements')} ({achievements.filter(a => a.unlockedAt).length}/{achievements.length})
 				</h2>
 				{achievements.length > 0 ? (
-					<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-						{achievements.slice(0, 12).map((achievement) => (
+					<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-h-[400px] overflow-y-auto p-1">
+						{achievements.map((achievement) => (
 							<AchievementBadge key={achievement.id} achievement={achievement} />
 						))}
 					</div>
