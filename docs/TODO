@@ -12,7 +12,8 @@ melissa:
 leny:
 - fix the bug of clicking conversation on chat modal resets the convo (becomes empty) on both mobile and pc
 - make the navbar turn into a menu on mobile for the fields on the right
+- change position of the chat button on the network tab
 
 omar:
 - fix blocking someone (keep both user's blocked state to each other) because now when user1 blocks user2, and user2 blocks user1, both users have the option to unblock BUT it unblocks both ways instead of unblocking only for one side (need to relations: user1 blocks user2 and user2 blocks user1)
--fix achievements STILL NOT WORKING
+- fix achievements STILL NOT WORKING
