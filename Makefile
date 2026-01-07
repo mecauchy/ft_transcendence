@@ -145,7 +145,7 @@ prisma-env:
 		echo "$(RED)✗ Secrets not found. Run 'make secrets' first$(NC)"; \
 		exit 1; \
 	fi
-ifdef MAC
+ifeq ($(shell uname -s),Darwin)
 	@PG_PASS=$$(cat infra/secret/postgres_db_pass.txt | tr -d '\r\n'); \
 	PG_PASS_ENCODED=$$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$$PG_PASS"); \
 	echo "DATABASE_URL=\"postgresql://$(POSTGRES_USER):$${PG_PASS_ENCODED}@localhost:5432/game_db?schema=public\"" > $(PRISMA_DIR)/.env; \
@@ -156,6 +156,7 @@ else
 	echo "DATABASE_URL=\"postgresql://$(POSTGRES_USER):$${PG_PASS_ENCODED}@localhost:5432/game_db?schema=public\"" > $(PRISMA_DIR)/.env
 	@echo "$(GREEN)✓ Created $(PRISMA_DIR)/.env$(NC) for linux"
 endif
+
 prisma-migrate:
 	@echo "$(BLUE)→ Syncing database with Prisma schema...$(NC)"
 	@if [ ! -f $(PRISMA_DIR)/.env ]; then \
