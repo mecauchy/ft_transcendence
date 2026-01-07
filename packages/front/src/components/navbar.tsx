@@ -266,44 +266,44 @@ function Navbar({
 							className="mobile-nav-btn play-btn"
 							onClick={() => handleNavClick('game')}
 						>
-							🎮 {t('nav.play')}
+							{t('nav.play')}
 						</button>
 						<button
 							className="mobile-nav-btn"
 							onClick={() => handleNavClick('profile')}
 						>
-							👤 {t('nav.profile')}
+							{t('nav.profile')}
 						</button>
 						<button
 							className="mobile-nav-btn"
 							onClick={() => handleNavClick('history')}
 						>
-							📜 {t('nav.history')}
+							{t('nav.history')}
 						</button>
 						<button
 							className="mobile-nav-btn"
 							onClick={() => handleNavClick('network')}
 						>
-							🌐 {t('nav.network')}
+							{t('nav.network')}
 						</button>
 						<button
 							className="mobile-nav-btn"
 							onClick={() => handleNavClick('settings')}
 						>
-							⚙️ {t('nav.settings')}
+							{t('nav.settings')}
 						</button>
 						<button
 							className="mobile-nav-btn"
 							onClick={() => handleNavClick('leaderboard')}
 						>
-							🏆 {t('nav.leaderboard')}
+							{t('nav.leaderboard')}
 						</button>
 						<div className="border-t border-white/10 my-2"></div>
 						<button
 							className="mobile-nav-btn logout-btn"
 							onClick={() => handleNavClick('logout')}
 						>
-							🚪 {t('nav.logout')} ({username})
+							{t('nav.logout')} ({username})
 						</button>
 					</div>
 				</div>
