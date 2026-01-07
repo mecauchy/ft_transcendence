@@ -4,7 +4,7 @@
 
 set -e
 VAULT_ADDR=${VAULT_ADDR:-http://vault:8200}
-SECRETS_DIR="/home/macauchy/ft_transcendence/infra/secret"
+SECRETS_DIR="/Users/lenygarcia/projets/ft_transcendence/infra/secret"
 WEBHOOK_FILE="$SECRETS_DIR/alertmanager_webhook.txt"
 
 # Create secrets directory if it doesn't exist

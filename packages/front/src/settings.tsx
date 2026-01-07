@@ -316,7 +316,8 @@ function Settings() {
 		setIs2FALoading(true);
 		try {
 			const response = await api.verify2FA(twoFACode);
-			if (response.verified) {
+			if (response) {
+				console.log('2FA enabled successfully');
 				setIs2FAEnabled(true);
 				setShow2FAModal(false);
 				setQrCode(null);
