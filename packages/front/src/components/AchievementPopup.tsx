@@ -125,7 +125,7 @@ function AchievementPopupCard({ achievement, onClose }: AchievementPopupProps) {
 // Achievement popup manager that listens to WebSocket events
 export default function AchievementPopup() {
 	const [achievement, setAchievement] = useState<Achievement | null>(null);
-	// const [queue, setQueue] = useState<Achievement[]>([]);
+	const [queue, setQueue] = useState<Achievement[]>([]);
 
 	const showNextAchievement = useCallback(() => {
 		setQueue((prev) => {
