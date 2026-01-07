@@ -569,6 +569,17 @@ class ApiClient {
 		});
 	}
 
+	async sendShopResult(payload: {
+		itemsBought: number;
+		items: string[];
+		addiction: boolean;
+	}) {
+		return this.request<{success: boolean; xpAwarded: number}>('/game/minigame/shop', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+		});
+	}
+
 	async getScenarios() {
 		return this.request<{
 			scenarios: Array<{
@@ -665,6 +676,15 @@ class ApiClient {
 				unlockedAt: string;
 			}>;
 		}>('/gamification/achievements/me');
+	}
+
+	async getUserAchievements(userId: string) {
+		return this.request<{
+			unlocked: Array<{
+				achievementId: string;
+				unlockedAt: string;
+			}>;
+		}>(`/gamification/achievements/user/${userId}`);
 	}
 }
 

@@ -11,13 +11,7 @@ export default class BackButton {
 	constructor(scene: Phaser.Scene, onBack: () => void) {
 		this.scene = scene;
 
-		// bg
-		this.bg = scene.add
-			.rectangle(0, 0, 80, 36, 0x000000, 0.7)
-			.setStrokeStyle(2, 0xffffff)
-			.setOrigin(0.5);
-
-		// text
+		// text first to measure it
 		this.text = scene.add
 			.text(0, 0, `← ${t("common.back")}`, {
 				fontFamily: "GameFont",
@@ -25,6 +19,14 @@ export default class BackButton {
 				color: "#ffffff",
 				align: "center",
 			})
+			.setOrigin(0.5);
+
+		// bg sized to fit text with padding
+		const textWidth = this.text.width;
+		const bgWidth = Math.max(80, textWidth + 20); // minimum 80px, or text width + padding
+		this.bg = scene.add
+			.rectangle(0, 0, bgWidth, 36, 0x000000, 0.7)
+			.setStrokeStyle(2, 0xffffff)
 			.setOrigin(0.5);
 
 		this.container = scene.add.container(0, 0, [this.bg, this.text]);

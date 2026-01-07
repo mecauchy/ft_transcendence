@@ -93,19 +93,19 @@ function Meter({value, label, lowColor, highColor, icon}: {
 	else if (isMid) barColor = 'bg-yellow-500';
 
 	return (
-		<div className="flex-1 p-4 bg-white/5 rounded-lg">
-			<div className="flex items-center gap-2 mb-2">
-				<span className="text-xl">{icon}</span>
-				<span className="text-sm font-medium">{label}</span>
+		<div className="flex-1 p-4 bg-white/5 rounded-lg min-w-0">
+			<div className="flex items-center gap-2 mb-2 overflow-hidden">
+				<span className="text-xl flex-shrink-0">{icon}</span>
+				<span className="text-sm font-medium truncate">{label}</span>
 			</div>
-			<div className="flex items-center gap-3">
-				<div className="flex-1 bg-gray-700 rounded-full h-4">
+			<div className="flex items-center gap-2 sm:gap-3">
+				<div className="flex-1 bg-gray-700 rounded-full h-4 min-w-0">
 					<div
 						className={`h-4 rounded-full transition-all duration-700 ${barColor}`}
 						style={{width: `${percentage}%`}}
 					/>
 				</div>
-				<span className="text-lg font-bold w-12 text-right">{percentage}%</span>
+				<span className="text-base sm:text-lg font-bold w-10 sm:w-12 text-right flex-shrink-0">{percentage}%</span>
 			</div>
 		</div>
 	);
@@ -113,34 +113,54 @@ function Meter({value, label, lowColor, highColor, icon}: {
 
 // achievement badge component
 function AchievementBadge({achievement}: {achievement: Achievement}) {
-	const rarityColors: Record<string, string> = {
-		COMMON: 'border-gray-400 bg-gray-400/10',
-		UNCOMMON: 'border-green-400 bg-green-400/10',
-		RARE: 'border-blue-400 bg-blue-400/10',
-		EPIC: 'border-purple-400 bg-purple-400/10',
-		LEGENDARY: 'border-yellow-400 bg-yellow-400/10',
+	const [showTooltip, setShowTooltip] = useState(false);
+	
+	const rarityConfig: Record<string, {border: string; bg: string; glow: string; label: string; textColor: string}> = {
+		COMMON: {border: 'border-gray-400', bg: 'bg-gray-400/10', glow: '', label: 'Common', textColor: 'text-gray-400'},
+		UNCOMMON: {border: 'border-green-400', bg: 'bg-green-400/10', glow: 'shadow-green-400/30', label: 'Uncommon', textColor: 'text-green-400'},
+		RARE: {border: 'border-blue-400', bg: 'bg-blue-400/15', glow: 'shadow-blue-400/40 shadow-md', label: 'Rare', textColor: 'text-blue-400'},
+		EPIC: {border: 'border-purple-400', bg: 'bg-purple-400/20', glow: 'shadow-purple-400/50 shadow-lg', label: 'Epic', textColor: 'text-purple-400'},
+		LEGENDARY: {border: 'border-yellow-400', bg: 'bg-yellow-400/20', glow: 'shadow-yellow-400/60 shadow-xl animate-pulse', label: 'Legendary', textColor: 'text-yellow-400'},
 	};
 
-	const borderColor = rarityColors[achievement.rarity] || rarityColors.COMMON;
+	const config = rarityConfig[achievement.rarity] || rarityConfig.COMMON;
 	const isUnlocked = !!achievement.unlockedAt;
+
+	const handleInteraction = () => {
+		setShowTooltip(prev => !prev);
+	};
 
 	return (
 		<div
-			className={`p-3 rounded-lg border-2 ${borderColor} ${
+			className={`p-3 rounded-lg border-2 ${config.border} ${config.bg} ${isUnlocked ? config.glow : ''} ${
 				isUnlocked ? 'cursor-help' : 'opacity-40 grayscale'
 			} transition-all hover:scale-105 group relative`}
-			title={isUnlocked ? achievement.description : `🔒 ${achievement.name}`}
+			onClick={handleInteraction}
+			onMouseEnter={() => setShowTooltip(true)}
+			onMouseLeave={() => setShowTooltip(false)}
+			onTouchStart={handleInteraction}
 		>
+			{/* Rarity indicator */}
+			<div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${config.textColor}`}>
+				{config.label}
+			</div>
 			<div className="text-xs font-semibold truncate">{achievement.name}</div>
 			{isUnlocked && (
 				<div className="text-[10px] text-gray-400 mt-1">
 					{new Date(achievement.unlockedAt!).toLocaleDateString()}
 				</div>
 			)}
-			{/* Hover tooltip for unlocked achievements */}
-			{isUnlocked && (
-				<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 w-48 text-center shadow-lg">
-					{achievement.description}
+			{/* Tooltip for achievements - shows on hover/tap */}
+			{showTooltip && (
+				<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-xs text-white z-50 w-48 text-center shadow-lg">
+					{isUnlocked ? (
+						<>
+							<div className={`font-bold ${config.textColor} mb-1`}>{config.label}</div>
+							{achievement.description}
+						</>
+					) : (
+						<>🔒 {achievement.name}</>
+					)}
 				</div>
 			)}
 		</div>
@@ -169,11 +189,12 @@ export default function Profile({userId}: {userId?: string | null}) {
 				const profileData = await api.getProfile(isOwnProfile ? undefined : userId!);
 				setProfile(profileData);
 
-				// load achievements - get all and user's unlocked
+				// load achievements - get all and target user's unlocked
 				try {
+					const targetUserId = isOwnProfile ? undefined : userId!;
 					const [allAchievements, userAchievements] = await Promise.all([
 						api.getAchievements(),
-						api.getMyAchievements()
+						targetUserId ? api.getUserAchievements(targetUserId) : api.getMyAchievements()
 					]);
 
 					const unlockedMap = new Map(

@@ -746,6 +746,52 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// shop scene
+	fastify.post<{Body: {
+		itemsBought: number;
+		items: string[];
+		addiction: boolean;
+	}}>('/minigame/shop', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = request.user!.userId;
+		const { itemsBought, items, addiction } = request.body as {
+			itemsBought: number;
+			items: string[];
+			addiction: boolean;
+		};
+
+		try {
+			// trigger shop achievement event
+			await triggerAchievementEvent(userId, 'SHOP_SCENE_COMPLETE', {
+				itemsBought,
+				items,
+				addiction,
+			});
+
+			// award xp
+			let xpAmount = 20;
+			let xpReason = 'Shop scene completed';
+
+			if (itemsBought >= 5) {
+				xpAmount = 50;
+				xpReason = 'Shop scene - Shopping spree!';
+			}
+
+			await awardXpInternal(userId, xpAmount, xpReason);
+
+			return reply.send({
+				success: true,
+				xpAwarded: xpAmount,
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to log shop minigame');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to log shop minigame',
+			});
+		}
+	});
+
 }
 
 

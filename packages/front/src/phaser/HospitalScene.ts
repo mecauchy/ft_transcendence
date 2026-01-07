@@ -112,9 +112,9 @@ export default class HospitalScene extends Phaser.Scene {
 			);
 		}
 		this.centerScene();
-		this.makeFolderInteractive(this.folders.folder1, t("scenes.hospital.folder1"));
-		this.makeFolderInteractive(this.folders.folder2, t("scenes.hospital.folder2"));
-		this.makeFolderInteractive(this.folders.folder3, t("scenes.hospital.folder3"));
+		this.makeFolderInteractive(this.folders.folder1, "folder1", t("scenes.hospital.folder1"));
+		this.makeFolderInteractive(this.folders.folder2, "folder2", t("scenes.hospital.folder2"));
+		this.makeFolderInteractive(this.folders.folder3, "folder3", t("scenes.hospital.folder3"));
 		this.makeDocumentInteractive(this.documents.document1);
 		this.makeDocumentInteractive(this.documents.document2);
 		this.makeDocumentInteractive(this.documents.document3);
@@ -156,7 +156,7 @@ export default class HospitalScene extends Phaser.Scene {
 		});
 	}
 
-	private makeFolderInteractive(folder: Phaser.GameObjects.Sprite, folderName: string) {
+	private makeFolderInteractive(folder: Phaser.GameObjects.Sprite, folderKey: string, folderName: string) {
 		folder.setInteractive({draggable: true});
 		folder.on("pointerover", () => {
 			const baseScale = folder.getData("baseScale");
@@ -172,10 +172,10 @@ export default class HospitalScene extends Phaser.Scene {
 			if (this.popup_active) return;
 			const currentTime = this.time.now;
 			if (currentTime - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD) {
-				// Detected double click
+				// Detected double click - use folderKey to determine which document
 				this.openDocument(
-					folderName === "Folder 1" ? this.documents.document1 :
-					folderName === "Folder 2" ? this.documents.document2 :
+					folderKey === "folder1" ? this.documents.document1 :
+					folderKey === "folder2" ? this.documents.document2 :
 					this.documents.document3
 				);
 				this.popup_active = true;
@@ -211,7 +211,7 @@ export default class HospitalScene extends Phaser.Scene {
 				folder.setData("dropped", true);
 				folder.setData("dropNX", this.DROP_ZONE.x);
 				folder.setData("dropNY", this.DROP_ZONE.y);
-				this.confirmFolderDrop(folder, folderName);
+				this.confirmFolderDrop(folder, folderKey);
 				return;
 			}
 			this.tweens.add({
@@ -225,18 +225,14 @@ export default class HospitalScene extends Phaser.Scene {
 		});
 	}
 
-	private confirmFolderDrop(folder: Phaser.GameObjects.Sprite, folderName: string) {
+	private confirmFolderDrop(folder: Phaser.GameObjects.Sprite, folderKey: string) {
 		let name;
-		let folderKey: string | undefined;
-		if (folderName === t("scenes.hospital.folder1")) {
+		if (folderKey === "folder1") {
 			name = "Alex";
-			folderKey = "folder1";
-		} else if (folderName === t("scenes.hospital.folder2")) {
+		} else if (folderKey === "folder2") {
 			name = "Maya";
-			folderKey = "folder2";
 		} else {
 			name = "Daniel";
-			folderKey = "folder3";
 		}
 		if (this.popup_active) return;
 		this.popup_active = true;

@@ -52,6 +52,35 @@ export async function achievementRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// get achievements for a specific user (public)
+	fastify.get<{Params: {userId: string}}>(
+		'/user/:userId',
+		async (request, reply) => {
+			const {userId} = request.params;
+
+			try {
+				const achievements = await getUserAchievements(userId);
+				const allAchievements = await getAllAchievements();
+
+				return {
+					unlocked: achievements,
+					unlockedCount: achievements.length,
+					totalCount: allAchievements.length,
+					completionPercentage: Math.round(
+						(achievements.length / allAchievements.length) * 100
+					),
+				};
+			} catch (error) {
+				request.log.error({error}, 'Failed to get user achievements');
+				return reply.status(500).send({
+					statusCode:	500,
+					error:		'Internal Server Error',
+					message:	'Failed to get achievements',
+				});
+			}
+		}
+	);
+
 	// get specific achievement
 	fastify.get<{Params: {id: string}}>(
 		'/:id',

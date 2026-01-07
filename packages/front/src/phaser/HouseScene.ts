@@ -255,6 +255,8 @@ export default class HouseScene extends Phaser.Scene {
 		const padding = 20;
 		const btnSpacing = 60;
 
+		const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 		this.touchUpBtn1 = this.createTouchButton(
 			'▲',
 			padding + 25,
@@ -284,6 +286,13 @@ export default class HouseScene extends Phaser.Scene {
 			() => { this.touchDown2Pressed = true; },
 			() => { this.touchDown2Pressed = false; }
 		);
+
+		if (!isTouchDevice) {
+			this.touchUpBtn1.setVisible(false);
+			this.touchDownBtn1.setVisible(false);
+			this.touchUpBtn2.setVisible(false);
+			this.touchDownBtn2.setVisible(false);
+		}
 	}
 
 	private updateTouchControlPositions() {

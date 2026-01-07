@@ -368,8 +368,8 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	};
 
 	return (
-		<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:p-4">
-			<div className="bg-gray-900 rounded-lg w-full max-w-4xl h-[90vh] md:h-[600px] flex overflow-hidden">
+		<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 md:p-4 pt-20 md:pt-4">
+			<div className="bg-gray-900 rounded-lg w-full max-w-4xl h-[calc(100vh-6rem)] md:h-[600px] max-h-[85vh] md:max-h-[600px] flex overflow-hidden">
 				{/* Conversation List */}
 				<div className={`w-full md:w-80 border-r border-gray-700 flex flex-col ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
 					<div className="p-4 border-b border-gray-700 flex items-center justify-between">

@@ -207,6 +207,7 @@ export default class ShopScene extends Phaser.Scene {
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.applyItemEffects();
+		this.sendShopResults();
 		this.popup.show(
 			t("common.returningToMap"),
 			[
@@ -220,6 +221,25 @@ export default class ShopScene extends Phaser.Scene {
 				},
 			]
 		);
+	}
+
+	private async sendShopResults(): Promise<void> {
+		try {
+			// addiction combo trigger
+			const hasWine = this.items_picks.includes("wine");
+			const hasSleepingPills = this.items_picks.includes("sleeping pills");
+			const hasAnxietyPills = this.items_picks.includes("anxiety pills");
+			const isAddiction = hasWine && hasSleepingPills && hasAnxietyPills;
+
+			await api.sendShopResult({
+				itemsBought: this.items_picks.length,
+				items: this.items_picks,
+				addiction: isAddiction,
+			});
+			console.log('Shop result sent to backend:', this.items_picks.length, 'items', isAddiction ? '(addiction combo)' : '');
+		} catch (error) {
+			console.error('Failed to send shop result:', error);
+		}
 	}
 
 	private async applyItemEffects(): Promise<void> {

@@ -52,10 +52,15 @@ const handleAddFriend = async () => {
 		settargetUsername("");
 		setTimeout(() => setActionMessage(null), 3000);
 	} catch (error: unknown) {
-		if (error instanceof Error)
-		setSearchError(error.message || t('network.failedToAddFriend'));
+		const err = error as { message?: string; statusCode?: number };
+		let errorMessage = t('network.failedToAddFriend');
+		if (err.message) {
+			errorMessage = err.message;
+		}
+		setSearchError(errorMessage);
+		setTimeout(() => setSearchError(null), 5000);
 	}
-	};
+};
 
 	// block user (from search)
 	const handleBlockUser = async () => {
@@ -73,8 +78,13 @@ const handleAddFriend = async () => {
 		setTimeout(() => setActionMessage(null), 3000);
 		}
 	} catch (error: unknown) {
-		if (error instanceof Error)
-		setSearchError(error.message || t('network.failedToBlockUser'));
+		const err = error as { message?: string; statusCode?: number };
+		let errorMessage = t('network.failedToBlockUser');
+		if (err.message) {
+			errorMessage = err.message;
+		}
+		setSearchError(errorMessage);
+		setTimeout(() => setSearchError(null), 5000);
 	}
 };
 
