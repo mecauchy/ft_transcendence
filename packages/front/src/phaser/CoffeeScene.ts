@@ -81,7 +81,7 @@ export function getThoughtDelta(
 	}
 	): { stress: number; confidence: number } {
 	const coefficients = getThoughtCoefficients();
-	const allSentences = Object.values(coefficients);
+	// const allSentences = Object.values(coefficients);
 	const scale = getScale(Object.keys(coefficients), options?.maxTotalSwing ?? DEFAULT_MAX_TOTAL_SWING);
 
 	const coeffRaw = coefficients[sentence];
