@@ -175,11 +175,12 @@ model UserKey {
 }
 
 model Settings {
-	id		BigInt	@id @default(autoincrement()) @map("settings_id")
-	userId	BigInt	@unique @map("settings_userid")
-	avatar	String?	@map("settings_avatar")
-	colour	String?	@map("settings_colour") @db.VarChar(32)
-	locale	String	@default("fr") @map("settings_locale") @db.VarChar(5)
+	id				BigInt	@id @default(autoincrement()) @map("settings_id")
+	userId			BigInt	@unique @map("settings_userid")
+	avatar			String?	@map("settings_avatar")
+	colour			String?	@map("settings_colour") @db.VarChar(32)
+	locale			String	@default("fr") @map("settings_locale") @db.VarChar(5)
+	gameProgress	Json	@default("{}") @map("game_progress")
 
 	// relations
 	user	User	@relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -57,7 +57,8 @@ CREATE TABLE settings (
 	settings_userid	BIGINT NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
 	settings_avatar	TEXT,
 	settings_colour	VARCHAR(32),
-	settings_locale	VARCHAR(5) NOT NULL DEFAULT 'fr'
+	settings_locale	VARCHAR(5) NOT NULL DEFAULT 'fr',
+	game_progress	JSONB NOT NULL DEFAULT '{}'
 );
 CREATE INDEX idx_settings_user ON settings (settings_userid);
 
@@ -236,7 +237,7 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 
 	-- Shop achievments
 	('SHOPPING_ADDICT', 'Shopping Addict', 'Buy 5 items.', 200, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_6_ITEMS"}'),
-	('SHOPPING_JUST_ADDICT', 'Just An Addict', 'Maybe reconsider your choices while shopping to improve your mental health.', 200, 'RARE', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_ADDICTION"}'),
+	('SHOPPING_JUST_ADDICT', 'Just An Addict', 'Maybe reconsider your choices while shopping to improve your mental health.', 250, 'RARE', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_ADDICTION"}'),
 
 
 	-- Social achievements

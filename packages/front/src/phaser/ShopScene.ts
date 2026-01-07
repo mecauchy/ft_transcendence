@@ -203,11 +203,11 @@ export default class ShopScene extends Phaser.Scene {
 		);
 	}
 
-	private end_shopping() {
+	private async end_shopping() {
 		if (this.popup_active) return;
 		this.popup_active = true;
-		this.applyItemEffects();
-		this.sendShopResults();
+		await this.applyItemEffects();
+		await this.sendShopResults();
 		this.popup.show(
 			t("common.returningToMap"),
 			[

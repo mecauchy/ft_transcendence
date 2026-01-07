@@ -15,6 +15,7 @@ export default class HospitalScene extends Phaser.Scene {
 
 	private patientsSaved: number = 0;
 	private readonly TOTAL_PATIENTS = 3;
+	private savedFolders: string[] = [];
 
 	private readonly DROP_ZONE = {
 		x: 0.5,
@@ -49,7 +50,7 @@ export default class HospitalScene extends Phaser.Scene {
 		this.load.image("document3", "assets/hospital/document3.png");
 	}
 
-	create() {
+	async create() {
 		this.bg = this.add.image(0, 0, "hospital_bg").setOrigin(0.5);
 		this.folders.folder1 = this.add.sprite(0, 0, "folder1");
 		this.folders.folder2 = this.add.sprite(0, 0, "folder2");
@@ -60,12 +61,12 @@ export default class HospitalScene extends Phaser.Scene {
 
 		this.popup = new Popup(this);
 
-		// load saved patients
-		const savedFolders = this.getSavedFolders();
-		this.patientsSaved = savedFolders.length;
+		// load saved patients from database
+		await this.loadSavedFolders();
+		this.patientsSaved = this.savedFolders.length;
 
 		// hide folders for saved patients
-		for (const folderKey of savedFolders) {
+		for (const folderKey of this.savedFolders) {
 			const folder = this.folders[folderKey];
 			if (folder) {
 				folder.setVisible(false);
@@ -271,8 +272,8 @@ export default class HospitalScene extends Phaser.Scene {
 	private async updateStressConfidence() {
 		// Placeholder for updating stress and confidence values
 		try {
-			const stressIncrease = 20; // Example value
-			const confidenceDecrease = 20; // Example value
+			const stressIncrease = 25;
+			const confidenceDecrease = 25;
 			const profile = await api.getProfile();
 			const currentStress = profile.stressLevel ?? 50;
 			const currentConfidence = profile.confidenceLevel ?? 50;
@@ -294,7 +295,7 @@ export default class HospitalScene extends Phaser.Scene {
 
 		// save completed folder
 		if (folderKey) {
-			this.saveFolderToStorage(folderKey);
+			await this.saveFolderToStorage(folderKey);
 		}
 		
 		await this.updateStressConfidence();
@@ -328,24 +329,28 @@ export default class HospitalScene extends Phaser.Scene {
 		);
 	}
 
-	private getSavedFolders(): string[] {
+	private async loadSavedFolders(): Promise<void> {
 		try {
-			const saved = localStorage.getItem('hospitalSavedFolders');
-			return saved ? JSON.parse(saved) : [];
-		} catch {
-			return [];
+			const response = await api.getGameProgress();
+			if (response.success && response.progress.hospitalSavedFolders) {
+				this.savedFolders = response.progress.hospitalSavedFolders as string[];
+			} else {
+				this.savedFolders = [];
+			}
+		} catch (error) {
+			console.error('Failed to load game progress from server:', error);
+			this.savedFolders = [];
 		}
 	}
 
-	private saveFolderToStorage(folderKey: string): void {
+	private async saveFolderToStorage(folderKey: string): Promise<void> {
 		try {
-			const savedFolders = this.getSavedFolders();
-			if (!savedFolders.includes(folderKey)) {
-				savedFolders.push(folderKey);
-				localStorage.setItem('hospitalSavedFolders', JSON.stringify(savedFolders));
+			if (!this.savedFolders.includes(folderKey)) {
+				this.savedFolders.push(folderKey);
+				await api.updateGameProgress('hospitalSavedFolders', this.savedFolders);
 			}
 		} catch (error) {
-			console.error('Failed to save folder to localStorage:', error);
+			console.error('Failed to save folder to server:', error);
 		}
 	}
 

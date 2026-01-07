@@ -150,7 +150,7 @@ const achievements = [
 		xpReward: 25,
 		rarity: 'COMMON' as const,
 		category: 'social',
-		conditionJson: {eventType: 'MESSAGE_SENT', type: 'MESSAGE_COUNT', count: 1},
+		conditionJson: {eventType: 'CHAT_MESSAGE_SENT', type: 'CHAT_MESSAGE_COUNT', count: 1},
 	},
 	
 	// shop achievements

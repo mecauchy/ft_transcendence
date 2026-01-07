@@ -425,7 +425,7 @@ export default class WorldMapScene extends Phaser.Scene {
 	}
 
 	private positionMeters() {
-		const padding = 10;
+		const padding = 25;
 		// const labelGap = 5;
 		// const meterWidth = 100;
 		const scaleFactor = Math.min(this.scale.width, this.scale.height) / 600;

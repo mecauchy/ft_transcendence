@@ -21,6 +21,31 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					oauth: true,
 					friendsInitiated: true,
 					friendsReceived: true,
+					achievements: {
+						include: {
+							achievement: true,
+						},
+					},
+					sentMessages: {
+						orderBy: {createdAt: 'desc'},
+						select: {
+							id: true,
+							content: true,
+							receiverId: true,
+							createdAt: true,
+							isRead: true,
+						},
+					},
+					receivedMessages: {
+						orderBy: {createdAt: 'desc'},
+						select: {
+							id: true,
+							content: true,
+							senderId: true,
+							createdAt: true,
+							isRead: true,
+						},
+					},
 				},
 			});
 
@@ -69,6 +94,22 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					createdAt: user.createdAt,
 					lastModified: user.updatedAt,
 				},
+				gamification: {
+					totalXp: user.totalXp,
+					currentLevel: user.currentLevel,
+					stressLevel: user.stressLevel,
+					confidenceLevel: user.confidenceLevel,
+				},
+				achievements: user.achievements.map((ua) => ({
+					id: ua.id,
+					code: ua.achievement.code,
+					name: ua.achievement.name,
+					description: ua.achievement.description,
+					xpReward: ua.achievement.xpReward,
+					rarity: ua.achievement.rarity,
+					category: ua.achievement.category,
+					unlockedAt: ua.unlockedAt,
+				})),
 				settings: user.settings ? {
 					avatar: user.settings.avatar,
 					colour: user.settings.colour,
@@ -92,6 +133,22 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					})),
 				},
 				friends,
+				chatHistory: {
+					messagesSent: user.sentMessages.map((m) => ({
+						id: m.id,
+						content: m.content,
+						receiverId: m.receiverId.toString(),
+						createdAt: m.createdAt,
+						isRead: m.isRead,
+					})),
+					messagesReceived: user.receivedMessages.map((m) => ({
+						id: m.id,
+						content: m.content,
+						senderId: m.senderId.toString(),
+						createdAt: m.createdAt,
+						isRead: m.isRead,
+					})),
+				},
 				oauthConnections: user.oauth ? [{
 					provider: user.oauth.provider,
 					connectedAt: user.oauth.createdAt,
@@ -170,6 +227,31 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 					oauth: true,
 					friendsInitiated: true,
 					friendsReceived: true,
+					achievements: {
+						include: {
+							achievement: true,
+						},
+					},
+					sentMessages: {
+						orderBy: {createdAt: 'desc'},
+						select: {
+							id: true,
+							content: true,
+							receiverId: true,
+							createdAt: true,
+							isRead: true,
+						},
+					},
+					receivedMessages: {
+						orderBy: {createdAt: 'desc'},
+						select: {
+							id: true,
+							content: true,
+							senderId: true,
+							createdAt: true,
+							isRead: true,
+						},
+					},
 				},
 			});
 
@@ -226,6 +308,30 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 			xml += `    <createdAt>${user.createdAt.toISOString()}</createdAt>\n`;
 			xml += `    <lastModified>${user.updatedAt.toISOString()}</lastModified>\n`;
 			xml += '  </user>\n';
+
+			// gamification data
+			xml += '  <gamification>\n';
+			xml += `    <totalXp>${user.totalXp}</totalXp>\n`;
+			xml += `    <currentLevel>${user.currentLevel}</currentLevel>\n`;
+			xml += `    <stressLevel>${user.stressLevel}</stressLevel>\n`;
+			xml += `    <confidenceLevel>${user.confidenceLevel}</confidenceLevel>\n`;
+			xml += '  </gamification>\n';
+
+			// achievements
+			xml += '  <achievements>\n';
+			for (const ua of user.achievements) {
+				xml += '    <achievement>\n';
+				xml += `      <id>${ua.id}</id>\n`;
+				xml += `      <code>${escapeXml(ua.achievement.code)}</code>\n`;
+				xml += `      <name>${escapeXml(ua.achievement.name)}</name>\n`;
+				xml += `      <description>${escapeXml(ua.achievement.description)}</description>\n`;
+				xml += `      <xpReward>${ua.achievement.xpReward}</xpReward>\n`;
+				xml += `      <rarity>${ua.achievement.rarity}</rarity>\n`;
+				xml += `      <category>${escapeXml(ua.achievement.category)}</category>\n`;
+				xml += `      <unlockedAt>${ua.unlockedAt.toISOString()}</unlockedAt>\n`;
+				xml += '    </achievement>\n';
+			}
+			xml += '  </achievements>\n';
 			
 			if (user.settings) {
 				xml += '  <settings>\n';
@@ -270,6 +376,32 @@ export async function gdprRoutes(fastify: FastifyInstance) {
 				xml += '    </friend>\n';
 			}
 			xml += '  </friends>\n';
+
+			// chat history
+			xml += '  <chatHistory>\n';
+			xml += '    <messagesSent>\n';
+			for (const m of user.sentMessages) {
+				xml += '      <message>\n';
+				xml += `        <id>${m.id}</id>\n`;
+				xml += `        <content>${escapeXml(m.content)}</content>\n`;
+				xml += `        <receiverId>${m.receiverId.toString()}</receiverId>\n`;
+				xml += `        <createdAt>${m.createdAt.toISOString()}</createdAt>\n`;
+				xml += `        <isRead>${m.isRead}</isRead>\n`;
+				xml += '      </message>\n';
+			}
+			xml += '    </messagesSent>\n';
+			xml += '    <messagesReceived>\n';
+			for (const m of user.receivedMessages) {
+				xml += '      <message>\n';
+				xml += `        <id>${m.id}</id>\n`;
+				xml += `        <content>${escapeXml(m.content)}</content>\n`;
+				xml += `        <senderId>${m.senderId.toString()}</senderId>\n`;
+				xml += `        <createdAt>${m.createdAt.toISOString()}</createdAt>\n`;
+				xml += `        <isRead>${m.isRead}</isRead>\n`;
+				xml += '      </message>\n';
+			}
+			xml += '    </messagesReceived>\n';
+			xml += '  </chatHistory>\n';
 			
 			xml += '</userData>';
 

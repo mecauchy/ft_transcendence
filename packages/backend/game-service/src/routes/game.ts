@@ -771,12 +771,13 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			let xpAmount = 20;
 			let xpReason = 'Shop scene completed';
 
-			if (itemsBought >= 5) {
+			if (itemsBought >= 6) {
 				xpAmount = 50;
 				xpReason = 'Shop scene - Shopping spree!';
 			}
 
 			await awardXpInternal(userId, xpAmount, xpReason);
+
 
 			return reply.send({
 				success: true,
@@ -792,6 +793,79 @@ export async function gameRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	// get game progress
+	fastify.get('/progress', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+
+		try {
+			const settings = await prisma.settings.findUnique({
+				where: {userId},
+				select: {gameProgress: true},
+			});
+
+			return reply.send({
+				success: true,
+				progress: settings?.gameProgress || {},
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to get game progress');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to get game progress',
+			});
+		}
+	});
+
+	// update game progress
+	fastify.put<{Body: {key: string; value: unknown}}>('/progress', async (request: FastifyRequest, reply: FastifyReply) => {
+		const userId = BigInt(request.user!.userId);
+		const {key, value} = request.body as {key: string; value: unknown};
+
+		if (!key) {
+			return reply.status(400).send({
+				statusCode: 400,
+				error: 'Bad Request',
+				message: 'Key is required',
+			});
+		}
+
+		try {
+			// get current progress
+			const settings = await prisma.settings.findUnique({
+				where: {userId},
+				select: {gameProgress: true},
+			});
+
+			const currentProgress = (settings?.gameProgress as Record<string, unknown>) || {};
+			const updatedProgress = {...currentProgress, [key]: value};
+
+			// update progress
+			await prisma.settings.upsert({
+				where: {userId},
+				update: {gameProgress: updatedProgress as any},
+				create: {
+					userId,
+					locale: 'en',
+					gameProgress: updatedProgress as any,
+				},
+			});
+
+			return reply.send({
+				success: true,
+				progress: updatedProgress,
+			});
+		} catch (error) {
+			request.log.error({error}, 'Failed to update game progress');
+			return reply.status(500).send({
+				statusCode: 500,
+				error: 'Internal Server Error',
+				message: 'Failed to update game progress',
+			});
+		}
+	});
+
 }
+
 
 

@@ -506,12 +506,17 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 									</button>
 								)}
 
-								{messages.map((msg) => {
+								{messages.map((msg, index) => {
 									const isMine = msg.senderId !== selectedConversation.otherUser.id;
+									// read tick
+									const isLastReadMessage = isMine && msg.isRead && 
+										!messages.slice(index + 1).some(m => 
+											m.senderId !== selectedConversation.otherUser.id && m.isRead
+										);
 									return (
 										<div
 											key={msg.id}
-											className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+											className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
 										>
 											<div
 												className={`max-w-[70%] px-3 py-2 rounded-lg ${
@@ -529,6 +534,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 													{formatTime(msg.createdAt)}
 												</div>
 											</div>
+											{isLastReadMessage && (
+												<span className="text-xs text-gray-400 mt-1 mr-1">
+													{t('chat.read', 'Read')} ✓
+												</span>
+											)}
 										</div>
 									);
 								})}

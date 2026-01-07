@@ -580,6 +580,20 @@ class ApiClient {
 		});
 	}
 
+	// game progress for hospital saved folders
+	async getGameProgress(): Promise<{success: boolean; progress: Record<string, unknown>}> {
+		return this.request<{success: boolean; progress: Record<string, unknown>}>('/game/progress', {
+			method: 'GET',
+		});
+	}
+
+	async updateGameProgress(key: string, value: unknown): Promise<{success: boolean; progress: Record<string, unknown>}> {
+		return this.request<{success: boolean; progress: Record<string, unknown>}>('/game/progress', {
+			method: 'PUT',
+			body: JSON.stringify({key, value}),
+		});
+	}
+
 	async getScenarios() {
 		return this.request<{
 			scenarios: Array<{
