@@ -181,7 +181,7 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 
 ### Critical (Affects Validation):
 - [ ] **README.md** - Create comprehensive README with team roles, project description, setup instructions (Maxime)
-- [ ] **Console Errors** - Verify no warnings/errors in browser console (All team
+- [ ] **Console Errors** - Verify no warnings/errors in browser console (All team)
 
 ### Medium Priority:
 - [ ] Privacy Policy text review/update (Melissa)
@@ -192,3 +192,6 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 - [ ] Stress/confidence meter positioning fix (Leny)
 - [ ] Mobile fullscreen fix (Leny)
 - [ ] Default avatar replacement (Leny)
+- [ ] Fix importing data to include achievements and pong/breathe history (Omar)
+- [ ] Add read receipt (Omar)
+- [ ] Add shop achievements (Omar)
