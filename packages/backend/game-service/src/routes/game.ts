@@ -771,11 +771,6 @@ export async function gameRoutes(fastify: FastifyInstance) {
 			let xpAmount = 20;
 			let xpReason = 'Shop scene completed';
 
-			if (itemsBought >= 6) {
-				xpAmount = 50;
-				xpReason = 'Shop scene - Shopping spree!';
-			}
-
 			await awardXpInternal(userId, xpAmount, xpReason);
 
 

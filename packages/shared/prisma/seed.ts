@@ -155,22 +155,22 @@ const achievements = [
 	
 	// shop achievements
 	{
-		code: 'FIRST_PURCHASE',
-		name: 'Smart Shopper',
-		description: 'Make your first purchase in the shop',
-		xpReward: 50,
-		rarity: 'COMMON' as const,
-		category: 'shop',
-		conditionJson: {eventType: 'SHOP_PURCHASE', type: 'PURCHASE_COUNT', count: 1},
-	},
-	{
-		code: 'SHOP_10_ITEMS',
-		name: 'Collector',
-		description: 'Purchase 10 items from the shop',
+		code: 'SHOPPING_ADDICT',
+		name: 'Shopping Addict',
+		description: 'Buy 3 items',
 		xpReward: 150,
 		rarity: 'UNCOMMON' as const,
 		category: 'shop',
-		conditionJson: {eventType: 'SHOP_PURCHASE', type: 'PURCHASE_COUNT', count: 10},
+		conditionJson: {eventType: 'SHOP_SCENE_COMPLETE', type: 'SHOP_3_ITEMS', count: 1},
+	},
+	{
+		code: 'SHOPPING_JUST_ADDICT',
+		name: 'Just An Addict',
+		description: 'Maybe reconsider your choices while shopping to improve your mental health',
+		xpReward: 250,
+		rarity: 'RARE' as const,
+		category: 'shop',
+		conditionJson: {eventType: 'SHOP_SCENE_COMPLETE', type: 'SHOP_ADDICTION', count: 1},
 	},
 	
 	// level achievements

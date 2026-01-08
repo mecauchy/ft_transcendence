@@ -420,10 +420,10 @@ async function evaluateCondition(
 			return allSaved === true;
 		}
 
-		case 'SHOP_6_ITEMS': {
+		case 'SHOP_3_ITEMS': {
 			const itemsBought = eventData.itemsBought as number | undefined;
 			if (itemsBought === undefined) return false;
-			return itemsBought >= 5;
+			return itemsBought >= 3;
 		}
 
 		case 'SHOP_ADDICTION': {

@@ -236,7 +236,7 @@ INSERT INTO achievements (code, name, description, xp_reward, rarity, category, 
 	('PATIENT_THREE', 'I Can Save Them All', 'Save all the patients.', 500, 'LEGENDARY', 'HOSPITAL', '{"eventType": "HOSPITAL_SCENE_COMPLETE", "type": "HOSPITAL_ALL_SAVED"}'),
 
 	-- Shop achievments
-	('SHOPPING_ADDICT', 'Shopping Addict', 'Buy 5 items.', 200, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_6_ITEMS"}'),
+	('SHOPPING_ADDICT', 'Shopping Addict', 'Buy 3 items.', 150, 'UNCOMMON', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_3_ITEMS"}'),
 	('SHOPPING_JUST_ADDICT', 'Just An Addict', 'Maybe reconsider your choices while shopping to improve your mental health.', 250, 'RARE', 'SHOP', '{"eventType": "SHOP_SCENE_COMPLETE", "type": "SHOP_ADDICTION"}'),
 
 
