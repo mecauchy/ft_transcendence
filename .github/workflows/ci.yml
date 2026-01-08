@@ -90,7 +90,15 @@ jobs:
         - name: 📥 Install Dependencies
           run: pnpm install --no-frozen-lockfile # Use --no-frozen-lockfile if you are still iterating on the lockfile
   
-        - name: 📝 Activate TS Problem Matcher
+        - name: � Generate Prisma Client
+          run: |
+            cd packages/shared/prisma && npx prisma generate
+            cd ../../../packages/backend/auth-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../user-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../game-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../gamification-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
+
+        - name: �📝 Activate TS Problem Matcher
           run: echo "::add-matcher::.github/tsc-matcher.json"
   
         - name: 🔍 Validate Shared Types
@@ -98,7 +106,7 @@ jobs:
           run: pnpm tsc --noEmit
   
         - name: ⚙️ Check Backend Compatibility
-          run: pnpm --filter "@speak-up/*" --filter "!@speak-up/prisma" exec tsc --noEmit
+          run: pnpm --filter "@speak-up/*" exec tsc --noEmit
   
         - name: 🎨 Check Frontend Compatibility
           run: pnpm --filter "front" exec tsc --noEmit
