@@ -92,11 +92,15 @@ jobs:
   
         - name: � Generate Prisma Client
           run: |
-            cd packages/shared/prisma && npx prisma generate
-            cd ../../../packages/backend/auth-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
-            cd ../user-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
-            cd ../game-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
-            cd ../gamification-service && npx prisma generate --schema=../../shared/prisma/schema.prisma
+            # Generate Prisma client for shared/prisma package
+            cd packages/shared/prisma
+            pnpm install
+            pnpm exec prisma generate
+            # Generate for each backend service that uses Prisma
+            cd ../../backend/auth-service && pnpm exec prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../user-service && pnpm exec prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../game-service && pnpm exec prisma generate --schema=../../shared/prisma/schema.prisma
+            cd ../gamification-service && pnpm exec prisma generate --schema=../../shared/prisma/schema.prisma
 
         - name: �📝 Activate TS Problem Matcher
           run: echo "::add-matcher::.github/tsc-matcher.json"

@@ -17,7 +17,10 @@ COPY packages/shared/prisma ../shared/prisma
 
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 RUN pnpm install
-RUN pnpm exec prisma generate --schema=../shared/prisma/schema.prisma
+# Create root package.json for Prisma to find, then generate client
+RUN echo '{"name":"root","private":true}' > /package.json && \
+    pnpm exec prisma generate --schema=../shared/prisma/schema.prisma && \
+    rm /package.json
 
 COPY packages/backend/game-service/src ./src
 
