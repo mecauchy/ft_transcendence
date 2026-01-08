@@ -163,7 +163,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 			};
 
 			// if conversation is selected and new message is in that convo, update list
-			if (selectedConversation && isOpen &&
+			// modal open check
+			const isConversationActive = selectedConversation && isOpen && 
+				(window.innerWidth >= 768 || showMobileChat);
+			
+			if (isConversationActive &&
 				(selectedConversation.id === data.conversationId || 
 				 selectedConversation.otherUser.id === data.senderId)) {
 				// if message isnt from us, add to chatlog
@@ -213,7 +217,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		return () => {
 			unsubscribe();
 		};
-	}, [selectedConversation, isOpen]);
+	}, [selectedConversation, isOpen, showMobileChat]);
 
 	// cleanup when modal closes
 	useEffect(() => {
@@ -409,13 +413,11 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 	if (!isOpen) return null;
 
 	const handleSelectConversation = (conv: Conversation) => {
-
-		if (selectedConversation?.id !== conv.id) {
-			setSelectedConversation(conv);
-			setMessages([]);
-			setCursor(null);
-			setHasMore(false);
-		}
+		// always reset messages
+		setMessages([]);
+		setCursor(null);
+		setHasMore(false);
+		setSelectedConversation(conv);
 		setShowMobileChat(true);
 	};
 

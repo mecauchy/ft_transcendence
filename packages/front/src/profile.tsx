@@ -1,7 +1,9 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {useAuth} from './contexts/AuthContext';
 import {api} from './api/client';
 import {useTranslation} from 'react-i18next';
+
 
 type UserProfile = {
 	id?: string;
@@ -114,6 +116,8 @@ function Meter({value, label, lowColor, highColor, icon}: {
 // achievement badge component
 function AchievementBadge({achievement}: {achievement: Achievement}) {
 	const [showTooltip, setShowTooltip] = useState(false);
+	const badgeRef = useRef<HTMLDivElement>(null);
+	const [tooltipPos, setTooltipPos] = useState({x: 0, y: 0});
 	
 	const rarityConfig: Record<string, {border: string; bg: string; glow: string; label: string; textColor: string}> = {
 		COMMON: {border: 'border-gray-400', bg: 'bg-gray-400/10', glow: '', label: 'Common', textColor: 'text-gray-400'},
@@ -126,33 +130,59 @@ function AchievementBadge({achievement}: {achievement: Achievement}) {
 	const config = rarityConfig[achievement.rarity] || rarityConfig.COMMON;
 	const isUnlocked = !!achievement.unlockedAt;
 
+	const updateTooltipPosition = () => {
+		if (badgeRef.current) {
+			const rect = badgeRef.current.getBoundingClientRect();
+			setTooltipPos({
+				x: rect.left + rect.width / 2,
+				y: rect.bottom + 8
+			});
+		}
+	};
+
 	const handleInteraction = () => {
+		updateTooltipPosition();
 		setShowTooltip(prev => !prev);
 	};
 
+	const handleMouseEnter = () => {
+		updateTooltipPosition();
+		setShowTooltip(true);
+	};
+
 	return (
-		<div
-			className={`p-3 rounded-lg border-2 ${config.border} ${config.bg} ${isUnlocked ? config.glow : ''} ${
-				isUnlocked ? 'cursor-help' : 'opacity-40 grayscale'
-			} transition-all hover:scale-105 group relative`}
-			onClick={handleInteraction}
-			onMouseEnter={() => setShowTooltip(true)}
-			onMouseLeave={() => setShowTooltip(false)}
-			onTouchStart={handleInteraction}
-		>
-			{/* Rarity indicator */}
-			<div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${config.textColor}`}>
-				{config.label}
-			</div>
-			<div className="text-xs font-semibold truncate">{achievement.name}</div>
-			{isUnlocked && (
-				<div className="text-[10px] text-gray-400 mt-1">
-					{new Date(achievement.unlockedAt!).toLocaleDateString()}
+		<>
+			<div
+				ref={badgeRef}
+				className={`p-3 rounded-lg border-2 ${config.border} ${config.bg} ${isUnlocked ? config.glow : ''} ${
+					isUnlocked ? 'cursor-help' : 'opacity-40 grayscale'
+				} transition-all hover:scale-105 group relative`}
+				onClick={handleInteraction}
+				onMouseEnter={handleMouseEnter}
+				onMouseLeave={() => setShowTooltip(false)}
+				onTouchStart={handleInteraction}
+			>
+				{/* Rarity indicator */}
+				<div className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${config.textColor}`}>
+					{config.label}
 				</div>
-			)}
-			{/* Tooltip for achievements - shows on hover/tap */}
-			{showTooltip && (
-				<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-xs text-white z-50 w-48 text-center shadow-lg">
+				<div className="text-xs font-semibold truncate">{achievement.name}</div>
+				{isUnlocked && (
+					<div className="text-[10px] text-gray-400 mt-1">
+						{new Date(achievement.unlockedAt!).toLocaleDateString()}
+					</div>
+				)}
+			</div>
+			{/* Tooltip rendered as portal - shows on hover/tap */}
+			{showTooltip && createPortal(
+				<div 
+					className="fixed px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-xs text-white w-48 text-center shadow-xl pointer-events-none z-[9999]"
+					style={{
+						left: `${tooltipPos.x}px`,
+						top: `${tooltipPos.y}px`,
+						transform: 'translateX(-50%)'
+					}}
+				>
 					{isUnlocked ? (
 						<>
 							<div className={`font-bold ${config.textColor} mb-1`}>{config.label}</div>
@@ -161,9 +191,19 @@ function AchievementBadge({achievement}: {achievement: Achievement}) {
 					) : (
 						<>🔒 {achievement.name}</>
 					)}
-				</div>
+					{/* Arrow pointing up */}
+					<div 
+						className="fixed border-8 border-transparent border-b-gray-900"
+						style={{
+							left: `${tooltipPos.x}px`,
+							top: `${tooltipPos.y - 16}px`,
+							transform: 'translateX(-50%)'
+						}}
+					></div>
+				</div>,
+				document.body
 			)}
-		</div>
+		</>
 	);
 }
 

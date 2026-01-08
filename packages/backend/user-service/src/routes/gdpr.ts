@@ -656,6 +656,133 @@ export async function importRoutes(fastify: FastifyInstance) {
 							}
 						}
 					}
+
+					// import gamification data if provided
+					if (importData.gamification) {
+						await tx.user.update({
+							where: {id: userId},
+							data: {
+								...(importData.gamification.totalXp !== undefined && {totalXp: importData.gamification.totalXp}),
+								...(importData.gamification.currentLevel !== undefined && {currentLevel: importData.gamification.currentLevel}),
+								...(importData.gamification.stressLevel !== undefined && {stressLevel: importData.gamification.stressLevel}),
+								...(importData.gamification.confidenceLevel !== undefined && {confidenceLevel: importData.gamification.confidenceLevel}),
+							},
+						});
+						updated++;
+						processed++;
+					}
+
+					// import pong history if provided
+					if (importData.gameHistory?.pong && Array.isArray(importData.gameHistory.pong)) {
+						for (const game of importData.gameHistory.pong) {
+							try {
+								// check if alreadyn exists
+								const existing = await tx.gamePong.findFirst({
+									where: {
+										playerId: userId,
+										startedAt: game.startedAt ? new Date(game.startedAt) : undefined,
+										endedAt: game.endedAt ? new Date(game.endedAt) : undefined,
+									},
+								});
+
+								if (!existing) {
+									await tx.gamePong.create({
+										data: {
+											playerId: userId,
+											mode: game.mode || 'AI',
+											difficulty: game.difficulty || 'EASY',
+											score1: game.score1 || 0,
+											score2: game.score2 || 0,
+											winner: game.winner || 'NONE',
+											startedAt: game.startedAt ? new Date(game.startedAt) : new Date(),
+											endedAt: game.endedAt ? new Date(game.endedAt) : null,
+										},
+									});
+									processed++;
+									updated++;
+								} else {
+									skipped++;
+								}
+							} catch (err) {
+								errors.push(`Failed to import pong game: ${err}`);
+								skipped++;
+							}
+						}
+					}
+
+					// import breathe history if provided
+					if (importData.gameHistory?.breathe && Array.isArray(importData.gameHistory.breathe)) {
+						for (const game of importData.gameHistory.breathe) {
+							try {
+								const existing = await tx.gameBreathe.findFirst({
+									where: {
+										playerId: userId,
+										startedAt: game.startedAt ? new Date(game.startedAt) : undefined,
+										endedAt: game.endedAt ? new Date(game.endedAt) : undefined,
+									},
+								});
+
+								if (!existing) {
+									await tx.gameBreathe.create({
+										data: {
+											playerId: userId,
+											startedAt: game.startedAt ? new Date(game.startedAt) : new Date(),
+											endedAt: game.endedAt ? new Date(game.endedAt) : null,
+										},
+									});
+									processed++;
+									updated++;
+								} else {
+									skipped++;
+								}
+							} catch (err) {
+								errors.push(`Failed to import breathe game: ${err}`);
+								skipped++;
+							}
+						}
+					}
+
+					// import achievements if provided
+					if (importData.achievements && Array.isArray(importData.achievements)) {
+						for (const ach of importData.achievements) {
+							try {
+								// find achievement by code
+								const achievement = await tx.achievement.findFirst({
+									where: {code: ach.code},
+								});
+
+								if (achievement) {
+									// check if user already has this achievement
+									const existing = await tx.userAchievement.findFirst({
+										where: {
+											userId,
+											achievementId: achievement.id,
+										},
+									});
+
+									if (!existing) {
+										await tx.userAchievement.create({
+											data: {
+												userId,
+												achievementId: achievement.id,
+												unlockedAt: ach.unlockedAt ? new Date(ach.unlockedAt) : new Date(),
+											},
+										});
+										processed++;
+										updated++;
+									} else {
+										skipped++;
+									}
+								} else {
+									errors.push(`Achievement not found: ${ach.code}`);
+									skipped++;
+								}
+							} catch (err) {
+								errors.push(`Failed to import achievement ${ach.code}: ${err}`);
+								skipped++;
+							}
+						}
+					}
 				});
 
 				request.log.info({userId: userId.toString(), processed, updated, skipped}, 'User data imported');

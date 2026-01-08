@@ -98,6 +98,13 @@ vault kv put secret/kuma \
 	echo -e "${GREEN}✓ Uptime-Kuma credentials stored${NC}" || \
 	echo -e "${YELLOW}⚠ Uptime-Kuma credentials already exist${NC}"
 
+# 42 OAuth credentials (development defaults - replace in production!)
+vault kv put secret/oauth/42 \
+	client_id="${OAUTH_42_CLIENT_ID:-dev_client_id_placeholder}" \
+	client_secret="${OAUTH_42_CLIENT_SECRET:-dev_client_secret_placeholder}" 2>/dev/null && \
+	echo -e "${GREEN}✓ 42 OAuth credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ 42 OAuth credentials already exist${NC}"
+
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
 	password="${POSTGRES_PASS}" \
