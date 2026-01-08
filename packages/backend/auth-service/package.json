@@ -4,7 +4,7 @@
 	"description": "Authentication Service - OAuth 2.0, JWT, 2FA management",
 	"main": "dist/index.js",
 	"scripts": {
-		"postinstall": "prisma generate",
+		"prepare": "test -n \"$PRISMA_SKIP_POSTINSTALL_GENERATE\" || prisma generate --schema=../../shared/prisma/schema.prisma",
 		"dev": "tsx watch src/index.ts",
 		"clean": "rimraf dist",
 		"build": "npm run clean && tsc",
