@@ -114,8 +114,9 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_ADDR=https://0.0.0.0:8200
-      - VAULT_CACERT=/vault/tls/vault.crt
+      - VAULT_ADDR=http://127.0.0.1:8200
+      # Disable TLS verification for dev mode
+      - VAULT_SKIP_VERIFY=true
     volumes:
       - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
@@ -207,16 +208,16 @@ services:
     container_name: prometheus
     profiles:
       - "monitoring"
-    restart: no
+    restart: "no"
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file:/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path:/prometheus'
-      - '--web.console.libraries:/usr/share/prometheus/console_libraries'
-      - '--web.console.templates:/usr/share/prometheus/consoles'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
@@ -239,8 +240,8 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR:https://vault:8200
-      - VAULT_TOKEN_FILE:/tmp/vault_token
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
         target: /tmp/vault_token
@@ -281,7 +282,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -316,11 +317,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro
-    entrypoint: ["/bin/bash", "-c", "if [ -f /app/data/kuma.db ]; then bash /setup-kuma.sh; fi && bash /entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     ports:
       - 3010:3001
     environment:
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -335,24 +336,7 @@ services:
       retries: 5
       start_period: 60s
 
-secrets:
-  vault_token:
-    file: ./infra/secret/vault_token.txt
-  jwt_secret:
-    file: ./infra/secret/jwt_secret.txt
-  session_secret:
-    file: ./infra/secret/session_secret.txt
-  redis_password:
-    file: ./infra/secret/redis_password.txt
-  api_gateway_role_id:
-    file: ./infra/secret/api-gateway_role_id
-  api_gateway_secret_id:
-    file: ./infra/secret/api-gateway_secret_id
-  auth_service_role_id:
-    file: ./infra/secret/auth-service_role_id
-  auth_service_secret_id:
-    file: ./infra/secret/auth-service_secret_id
-
+  # ELK Stack services
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: elasticsearch
@@ -361,9 +345,9 @@ secrets:
     ports:
       - "9200:9200"
     environment:
-      - ES_JAVA_OPTS:-Xms512m -Xmx512m
-      - VAULT_ADDR:http://vault:8200
-      - VAULT_TOKEN:root_token_dev_only
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
     networks:
       - logging_net
       - service_mesh
@@ -396,14 +380,10 @@ secrets:
       - VAULT_TOKEN=root_token_dev_only
       - ELASTICSEARCH_PASSWORD=changeme123
     volumes:
-      # Filebeat configuration
       - ./infra/monitoring/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
-      # Docker logs - 42 school goinfre path (contains Docker data)
       - /goinfre:/goinfre:ro
-      # Docker socket for metadata enrichment
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Filebeat data persistence
       - filebeat_data:/usr/share/filebeat/data
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
@@ -424,9 +404,9 @@ secrets:
     profiles:
       - "monitoring"
     ports:
-      - "5044:5044"   # Beats input
-      - "5000:5000"   # TCP input
-      - "9600:9600"   # Logstash API
+      - "5044:5044"
+      - "5000:5000"
+      - "9600:9600"
     networks:
       - logging_net
       - service_mesh
@@ -477,3 +457,21 @@ secrets:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+secrets:
+  vault_token:
+    file: ./infra/secret/vault_token.txt
+  jwt_secret:
+    file: ./infra/secret/jwt_secret.txt
+  session_secret:
+    file: ./infra/secret/session_secret.txt
+  redis_password:
+    file: ./infra/secret/redis_password.txt
+  api_gateway_role_id:
+    file: ./infra/secret/api-gateway_role_id
+  api_gateway_secret_id:
+    file: ./infra/secret/api-gateway_secret_id
+  auth_service_role_id:
+    file: ./infra/secret/auth-service_role_id
+  auth_service_secret_id:
+    file: ./infra/secret/auth-service_secret_id

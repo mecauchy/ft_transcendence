@@ -26,6 +26,7 @@ COPY packages/backend/api-gateway/tsconfig.json ./packages/backend/api-gateway/t
 COPY packages/backend/api-gateway/src ./packages/backend/api-gateway/src
 
 # Build TypeScript files
+WORKDIR /app/packages/backend/api-gateway
 RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
 
 # Production stage

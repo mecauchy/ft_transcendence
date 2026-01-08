@@ -42,14 +42,14 @@ echo ""
 echo -e "${YELLOW} Reading secrets from files...${NC}"
 
 # Retrieve database passwords from infra/secrets/
-POSTGRES_PASS=$(get_secret_content "/run/secrets/postgres_db_pass.txt")
-AUTH_PASS=$(get_secret_content "/run/secrets/auth_db_pass.txt")
-CHAT_PASS=$(get_secret_content "/run/secrets/chat_db_pass.txt")
-GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
-USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
-GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
-KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
-ELASTICSEARCH_PASS=$(get_secret_content "/run/secrets/elasticsearch_pass.txt")
+POSTGRES_PASS=$(get_secret_content "/tmp/vault-secrets/postgres_db_pass.txt")
+AUTH_PASS=$(get_secret_content "/tmp/vault-secrets/auth_db_pass.txt")
+CHAT_PASS=$(get_secret_content "/tmp/vault-secrets/chat_db_pass.txt")
+GAME_PASS=$(get_secret_content "/tmp/vault-secrets/game_db_pass.txt")
+USER_PASS=$(get_secret_content "/tmp/vault-secrets/user_db_pass.txt")
+GRAFANA_PASS=$(get_secret_content "/tmp/vault-secrets/grafana_pass.txt")
+KUMA_PASS=$(get_secret_content "/tmp/vault-secrets/kuma_pass.txt")
+ELASTICSEARCH_PASS=$(get_secret_content "/tmp/vault-secrets/elasticsearch_pass.txt")
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 

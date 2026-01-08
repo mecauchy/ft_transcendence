@@ -39,3 +39,8 @@ http://localhost:9093/#/alerts
 
 cAdvisor :
 http://localhost:8081
+
+=========== Script pour afficher les credentials ============
+
+lancement :
+./scripts/show_creds.sh

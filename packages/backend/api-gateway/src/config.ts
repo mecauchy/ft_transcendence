@@ -1,4 +1,26 @@
 // packages/backend/api-gateway/src/config.ts
+import * as fs from 'fs';
+
+// Helper function to get secrets from environment or file
+function getSecret(envVar: string, fileEnvVar: string, required: boolean = true): string | undefined {
+  // Check environment variable first
+  if (process.env[envVar]) {
+    return process.env[envVar];
+  }
+  
+  // Check file path from environment
+  const filePath = process.env[fileEnvVar];
+  if (filePath && fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, 'utf-8').trim();
+  }
+  
+  if (required && process.env.NODE_ENV === 'production') {
+    throw new Error(`Required secret ${envVar} not found`);
+  }
+  
+  return undefined;
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   host: process.env.HOST || '0.0.0.0',
@@ -14,7 +36,7 @@ export const config = {
     address:
       process.env.VAULT_ADDRESS ??
       (process.env.NODE_ENV === 'production' ? 'https://vault:8200' : 'http://vault:8200'),
-      token: process.env.VAULT_TOKEN || (() => { throw new Error('VAULT_TOKEN must be set in production')}),
+      token: process.env.VAULT_TOKEN || 'root_token_dev_only',
   },
 
   services: {

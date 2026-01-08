@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all monitoring monitoring-up monitoring-down
 
 # Colors for output
 BLUE := \033[0;34m
@@ -21,6 +21,7 @@ help:
 	@echo "  make up                   - Start all containers (production mode)"
 	@echo "  make dev                  - Start containers in development mode (exposed ports)"
 	@echo "  make prod                 - Start containers in production mode (no exposed ports)"
+	@echo "  make monitoring           - Start with monitoring stack (Prometheus, Grafana, etc.)"
 	@echo "  make down                 - Stop all containers"
 	@echo "  make restart              - Restart all containers"
 	@echo "  make restart-dev          - Restart in development mode"
@@ -67,10 +68,10 @@ help:
 
 up: secrets
 	@echo "$(BLUE)→ Checking if images need to be built...$(NC)"
-	@docker-compose build
+	@docker compose build
 	@echo "$(BLUE)→ Starting production stack (idempotent)...$(NC)"
-	@docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-	@docker-compose ps
+	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@docker compose ps
 	@echo "$(GREEN)✓ Production stack started$(NC)"
 
 dev: secrets
@@ -78,7 +79,7 @@ dev: secrets
 	@echo "$(YELLOW)  - Ports exposed: 3000 (api-gateway), 3011 (auth-service), 5432 (postgres), 6378 (redis)$(NC)"
 	@echo "$(YELLOW)  - Vault: HTTP mode at http://vault:8200$(NC)"
 	@echo "$(YELLOW)  - AppRole credentials: Auto-generated$(NC)"
-	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 	@sleep 5
 	@echo "$(BLUE)→ Checking AppRole credentials...$(NC)"
 	@if [ -s infra/secret/api-gateway_role_id ] && [ -s infra/secret/api-gateway_secret_id ]; then \
@@ -86,16 +87,42 @@ dev: secrets
 	else \
 		echo "$(YELLOW)⚠ AppRole credentials not found - check vault logs$(NC)"; \
 	fi
-	@docker-compose ps
+	@docker compose ps
 
 prod: secrets
 	@echo "$(BLUE)→ Starting containers in PRODUCTION mode...$(NC)"
 	@echo "$(GREEN)  - Network isolation: No backend ports exposed$(NC)"
 	@echo "$(GREEN)  - Vault: TLS enabled$(NC)"
 	@echo "$(GREEN)  - Access via WAF only (ports 80/443)$(NC)"
-	@docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 	@sleep 3
-	@docker-compose ps
+	@docker compose ps
+
+monitoring: secrets
+	@echo "$(BLUE)→ Starting containers with MONITORING stack...$(NC)"
+	@echo "$(YELLOW)  - Services: Prometheus, Grafana, Alertmanager, cAdvisor$(NC)"
+	@echo "$(YELLOW)  - ELK Stack: Elasticsearch, Kibana, Logstash, Filebeat$(NC)"
+	@echo "$(YELLOW)  - Uptime-Kuma for availability monitoring$(NC)"
+	@docker compose --profile monitoring up -d
+	@sleep 10
+	@docker compose ps
+	@echo ""
+	@echo "$(GREEN)✓ Monitoring stack started$(NC)"
+	@echo ""
+	@echo "$(GREEN)📊 Monitoring Access URLs:$(NC)"
+	@echo "  Grafana:         http://localhost:3009 (admin/admin)"
+	@echo "  Prometheus:      http://localhost:9090"
+	@echo "  Alertmanager:    http://localhost:9093"
+	@echo "  Kibana:          http://localhost:5601"
+	@echo "  Uptime-Kuma:     http://localhost:3010"
+	@echo ""
+
+monitoring-up: monitoring
+
+monitoring-down:
+	@echo "$(BLUE)→ Stopping monitoring stack...$(NC)"
+	@docker compose --profile monitoring down
+	@echo "$(GREEN)✓ Monitoring stack stopped$(NC)"
 
 secrets:
 	@echo "$(BLUE)→ Generating development secrets...$(NC)"
@@ -106,15 +133,15 @@ secrets:
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"
-	@docker-compose down || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+	@docker compose down || docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 restart: down up
 	@echo "$(GREEN)✓ Containers restarted$(NC)"
 
 restart-dev:
 	@echo "$(BLUE)→ Restarting in development mode...$(NC)"
-	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
-	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 	@echo "$(GREEN)✓ Development stack restarted$(NC)"
 
 # ============================================================================
@@ -122,34 +149,34 @@ restart-dev:
 # ============================================================================
 
 logs:
-	@docker-compose logs -f
+	@docker compose logs -f
 
 logs-vault:
-	@docker-compose logs -f vault
+	@docker compose logs -f vault
 
 logs-postgres:
-	@docker-compose logs -f postgres
+	@docker compose logs -f postgres
 
 logs-redis:
-	@docker-compose logs -f redis
+	@docker compose logs -f redis
 
 logs-waf:
-	@docker-compose logs -f waf
+	@docker compose logs -f waf
 
 logs-api-gateway:
-	@docker-compose logs -f api-gateway
+	@docker compose logs -f api-gateway
 
 health:
 	@echo "$(BLUE)→ Checking service health...$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Vault:$(NC)"
-	@docker-compose exec -T vault vault status 2>/dev/null || echo "$(RED)✗ Unreachable$(NC)"
+	@docker compose exec -T vault vault status 2>/dev/null || echo "$(RED)✗ Unreachable$(NC)"
 	@echo ""
 	@echo "$(YELLOW)PostgreSQL:$(NC)"
-	@docker-compose exec -T postgres pg_isready -U $(POSTGRES_USER) 2>&1 || echo "$(RED)✗ Unreachable$(NC)"
+	@docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) 2>&1 || echo "$(RED)✗ Unreachable$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Redis:$(NC)"
-	@docker-compose exec -T redis redis-cli ping 2>&1 || echo "$(RED)✗ Unreachable$(NC)"
+	@docker compose exec -T redis redis-cli ping 2>&1 || echo "$(RED)✗ Unreachable$(NC)"
 	@echo ""
 	@echo "$(YELLOW)WAF (Nginx):$(NC)"
 	@curl -s http://localhost:80 >/dev/null 2>&1 && echo "$(GREEN)✓ Listening on port 80$(NC)" || echo "$(RED)✗ Unreachable$(NC)"
@@ -162,13 +189,13 @@ health:
 # ============================================================================
 
 vault:
-	@docker-compose exec vault sh
+	@docker compose exec vault sh
 
 db:
-	@docker-compose exec postgres psql -U $(POSTGRES_USER)
+	@docker compose exec postgres psql -U $(POSTGRES_USER)
 
 redis:
-	@docker-compose exec redis redis-cli
+	@docker compose exec redis redis-cli
 
 # ============================================================================
 # BUILD (Development)
@@ -184,12 +211,12 @@ build-local:
 
 build-docker:
 	@echo "$(BLUE)→ Building Docker images...$(NC)"
-	@docker-compose build
+	@docker compose build
 	@echo "$(GREEN)✓ Docker images built$(NC)"
 
 rebuild:
 	@echo "$(BLUE)→ Forcing rebuild of all Docker images (no cache)...$(NC)"
-	@docker-compose build --no-cache
+	@docker compose build --no-cache
 	@echo "$(GREEN)✓ Docker images rebuilt from scratch$(NC)"
 
 # ============================================================================
@@ -225,7 +252,7 @@ clean: clean-soft
 
 clean-soft:
 	@echo "$(BLUE)→ Soft clean: Stopping containers and pruning unused resources...$(NC)"
-	@docker-compose down 2>/dev/null || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+	@docker compose down 2>/dev/null || docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 	@echo "$(YELLOW)→ Pruning unused Docker resources...$(NC)"
 	@docker system prune -f
 	@echo "$(GREEN)✓ Soft cleanup complete (volumes preserved)$(NC)"
@@ -233,13 +260,13 @@ clean-soft:
 clean-hard: down
 	@echo "$(BLUE)→ Hard clean: Removing containers, volumes, and rebuilding images...$(NC)"
 	@echo "$(YELLOW)⚠️  This will delete all data in volumes!$(NC)"
-	@docker-compose down -v --remove-orphans 2>/dev/null || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
+	@docker compose down -v --remove-orphans 2>/dev/null || docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
 	@echo "$(YELLOW)→ Removing project images...$(NC)"
 	@docker image rm ft_transcendence-api-gateway ft_transcendence-auth-service ft_transcendence-waf ft_transcendence-front 2>/dev/null || true
 	@echo "$(YELLOW)→ Pruning all Docker system resources...$(NC)"
 	@docker system prune -af
 	@echo "$(YELLOW)→ Rebuilding Docker images...$(NC)"
-	@docker-compose build --no-cache
+	@docker compose build --no-cache
 	@echo "$(GREEN)✓ Hard cleanup and rebuild complete$(NC)"
 
 clean-volumes:
@@ -248,12 +275,12 @@ clean-volumes:
 	@sleep 5
 	@echo "$(BLUE)→ Removing all volumes...$(NC)"
 	@docker volume ls -q --filter label=com.docker.compose.project=$(PROJECT_NAME) | xargs -r docker volume rm 2>/dev/null || true
-	@docker-compose down -v --remove-orphans 2>/dev/null || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
+	@docker compose down -v --remove-orphans 2>/dev/null || docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
 	@echo "$(GREEN)✓ All volumes removed$(NC)"
 
 clean-images:
 	@echo "$(BLUE)→ Removing project Docker images...$(NC)"
-	@docker-compose down 2>/dev/null || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+	@docker compose down 2>/dev/null || docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 	@docker image rm -f ft_transcendence-api-gateway ft_transcendence-auth-service ft_transcendence-waf ft_transcendence-front 2>/dev/null || true
 	@docker images --filter reference='ft_transcendence-*' -q | xargs -r docker image rm -f
 	@echo "$(GREEN)✓ Project images removed$(NC)"
@@ -268,7 +295,7 @@ clean-all:
 	@echo "$(RED)Continuing in 10 seconds... Press Ctrl+C to cancel$(NC)"
 	@sleep 10
 	@echo "$(BLUE)→ Stopping and removing containers...$(NC)"
-	@docker-compose down -v --remove-orphans 2>/dev/null || docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
+	@docker compose down -v --remove-orphans 2>/dev/null || docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
 	@echo "$(BLUE)→ Removing all project images...$(NC)"
 	@docker images --filter reference='ft_transcendence-*' -q | xargs -r docker image rm -f
 	@echo "$(BLUE)→ Removing all project volumes...$(NC)"
