@@ -286,7 +286,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 			});
 
 			// mark msg as read on view
-			await prisma.message.updateMany({
+			const updatedMessages = await prisma.message.updateMany({
 				where: {
 					conversationId,
 					receiverId:	userId,
@@ -294,6 +294,37 @@ export async function chatRoutes(fastify: FastifyInstance) {
 				},
 				data: {isRead: true},
 			});
+
+			// notify via websocket the read status
+			if (updatedMessages.count > 0) {
+				const unreadMessages = await prisma.message.findMany({
+					where: {
+						conversationId,
+						receiverId:	userId,
+					},
+					select: {
+						id: true,
+						senderId: true,
+					},
+					distinct: ['senderId'],
+				});
+
+				// publish read status to both
+				for (const msg of unreadMessages) {
+					if (msg.senderId !== userId) {
+						await pubClient.publish(
+							`user:${msg.senderId}:messages`,
+							JSON.stringify({
+								type: 'MESSAGES_READ',
+								data: {
+									conversationId,
+									readByUserId: userId.toString(),
+								},
+							})
+						);
+					}
+				}
+			}
 
 			return {
 				messages: messages.map((msg) => ({

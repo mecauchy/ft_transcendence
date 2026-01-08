@@ -110,6 +110,45 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		};
 	}, [selectedConversation]);
 
+	// listen for read status updates
+	useEffect(() => {
+		const unsubscribe = wsService.on('MESSAGES_READ', (message) => {
+			const data = message.data as {
+				conversationId: string;
+				readByUserId: string;
+			};
+
+			// if convo is active, automark as read
+			if (selectedConversation && selectedConversation.id === data.conversationId) {
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.senderId !== data.readByUserId ? { ...msg, isRead: true } : msg
+					)
+				);
+			}
+
+			// update convo list
+			setConversations((prev) =>
+				prev.map((c) =>
+					c.id === data.conversationId && c.lastMessage
+						? {
+								...c,
+								lastMessage: {
+									...c.lastMessage,
+									isRead: true,
+								},
+								unreadCount: 0,
+						  }
+						: c
+				)
+			);
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	}, [selectedConversation]);
+
 	// listen with websockket
 	useEffect(() => {
 		const unsubscribe = wsService.on('CHAT_MESSAGE', (message) => {
@@ -124,7 +163,7 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 			};
 
 			// if conversation is selected and new message is in that convo, update list
-			if (selectedConversation && 
+			if (selectedConversation && isOpen &&
 				(selectedConversation.id === data.conversationId || 
 				 selectedConversation.otherUser.id === data.senderId)) {
 				// if message isnt from us, add to chatlog
@@ -140,6 +179,15 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 					if (prev.some((m) => m.id === data.messageId)) return prev;
 					return [...prev, newMsg];
 				});
+
+				// if convo active automark as read
+				if (selectedConversation.id === data.conversationId && 
+					data.senderId === selectedConversation.otherUser.id) {
+					// call api to update status
+					api.getMessages(data.conversationId, undefined).catch((err) => {
+						console.error('Failed to mark messages as read:', err);
+					});
+				}
 			}
 
 			// update convo list with latest interaction
@@ -165,7 +213,15 @@ export default function ChatModal({isOpen, onClose, initialUserId}: ChatModalPro
 		return () => {
 			unsubscribe();
 		};
-	}, [selectedConversation]);
+	}, [selectedConversation, isOpen]);
+
+	// cleanup when modal closes
+	useEffect(() => {
+		if (!isOpen) {
+			setMessages([]);
+			setShowMobileChat(false);
+		}
+	}, [isOpen]);
 
 	// load chat
 	useEffect(() => {

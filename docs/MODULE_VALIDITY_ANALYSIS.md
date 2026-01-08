@@ -194,4 +194,3 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 - [ ] Default avatar replacement (Leny)
 - [ ] Fix importing data to include achievements and pong/breathe history (Omar)
 - [ ] Add read receipt (Omar)
-- [ ] Add shop achievements (Omar)

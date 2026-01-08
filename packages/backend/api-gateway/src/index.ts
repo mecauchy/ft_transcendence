@@ -363,6 +363,15 @@ async function	start() {
 								},
 								timestamp: Date.now(),
 							}));
+						} else if (data.type === 'MESSAGES_READ') {
+							socket.send(JSON.stringify({
+								type: 'MESSAGES_READ',
+								data: {
+									conversationId: data.data.conversationId?.toString(),
+									readByUserId: data.data.readByUserId?.toString(),
+								},
+								timestamp: Date.now(),
+							}));
 						} else {
 							socket.send(JSON.stringify(data));
 						}
