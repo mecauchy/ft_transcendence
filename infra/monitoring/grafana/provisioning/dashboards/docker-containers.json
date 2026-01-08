@@ -58,7 +58,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -72,7 +74,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(container_last_seen{id=~\"/user.slice.*docker.*\"})",
+          "expr": "count(container_last_seen{name!=\"\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -118,7 +120,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -132,7 +136,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_working_set_bytes{id=~\"/user.slice.*docker.*\"})",
+          "expr": "sum(container_memory_working_set_bytes{name!=\"\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -178,7 +182,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -192,7 +198,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg(rate(container_cpu_usage_seconds_total{id=~\"/user.slice.*docker.*\"}[5m])) * 100",
+          "expr": "avg(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) * 100",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -238,7 +244,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -252,7 +260,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_cache{id=~\"/user.slice.*docker.*\"})",
+          "expr": "sum(container_memory_cache{name!=\"\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -324,7 +332,10 @@
       "id": 5,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
@@ -344,7 +355,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{id=~\"/user.slice.*docker.*\"}",
+          "expr": "container_memory_working_set_bytes{name!=\"\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -416,7 +427,10 @@
       "id": 6,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
@@ -436,7 +450,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_cpu_load_average_10s{id=~\"/user.slice.*docker.*\"}",
+          "expr": "container_cpu_load_average_10s{name!=\"\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -490,7 +504,9 @@
         "minVizWidth": 0,
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -505,7 +521,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(container_cpu_usage_seconds_total{id=~\"/user.slice.*docker.*\"}[5m]) * 100",
+          "expr": "rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]) * 100",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -559,7 +575,9 @@
         "minVizWidth": 0,
         "orientation": "horizontal",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -574,7 +592,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{id=~\"/user.slice.*docker.*\"}",
+          "expr": "container_memory_working_set_bytes{name!=\"\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -646,7 +664,10 @@
       "id": 9,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
@@ -666,7 +687,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_cache{id=~\"/user.slice.*docker.*\"}",
+          "expr": "container_memory_cache{name!=\"\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -751,7 +772,10 @@
       "id": 10,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
@@ -771,7 +795,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(container_network_receive_bytes_total{id=\"/\"}[5m])",
+          "expr": "rate(container_network_receive_bytes_total{name!=\"\"}[5m])",
           "legendFormat": "{{interface}} rx",
           "range": true,
           "refId": "A"
@@ -782,7 +806,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(container_network_transmit_bytes_total{id=\"/\"}[5m])",
+          "expr": "rate(container_network_transmit_bytes_total{name!=\"\"}[5m])",
           "hide": false,
           "legendFormat": "{{interface}} tx",
           "range": true,
@@ -796,7 +820,11 @@
   "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["docker", "containers", "monitoring"],
+  "tags": [
+    "docker",
+    "containers",
+    "monitoring"
+  ],
   "templating": {
     "list": []
   },

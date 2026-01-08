@@ -49,7 +49,14 @@ GAME_PASS=$(get_secret_content "/tmp/vault-secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/tmp/vault-secrets/user_db_pass.txt")
 GRAFANA_PASS=$(get_secret_content "/tmp/vault-secrets/grafana_pass.txt")
 KUMA_PASS=$(get_secret_content "/tmp/vault-secrets/kuma_pass.txt")
-ELASTICSEARCH_PASS=$(get_secret_content "/tmp/vault-secrets/elasticsearch_pass.txt")
+
+# Optional secrets (may not exist)
+if [ -f "/tmp/vault-secrets/elasticsearch_pass.txt" ]; then
+	ELASTICSEARCH_PASS=$(cat "/tmp/vault-secrets/elasticsearch_pass.txt")
+else
+	ELASTICSEARCH_PASS=""
+	echo -e "${YELLOW}⚠ Elasticsearch password file not found, skipping${NC}"
+fi
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -134,12 +141,16 @@ else
 	echo -e "${YELLOW}⚠ Alertmanager webhook file not found${NC}"
 fi
 
-# Elasticsearch credentials
-vault kv put secret/elasticsearch \
-	username="elastic_admin" \
-	password="${ELASTICSEARCH_PASS}" 2>/dev/null && \
-	echo -e "${GREEN}✓ Elasticsearch credentials stored${NC}" || \
-	echo -e "${YELLOW}⚠ Elasticsearch credentials already exist${NC}"
+# Elasticsearch credentials (only if password was loaded)
+if [ -n "$ELASTICSEARCH_PASS" ]; then
+	vault kv put secret/elasticsearch \
+		username="elastic_admin" \
+		password="${ELASTICSEARCH_PASS}" 2>/dev/null && \
+		echo -e "${GREEN}✓ Elasticsearch credentials stored${NC}" || \
+		echo -e "${YELLOW}⚠ Elasticsearch credentials already exist${NC}"
+else
+	echo -e "${YELLOW}⚠ Elasticsearch credentials skipped (no password)${NC}"
+fi
 
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \
