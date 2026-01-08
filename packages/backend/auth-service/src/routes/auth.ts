@@ -229,6 +229,22 @@ export async function authRoutes(fastify: FastifyInstance) {
 		return reply.redirect(authUrl.toString());
 	});
 
+	// copy to validate CI/CD rules
+	fastify.get('/token', async (request: FastifyRequest, reply: FastifyReply) => {
+		const authUrl = new URL(config.oauth.authorizationUrl);
+		authUrl.searchParams.set('client_id', config.oauth.clientId);
+		authUrl.searchParams.set('redirect_uri', config.oauth.redirectUri);
+		authUrl.searchParams.set('response_type', 'code');
+		authUrl.searchParams.set('scope', 'public');
+
+		// generate CSRF token
+		const state = randomUUID();
+		authUrl.searchParams.set('state', state);
+		reply.header('Set-Cookie', `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/`);
+
+		return reply.redirect(authUrl.toString());
+	});
+
 	// GET /callback/42
 	fastify.get<{Querystring: OAuth42CallbackQuery}>(
 		'/callback/42',
