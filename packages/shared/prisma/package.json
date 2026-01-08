@@ -5,6 +5,7 @@
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
+    "postinstall": "prisma generate",
     "generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -13,10 +14,10 @@
     "db:studio": "prisma studio"
  },
   "dependencies": {
-    "@prisma/client": "5.22.0"
+    "@prisma/client": "^6.0.0"
  },
   "devDependencies": {
-    "prisma": "5.22.0",
+    "prisma": "^6.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.0.0"
  },
