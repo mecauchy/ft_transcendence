@@ -7,6 +7,7 @@ WORKDIR /app
 COPY packages/backend/user-service/package.json ./
 COPY packages/backend/user-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
+COPY packages/shared/prisma ../shared/prisma
 
 WORKDIR /shared/types
 ENV CI=true
@@ -14,9 +15,6 @@ RUN pnpm install && pnpm run build
 
 WORKDIR /app
 RUN pnpm install
-
-COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
-RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/user-service/src ./src
 
