@@ -213,10 +213,10 @@ services:
       - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--config.file:/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path:/prometheus'
+      - '--web.console.libraries:/usr/share/prometheus/console_libraries'
+      - '--web.console.templates:/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
@@ -239,8 +239,8 @@ services:
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR=https://vault:8200
-      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - VAULT_ADDR:https://vault:8200
+      - VAULT_TOKEN_FILE:/tmp/vault_token
     secrets:
       - source: vault_token
         target: /tmp/vault_token

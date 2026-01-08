@@ -25,11 +25,10 @@ RUN pnpm install --frozen-lockfile --shamefully-hoist
 COPY packages/backend/api-gateway/tsconfig.json ./packages/backend/api-gateway/tsconfig.json
 COPY packages/backend/api-gateway/src ./packages/backend/api-gateway/src
 
-# 5. Build the package from its package directory so output goes to packages/backend/api-gateway/dist
-WORKDIR /app/packages/backend/api-gateway
-RUN pnpm run build
+# Build TypeScript files
+RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
 
-# --- Production Stage ---
+# Production stage
 FROM node:18-alpine
 
 RUN corepack enable

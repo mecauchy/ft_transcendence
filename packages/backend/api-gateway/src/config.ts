@@ -1,17 +1,4 @@
 // packages/backend/api-gateway/src/config.ts
-import * as fs from 'fs';
-
-function readSecretFile(envVar: string, filePath: string): string | undefined {
-  const fileEnv = process.env[envVar];
-  if (fileEnv && fs.existsSync(fileEnv)) {
-    return fs.readFileSync(fileEnv, 'utf8').trim();
-  }
-  if (fs.existsSync(filePath)) {
-    return fs.readFileSync(filePath, 'utf8').trim();
-  }
-  return undefined;
-}
-
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   host: process.env.HOST || '0.0.0.0',
