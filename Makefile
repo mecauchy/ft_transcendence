@@ -351,9 +351,9 @@ clean-all:
 	@echo "$(BLUE)→ Stopping and removing containers...$(NC)"
 	@docker compose --profile monitoring down -v --remove-orphans 2>/dev/null || true
 	@echo "$(BLUE)→ Removing all project images...$(NC)"
-	@docker images --filter reference='transcendence-*' -q | xargs -r docker image rm -f 2>/dev/null || true
+	$(MAKE) clean-images
 	@echo "$(BLUE)→ Removing all project volumes...$(NC)"
-	@docker volume ls -q | grep -E "transcendence|postgres|redis|vault|grafana|prometheus" | xargs -r docker volume rm 2>/dev/null || true
+	$(MAKE) clean-volumes
 	@echo "$(BLUE)→ Removing secrets...$(NC)"
 	@rm -f infra/secret/*.txt 2>/dev/null || true
 	@rm -rf infra/secret/.secrets 2>/dev/null || true

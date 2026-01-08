@@ -370,7 +370,6 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.stressMeterFill = this.add.rectangle(0, 0, meterWidth * (this.stressValue / 100), meterHeight - 4, 0xff4444);
 		this.stressMeterFill.setOrigin(0, 0.5);
 		this.stressMeterLabel = this.add.text(0, 0, t("common.stress") + ":", {
-			fontFamily: 'GameFont',
 			fontSize: '12px',
 			color: '#ffffff',
 		});
@@ -382,7 +381,6 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.confidenceMeterFill = this.add.rectangle(0, 0, meterWidth * (this.confidenceValue / 100), meterHeight - 4, 0x44cc44);
 		this.confidenceMeterFill.setOrigin(0, 0.5);
 		this.confidenceMeterLabel = this.add.text(0, 0, t("common.confidence") + ":", {
-			fontFamily: 'GameFont',
 			fontSize: '12px',
 			color: '#ffffff',
 		});
@@ -425,7 +423,7 @@ export default class WorldMapScene extends Phaser.Scene {
 	}
 
 	private positionMeters() {
-		const padding = 25;
+		const padding = 15;
 		// const labelGap = 5;
 		// const meterWidth = 100;
 		const scaleFactor = Math.min(this.scale.width, this.scale.height) / 600;
