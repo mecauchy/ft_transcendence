@@ -17,13 +17,19 @@ interface	IVaultClient {
 export class	VaultClient {
 	private client:	IVaultClient;
 	private config:	VaultConfig;
+	private token?:	string;
 
 	constructor(config: VaultConfig) {
 		this.config = config;
+		this.token = config.token;
 		this.client = Vault({
 			apiVersion: 'v1',
 			endpoint: this.config.address,
 		});
+	}
+
+	async	init(): Promise<void> {
+		await this.authenticate();
 	}
 
 	async	authenticate(): Promise<void> {
@@ -32,28 +38,28 @@ export class	VaultClient {
 				this.client.token = this.config.token;
 				console.log('Vault authenticated using provided token (development mode).');
 				return;
-			} catch (err) {
-				if (this.token) {
-					this.client.token = this.token;
-					console.warn('AppRole login failed in development, falling back to VAULT_TOKEN');
-					return;
-				}
-				throw err;
 			}
-		}
 
-		if (this.token) {
-			this.client.token = this.token;
-			console.log('Using VAULT_TOKEN for Vault authentication');
-			return;
-		}
+			if (this.token) {
+				this.client.token = this.token;
+				console.log('Using VAULT_TOKEN for Vault authentication');
+				return;
+			}
 
-		// Last resort in dev: look for mounted secret files (handled by entrypoint normally)
-		throw new Error('No Vault authentication available');
+			// Last resort in dev: look for mounted secret files (handled by entrypoint normally)
+			throw new Error('No Vault authentication available');
+		} catch (err) {
+			if (this.token) {
+				this.client.token = this.token;
+				console.warn('Vault login failed, falling back to VAULT_TOKEN');
+				return;
+			}
+			throw err;
+		}
 	}
 
 	private async loginWithAppRole(roleId: string, secretId: string): Promise<void> {
-		const url = `${this.address.replace(/\/$/, '')}/v1/auth/approle/login`;
+		const url = `${this.config.address.replace(/\/$/, '')}/v1/auth/approle/login`;
 		
 		// Configure fetch options for HTTPS with self-signed certs
 		const fetchOptions: any = {

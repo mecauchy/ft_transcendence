@@ -8,6 +8,7 @@ import {config} from '../config';
 const pubClient = new Redis({
 	host:	config.redis.host,
 	port:	config.redis.port,
+	password: config.redis.password,
 });
 
 export type NotificationType = 

@@ -6,6 +6,7 @@ import {awardXP} from './xp';
 const redis = new Redis({
 	host: config.redis.host,
 	port: config.redis.port,
+	password: config.redis.password,
 });
 
 export interface Achievement {

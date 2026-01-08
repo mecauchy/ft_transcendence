@@ -40,6 +40,7 @@ export class WebSocketManager {
 		this.redis = new Redis({
 			host: config.redis.host,
 			port: config.redis.port,
+			password: config.redis.password,
 		});
 
 		// start health check

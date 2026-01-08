@@ -40,7 +40,7 @@ export default function Game() {
 		container.style.height = `${size}px`;
 
 		phaserRef.current = new Phaser.Game({
-			type: Phaser.WEBGL,
+			type: Phaser.CANVAS, // Use Canvas to avoid WebGL deprecation warnings
 			parent: container,
 			width: "100%",
 			height: "100%",

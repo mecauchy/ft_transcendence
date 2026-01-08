@@ -9,18 +9,13 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "rimraf": "^5.0.0"
- },
-  "devDependencies": {
+    "rimraf": "^5.0.0",
     "typescript": "^5.9.3"
- },
+  },
   "keywords": [
     "types",
     "contracts"
   ],
   "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "typescript": "^5.9.3"
-  }
+  "license": "MIT"
 }

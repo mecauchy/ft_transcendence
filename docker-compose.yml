@@ -55,17 +55,14 @@ services:
       - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - PORT=3000
       - HOST=0.0.0.0
-      - AUTH_SERVICE_URL=https://auth-service:3001
-      - USER_SERVICE_URL=https://user-service:3002
-      - GAME_SERVICE_URL=https://game-service:3003
-      - GAMIFICATION_SERVICE_URL=https://gamification-service:3004
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USER_SERVICE_URL=http://user-service:3002
+      - GAME_SERVICE_URL=http://game-service:3003
+      - GAMIFICATION_SERVICE_URL=http://gamification-service:3004
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    secrets:
-      - source: vault_token
-        target: /tmp/vault_token
     ports:
       - "3000:3000"
     networks:
@@ -113,6 +110,7 @@ services:
       - DB_NAME=game_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
@@ -122,6 +120,8 @@ services:
         target: /run/secrets/postgres_db_pass.txt
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
       - source: auth_service_role_id
         target: /run/secrets/vault_role_id
       - source: auth_service_secret_id
@@ -162,6 +162,7 @@ services:
       - DB_NAME=game_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
       - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
@@ -171,6 +172,8 @@ services:
         target: /tmp/vault_token
       - source: postgres_db_pass
         target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
     networks:
       - service_mesh
       - logging_net
@@ -204,6 +207,7 @@ services:
       - DB_NAME=game_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
       - GAME_TICK_RATE=20
@@ -216,6 +220,8 @@ services:
         target: /tmp/vault_token
       - source: postgres_db_pass
         target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
     networks:
       - service_mesh
       - logging_net
@@ -249,6 +255,7 @@ services:
       - DB_NAME=game_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - VAULT_ADDR=http://vault:8200
       - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
       - VAULT_TOKEN_FILE=/tmp/vault_token
@@ -257,6 +264,8 @@ services:
         target: /tmp/vault_token
       - source: postgres_db_pass
         target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
     networks:
       - service_mesh
       - logging_net
@@ -317,6 +326,8 @@ services:
     networks:
       - service_mesh
       - logging_net
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U root_admin"]
       interval: 10s
@@ -373,7 +384,7 @@ services:
     container_name: prometheus
     profiles:
       - "monitoring"
-    restart: no
+    restart: "no"
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml

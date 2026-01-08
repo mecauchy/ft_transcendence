@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 const redis = new Redis({
 	host: config.redis.host,
 	port: config.redis.port,
+	password: config.redis.password,
 });
 
 export interface XPLog {

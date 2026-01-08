@@ -1,3 +1,15 @@
+import { readFileSync, existsSync } from 'fs';
+
+// helper to get secrets
+function getSecret(envVar: string, fileEnvVar: string, defaultValue?: string): string | undefined {
+	if (process.env[envVar]) return process.env[envVar]!;
+	const filePath = process.env[fileEnvVar];
+	if (filePath && existsSync(filePath)) {
+		return readFileSync(filePath, 'utf-8').trim();
+	}
+	return defaultValue;
+}
+
 export const config = {
 	port: parseInt(process.env.PORT || '3003'),
 	host: process.env.HOST || '0.0.0.0',
@@ -15,6 +27,7 @@ export const config = {
 	redis: {
 		host: process.env.REDIS_HOST || 'redis',
 		port: parseInt(process.env.REDIS_PORT || '6379'),
+		password: getSecret('REDIS_PASSWORD', 'REDIS_PASSWORD_FILE', undefined),
 	},
 
 	jwt: {
