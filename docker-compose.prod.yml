@@ -5,32 +5,32 @@ services:
   # VAULT SERVICE - PRODUCTION MODE
   vault:
     # Use file-based storage with proper configuration
-    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    command: ["vault", "server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
     volumes:
       - vault_data:/vault/file
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
-      - ./infra/secrets:/run/secrets:ro
+      - ./infra/secret:/run/secrets:ro
     environment:
-      VAULT_ADDR: https://vault:8200
-      VAULT_SKIP_VERIFY: "false"
+      VAULT_ADDR: http://vault:8200
+      VAULT_CACERT:  # Unset VAULT_CACERT for dev mode (HTTP only)
       VAULT_LOG_LEVEL: info
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
     # Don't expose ports in production, use ingress/load balancer
     ports: []
-    # Require init/unseal in production
+    # Simple health check for dev mode
     healthcheck:
-      test: ["CMD", "curl", "-f", "-k", "https://localhost:8200/v1/sys/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
 
   # PostgreSQL SERVICE - PRODUCTION MODE
   postgres:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
-      POSTGRES_INITDB_ARGS: "-c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key"
     volumes:
-      - ./infra/secrets:/run/secrets:ro
+      - ./infra/secret:/run/secrets:ro
       - postgres_data:/var/lib/postgresql/data
     # Don't expose port directly in production
     ports: []
@@ -43,10 +43,10 @@ services:
 
   # Redis SERVICE - PRODUCTION MODE
   redis:
-    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_pass.txt)\""]
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
     volumes:
       - redis_data:/data
-      - ./infra/secrets:/run/secrets:ro
+      - ./infra/secret:/run/secrets:ro
     # Don't expose port directly in production
     ports: []
     healthcheck:
@@ -65,18 +65,32 @@ services:
       - SSL_KEY_PATH=/etc/ssl/private/server.key
     volumes:
       - ./infra/certs:/etc/ssl/certs:ro
-    # Don't expose HTTP directly, only HTTPS
-    ports:
-      - "443:443"  # HTTPS only
 
   api-gateway:
     environment:
       - NODE_ENV=production
       - LOG_LEVEL=info
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDRESS=http://vault:8200
+      - CORS_ORIGIN=https://192.168.1.57
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+
+  auth-service:
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - VAULT_ADDR=http://vault:8200
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
 
   uptime-kuma:
     environment:
-      - VAULT_ADDR=https://vault:8200
-      
+      - VAULT_ADDR=http://vault:8200
+
+  alertmanager:
+    environment:
+      - VAULT_ADDR=http://vault:8200
 

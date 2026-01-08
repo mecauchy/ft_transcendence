@@ -78,13 +78,13 @@ packages/front/                         @lewwny
 # -----------------------------------------------------------------------------
 #                        PROJECT CONFIGURATION
 # -----------------------------------------------------------------------------
-# Owner: Everyone
+# Owners: Melissa & Maxime
 
 .gitignore                              @mecauchy @maxime-c16
 
 # -----------------------------------------------------------------------------
 #                             DOCUMENTATION
 # -----------------------------------------------------------------------------
-# Owner: Melissa & Maxime
+# Owners: Everyone
 
 README.md                               @mecauchy @maxime-c16 @lewwny @floppy727

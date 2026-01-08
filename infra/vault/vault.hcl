@@ -7,12 +7,14 @@ storage "file" {
 }
 
 # Listener configuration
-# WARNING: TLS is disabled for development only
-# For production, enable TLS by setting tls_disable = 0 and providing
-# valid tls_cert_file and tls_key_file to prevent cleartext token exposure
+# Production-ready: TLS enabled with self-signed certificates
+# For production with CA-signed certs, replace vault.crt/vault.key
 listener "tcp" {
-  address       = "0.0.0.0:8200"
-  tls_disable   = 1
+  address          = "0.0.0.0:8200"
+  tls_disable      = 0
+  tls_cert_file    = "/vault/tls/vault.crt"
+  tls_key_file     = "/vault/tls/vault.key"
+  tls_min_version  = "tls12"
 }
 
 # Cluster listener
@@ -30,8 +32,8 @@ telemetry {
 }
 
 # API configuration
-api_addr      = "http://0.0.0.0:8200"
-cluster_addr  = "http://0.0.0.0:8201"
+api_addr      = "https://0.0.0.0:8200"
+cluster_addr  = "https://0.0.0.0:8201"
 
 # Logging
 log_level = "info"

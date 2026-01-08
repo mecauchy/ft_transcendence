@@ -5,6 +5,16 @@
 set -e
 
 echo "=== Alertmanager Entrypoint ==="
+
+# Load Vault token from file
+if [ -f "${VAULT_TOKEN_FILE}" ]; then
+    export VAULT_TOKEN=$(cat "${VAULT_TOKEN_FILE}" | tr -d '\n')
+    echo "Vault token loaded from ${VAULT_TOKEN_FILE}"
+else
+    echo "ERREUR: Vault token file not found at ${VAULT_TOKEN_FILE}"
+    exit 1
+fi
+
 echo "Récupération du webhook Discord depuis Vault..."
 
 # Attendre que Vault soit disponible (utiliser wget car curl n'est pas dispo)

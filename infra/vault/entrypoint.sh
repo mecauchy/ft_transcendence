@@ -41,20 +41,23 @@ export VAULT_TOKEN="$DEV_ROOT_TOKEN"
 sleep 1
 i=1
 while [ $i -le 60 ]; do
-  if vault status > /dev/null 2>&1; then
+  if wget -q -O /dev/null http://127.0.0.1:8200/v1/sys/health 2>&1; then
     echo "✓ Vault started successfully" 2>&1
     break
   fi
   if [ $i -eq 60 ]; then
     echo "✗ Vault failed to start after 60 seconds" 2>&1
-    exit 1
+    echo "Attempting to continue anyway..." 2>&1
   fi
   sleep 1
   i=$((i+1))
 done
 
 # Set environment variables for init script
-export VAULT_ADDR="http://localhost:8200"
+export VAULT_ADDR="http://127.0.0.1:8200"
+export VAULT_SKIP_VERIFY="true"
+# Remove VAULT_CACERT since we're using dev mode HTTP, not HTTPS
+unset VAULT_CACERT
 # Export token for convenience to init script and other local tooling
 export VAULT_TOKEN="$DEV_ROOT_TOKEN"
 

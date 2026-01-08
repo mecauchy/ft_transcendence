@@ -51,12 +51,14 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     environment:
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - PORT=3000
       - HOST=0.0.0.0
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - USER_SERVICE_URL=http://user-service:3002
-      - GAME_SERVICE_URL=http://game-service:3003
-      - GAMIFICATION_SERVICE_URL=http://gamification-service:3004
+      - AUTH_SERVICE_URL=https://auth-service:3001
+      - USER_SERVICE_URL=https://user-service:3002
+      - GAME_SERVICE_URL=https://game-service:3003
+      - GAMIFICATION_SERVICE_URL=https://gamification-service:3004
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
       - REDIS_HOST=redis
@@ -81,12 +83,19 @@ services:
         condition: service_healthy
       gamification-service:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: session_secret
+        target: /run/secrets/session_secret
+      - source: api_gateway_role_id
+        target: /run/secrets/vault_role_id
+      - source: api_gateway_secret_id
+        target: /run/secrets/vault_secret_id
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
 
   # AUTH SERVICE - OAuth 2.0, JWT, 2FA
   auth-service:
@@ -111,6 +120,15 @@ services:
         target: /tmp/vault_token
       - source: postgres_db_pass
         target: /run/secrets/postgres_db_pass.txt
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: auth_service_role_id
+        target: /run/secrets/vault_role_id
+      - source: auth_service_secret_id
+        target: /run/secrets/vault_secret_id
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+
     networks:
       - service_mesh
       - logging_net
@@ -262,18 +280,23 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_ADDR=http://0.0.0.0:8200
-      - VAULT_SKIP_VERIFY=true
+      - VAULT_ADDR=https://0.0.0.0:8200
+      - VAULT_CACERT=/vault/tls/vault.crt
     volumes:
       - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
       - ./infra/vault/policies:/policies:ro
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
+      - ./infra/certs:/vault/tls:ro
+      - ./infra/secret:/tmp/vault-secrets:rw
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
+    secrets:
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
     healthcheck:
-      # In dev mode Vault is not configured with TLS; use HTTP for local healthcheck.
+      # Dev mode uses HTTP, prod uses HTTPS via override file
       test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
       interval: 10s
       timeout: 5s
@@ -286,9 +309,11 @@ services:
     container_name: postgres
     environment:
       - POSTGRES_USER=root_admin
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
     volumes:
       - postgres_data:/var/lib/postgres/data
       - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/secret:/run/secrets:ro
     networks:
       - service_mesh
       - logging_net
@@ -328,14 +353,15 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
     volumes:
       - redis_data:/data
+      - ./infra/secret:/run/secrets:ro
     networks:
       - service_mesh
       - logging_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a \"$(cat /run/secrets/redis_password.txt)\" ping 2>/dev/null | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -370,7 +396,8 @@ services:
     image: prom/alertmanager:latest
     container_name: alertmanager
     depends_on:
-      - vault
+      vault:
+        condition: service_healthy
     volumes:
       - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
@@ -378,7 +405,7 @@ services:
     entrypoint: /entrypoint.sh
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -420,7 +447,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -459,7 +486,7 @@ services:
     ports:
       - 3010:3001
     environment:
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -477,5 +504,19 @@ services:
 secrets:
   vault_token:
     file: ./infra/secret/vault_token.txt
+  jwt_secret:
+    file: ./infra/secret/jwt_secret.txt
+  session_secret:
+    file: ./infra/secret/session_secret.txt
+  redis_password:
+    file: ./infra/secret/redis_password.txt
+  api_gateway_role_id:
+    file: ./infra/secret/api-gateway_role_id
+  api_gateway_secret_id:
+    file: ./infra/secret/api-gateway_secret_id
+  auth_service_role_id:
+    file: ./infra/secret/auth-service_role_id
+  auth_service_secret_id:
+    file: ./infra/secret/auth-service_secret_id
   postgres_db_pass:
     file: ./infra/secret/postgres_db_pass.txt

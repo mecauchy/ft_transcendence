@@ -77,7 +77,7 @@ async function	start() {
 			token:	config.vault.token,
 		};
 		const vault = new VaultClient(vaultConfig);
-		await vault.authenticate();
+		await vault.init();
 
 		// register cookies and middleware
 		await fastify.register(fastifyCookie);
