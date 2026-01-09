@@ -17,6 +17,8 @@ function OAuthCallback() {
 				let require2FA = false;
 				let userId: string | null = null;
 
+				console.log('[OAuthCallback] Encoded data:', encodedData ? 'present' : 'missing');
+
 				if (encodedData) {
 					try {
 						const decoded = JSON.parse(atob(encodedData));
@@ -24,13 +26,21 @@ function OAuthCallback() {
 						refreshToken = decoded.refreshToken;
 						require2FA = decoded.require2FA || false;
 						userId = decoded.userId || null;
-					} catch {
+						console.log('[OAuthCallback] Decoded:', { 
+							hasAccessToken: !!accessToken, 
+							hasRefreshToken: !!refreshToken, 
+							require2FA, 
+							userId 
+						});
+					} catch (decodeError) {
+						console.error('[OAuthCallback] Decode failed:', decodeError);
 						// else try without decode
 						accessToken = params.get('token');
 					}
 				} else {
 					// fallback to old format for backward compatibility
 					accessToken = params.get('token');
+					console.log('[OAuthCallback] Using fallback token:', !!accessToken);
 				}
 
 				if (!accessToken) {
@@ -40,6 +50,7 @@ function OAuthCallback() {
 
 				// check 2fa requirement
 				if (require2FA && userId) {
+					console.log('[OAuthCallback] 2FA required, setting up for 2FA flow');
 					// store userid to trigger modal
 					localStorage.setItem('pending2FAUserId', userId);
 					// store tokens temporarily
@@ -52,6 +63,7 @@ function OAuthCallback() {
 					return;
 				}
 
+				console.log('[OAuthCallback] No 2FA required, proceeding with login');
 				// Set token in API client
 				api.setToken(accessToken);
 
