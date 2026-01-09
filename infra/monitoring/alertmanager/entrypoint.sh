@@ -68,12 +68,14 @@ while [ $WEBHOOK_COUNT -lt $WEBHOOK_RETRIES ] && [ -z "$DISCORD_WEBHOOK" ]; do
 done
 
 if [ -z "$DISCORD_WEBHOOK" ]; then
-    echo "ERREUR: Impossible de récupérer le webhook Discord depuis Vault après $WEBHOOK_RETRIES tentatives"
-    echo "Vérifiez que le secret existe dans Vault: secret/data/alertmanager"
-    exit 1
+    echo "WARNING: Could not retrieve Discord webhook from Vault after $WEBHOOK_RETRIES attempts"
+    echo "Alertmanager will start without Discord notifications"
+    echo "To enable notifications, add webhook via: ./scripts/webhook-manager.sh save '<url>'"
+    # Use a placeholder that won't break the config but won't send real notifications
+    DISCORD_WEBHOOK="https://discord.com/api/webhooks/disabled/placeholder"
 fi
 
-echo "Webhook Discord récupéré avec succès!"
+echo "Alertmanager configuration ready!"
 
 # Créer le fichier de config avec le webhook
 cp /etc/alertmanager/alertmanager.yml /tmp/alertmanager.yml

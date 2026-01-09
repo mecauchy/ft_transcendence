@@ -32,6 +32,10 @@ telemetry.optIn: false
 # Monitoring (disabled for simplicity)
 monitoring.ui.enabled: false
 
+# Migration settings - longer timeout for slow ES init / low disk scenarios
+migrations.retryAttempts: 20
+migrations.batchSize: 250
+
 # Default app on login
 uiSettings.overrides.defaultRoute: "/app/discover"
 

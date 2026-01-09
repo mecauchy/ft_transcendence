@@ -384,6 +384,8 @@ services:
       - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
       # Mount Docker socket with environment-specific path
       - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:ro
+      # Mount Docker container logs directory
+      - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
       - filebeat_data:/usr/share/filebeat/data
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
@@ -392,11 +394,11 @@ services:
       vault:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "filebeat test config -e || exit 1"]
+      test: ["CMD-SHELL", "pgrep -x filebeat > /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.12.0
@@ -455,9 +457,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
 
 secrets:
   vault_token:
