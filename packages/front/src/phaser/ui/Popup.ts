@@ -33,7 +33,7 @@ export default class Popup {
 				fontSize: "1.25rem",
 				color: "#ffffff",
 				align: "center",
-				wordWrap: { width: 400 }
+				wordWrap: {width: 400}
 			})
 			.setOrigin(0.5, 0);
 
@@ -51,7 +51,7 @@ export default class Popup {
 
 	/* ---------- PUBLIC API ---------- */
 
-	show(message: string, buttons: PopupButton[] = []) {
+	show(message:	string, buttons: PopupButton[] = []) {
 		this.currentMessage = message;
 		this.currentButtons = buttons;
 
@@ -84,7 +84,7 @@ export default class Popup {
 
 	/* ---------- LAYOUT ---------- */
 
-	private layoutForContent(message: string, buttons: PopupButton[]) {
+	private layoutForContent(message:	string, buttons: PopupButton[]) {
 		const padding = 30;
 		const buttonGap = buttons.length ? 30 : 0;
 		const buttonsHeight = buttons.length ? 30 : 0;

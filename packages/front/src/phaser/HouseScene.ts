@@ -1,5 +1,11 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { api } from "../api/client";
+import { t } from "./i18nHelper";
+
+type PongMode = "AI" | "LOCAL";
+type PongDifficulty = "EASY" | "MEDIUM" | "HARD" | "LOCAL";
+type PongWinner = "PLAYER" | "AI" | "PLAYER1" | "PLAYER2";
 
 export default class HouseScene extends Phaser.Scene {
 
@@ -42,11 +48,24 @@ export default class HouseScene extends Phaser.Scene {
 	private score1 = 0;
 	private score2 = 0;
 
+	private startTimeStamp: string | null = null;
+	private matchSent = false;
+
 	private keyW!: Phaser.Input.Keyboard.Key;
 	private keyS!: Phaser.Input.Keyboard.Key;
 
+	// Touch controls
+	private touchUpBtn1!: Phaser.GameObjects.Container;
+	private touchDownBtn1!: Phaser.GameObjects.Container;
+	private touchUpBtn2!: Phaser.GameObjects.Container;
+	private touchDownBtn2!: Phaser.GameObjects.Container;
+	private touchUp1Pressed = false;
+	private touchDown1Pressed = false;
+	private touchUp2Pressed = false;
+	private touchDown2Pressed = false;
+
 	constructor() {
-		super({ key: "HouseScene" });
+		super({key: "HouseScene"});
 	}
 
 	preload() {}
@@ -63,6 +82,7 @@ export default class HouseScene extends Phaser.Scene {
 		this.renderScore();
 
 		this.popup = new Popup(this);
+		this.createTouchControls();
 		this.centerScene();
 
 		this.scale.on("resize", this.onResize, this);
@@ -86,14 +106,16 @@ export default class HouseScene extends Phaser.Scene {
 		this.ballSpeedY_n = 0.005;
 		this.score1 = 0;
 		this.score2 = 0;
+		this.startTimeStamp = new Date().toISOString();
+		this.matchSent = false;
 	}
 
 	private showWelcomePopup() {
 		this.popup.show(
-			"Welcome to the House! Get ready to play Pong!",
+			t("scenes.house.welcome"),
 			[
 				{
-					label: "IA Opponent",
+					label: t("scenes.house.iaOpponent"),
 					onClick: () => {
 						this.popup.hide();
 						this.ia_mode = true;
@@ -105,18 +127,21 @@ export default class HouseScene extends Phaser.Scene {
 						]);
 						this.keyW.destroy();
 						this.keyS.destroy();
+						// hide mobile controls on ai mode
+						this.touchUpBtn1?.setVisible(false);
+						this.touchDownBtn1?.setVisible(false);
 						this.ia_popup();
 					}
 				},
 				{
-					label: "Two Players",
+					label: t("scenes.house.localMultiplayer"),
 					onClick: () => {
 						this.popup.hide();
 						this.game_started = true;
 					}
 				},
 				{
-					label: "Forgive",
+					label: t("common.cancel"),
 					onClick: () => {
 						this.scene.start("WorldMapScene");
 					}
@@ -127,10 +152,10 @@ export default class HouseScene extends Phaser.Scene {
 
 	private ia_popup() {
 		this.popup.show(
-			"Choose your difficulty:",
+			t("scenes.house.chooseDifficulty"),
 			[
 				{
-					label: "Easy",
+					label: t("scenes.house.easy"),
 					onClick: () => {
 						this.ia_difficulty = 0.7;
 						this.popup.hide();
@@ -138,7 +163,7 @@ export default class HouseScene extends Phaser.Scene {
 					}
 				},
 				{
-					label: "Medium",
+					label: t("scenes.house.medium"),
 					onClick: () => {
 						this.ia_difficulty = 0.3;
 						this.popup.hide();
@@ -146,7 +171,7 @@ export default class HouseScene extends Phaser.Scene {
 					}
 				},
 				{
-					label: "Hard",
+					label: t("scenes.house.hard"),
 					onClick: () => {
 						this.ia_difficulty = 0.0;
 						this.popup.hide();
@@ -166,19 +191,20 @@ export default class HouseScene extends Phaser.Scene {
 			this.offsetX + this.gameSize * 0.25,
 			this.offsetY + this.gameSize * 0.1,
 			this.score1.toString(),
-			{ fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
+			{fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
 		).setOrigin(0.5);
 		this.scoreText2 = this.add.text(
 			this.offsetX + this.gameSize * 0.75,
 			this.offsetY + this.gameSize * 0.1,
 			this.score2.toString(),
-			{ fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
+			{fontSize: `${this.gameSize * 0.1}px`, color: "#ffffff", fontFamily: 'GameFont'}
 		).setOrigin(0.5);
 	}
 
 	private onResize() {
 		if (!this.scene.isActive()) return;
 		this.centerScene();
+		this.updateTouchControlPositions();
 	}
 
 	private listenKeys() {
@@ -192,6 +218,101 @@ export default class HouseScene extends Phaser.Scene {
 		this.cursors = keyboard.createCursorKeys();
 		this.keyW = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
 		this.keyS = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+	}
+
+	private createTouchButton(label: string, x: number, y: number, onPress: () => void, onRelease: () => void): Phaser.GameObjects.Container {
+		const btnSize = 50;
+		const bg = this.add.rectangle(0, 0, btnSize, btnSize, 0x333333, 0.8)
+			.setStrokeStyle(2, 0xffffff);
+		const text = this.add.text(0, 0, label, {
+			fontSize: '24px',
+			color: '#ffffff',
+		}).setOrigin(0.5);
+
+		const container = this.add.container(x, y, [bg, text]);
+		container.setDepth(998);
+
+		bg.setInteractive({ useHandCursor: true });
+		bg.on('pointerdown', () => {
+			bg.setFillStyle(0x555555, 0.9);
+			onPress();
+		});
+		bg.on('pointerup', () => {
+			bg.setFillStyle(0x333333, 0.8);
+			onRelease();
+		});
+		bg.on('pointerout', () => {
+			bg.setFillStyle(0x333333, 0.8);
+			onRelease();
+		});
+
+		return container;
+	}
+
+	private createTouchControls() {
+		const screenW = this.scale.width;
+		const screenH = this.scale.height;
+		const padding = 20;
+		const btnSpacing = 60;
+
+		const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+		this.touchUpBtn1 = this.createTouchButton(
+			'▲',
+			padding + 25,
+			screenH - padding - btnSpacing - 25,
+			() => { this.touchUp1Pressed = true; },
+			() => { this.touchUp1Pressed = false; }
+		);
+		this.touchDownBtn1 = this.createTouchButton(
+			'▼',
+			padding + 25,
+			screenH - padding - 25,
+			() => { this.touchDown1Pressed = true; },
+			() => { this.touchDown1Pressed = false; }
+		);
+
+		this.touchUpBtn2 = this.createTouchButton(
+			'▲',
+			screenW - padding - 25,
+			screenH - padding - btnSpacing - 25,
+			() => { this.touchUp2Pressed = true; },
+			() => { this.touchUp2Pressed = false; }
+		);
+		this.touchDownBtn2 = this.createTouchButton(
+			'▼',
+			screenW - padding - 25,
+			screenH - padding - 25,
+			() => { this.touchDown2Pressed = true; },
+			() => { this.touchDown2Pressed = false; }
+		);
+
+		if (!isTouchDevice) {
+			this.touchUpBtn1.setVisible(false);
+			this.touchDownBtn1.setVisible(false);
+			this.touchUpBtn2.setVisible(false);
+			this.touchDownBtn2.setVisible(false);
+		}
+	}
+
+	private updateTouchControlPositions() {
+		const screenW = this.scale.width;
+		const screenH = this.scale.height;
+		const padding = 20;
+		const btnSpacing = 60;
+
+		if (this.touchUpBtn1) {
+			this.touchUpBtn1.setPosition(padding + 25, screenH - padding - btnSpacing - 25);
+		}
+		if (this.touchDownBtn1) {
+			this.touchDownBtn1.setPosition(padding + 25, screenH - padding - 25);
+		}
+		if (this.touchUpBtn2) {
+			this.touchUpBtn2.setPosition(screenW - padding - 25, screenH - padding - btnSpacing - 25);
+		}
+		if (this.touchDownBtn2) {
+			this.touchDownBtn2.setPosition(screenW - padding - 25, screenH - padding - 25);
+		}
 	}
 
 	private centerScene() {
@@ -258,11 +379,14 @@ export default class HouseScene extends Phaser.Scene {
 		}
 		if (this.ia_mode) this.ia_actions();
 		this.checkMovement();
+
 		this.ballx_n += this.ballSpeedX_n;
 		this.bally_n += this.ballSpeedY_n;
+
 		if (this.bally_n <= 0 || this.bally_n >= 1) {
 			this.ballSpeedY_n = -this.ballSpeedY_n;
 		}
+
 		this.checkCollision();
 		this.ball.x = this.offsetX + this.gameSize * this.ballx_n;
 		this.ball.y = this.offsetY + this.gameSize * this.bally_n;
@@ -293,16 +417,16 @@ export default class HouseScene extends Phaser.Scene {
 	}
 
 	private checkMovement() {
-		if (this.cursors.up?.isDown) {
+		if (this.cursors.up?.isDown || this.touchUp2Pressed) {
 			this.paddle2y_n -= this.PADDLE_SPEED_N;
 		}
-		if (this.cursors.down?.isDown) {
+		if (this.cursors.down?.isDown || this.touchDown2Pressed) {
 			this.paddle2y_n += this.PADDLE_SPEED_N;
 		}
-		if ((this.keyW?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_up)) {
+		if ((this.keyW?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_up) || (!this.ia_mode && this.touchUp1Pressed)) {
 			this.paddle1y_n -= this.PADDLE_SPEED_N;
 		}
-		if ((this.keyS?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_down)) {
+		if ((this.keyS?.isDown && !this.ia_mode) || (this.ia_mode && this.ia_move_down) || (!this.ia_mode && this.touchDown1Pressed)) {
 			this.paddle1y_n += this.PADDLE_SPEED_N;
 		}
 		const halfH1 = (this.paddle1.height / this.gameSize) / 2;
@@ -362,18 +486,126 @@ export default class HouseScene extends Phaser.Scene {
 		this.ballSpeedY_n = Phaser.Math.Between(-0.005, 0.005);
 	}
 
+	private difficultyLabel(): PongDifficulty {
+		if (!this.ia_mode)
+			return "LOCAL";
+		if (this.ia_difficulty >= 0.6)
+			return "EASY";
+		if (this.ia_difficulty >= 0.2)
+			return "MEDIUM";
+		return "HARD";
+	}
+
+	private winnerValue(): PongWinner {
+		if (this.ia_mode)
+		{
+			if (this.score2 >= 5)
+				return "PLAYER";
+			return "AI";
+		}
+		if (this.score2 >= 5)
+			return "PLAYER1";
+		return "PLAYER2";
+	}
+
+	private modeValue(): PongMode {
+		if (this.ia_mode)
+			return "AI";
+		return "LOCAL";
+	}
+
+	private async sendPongStats(): Promise<void> {
+		if (this.matchSent)
+			return ;
+		this.matchSent = true;
+
+		const startedAt = this.startTimeStamp ?? new Date().toISOString();
+		const endedAt = new Date().toISOString();
+
+		const payload = {
+			playerid:	"",
+			mode:		this.modeValue(),
+			difficulty:	this.difficultyLabel(),
+			score1:		String(this.score1),
+			score2:		String(this.score2),
+			winner:		this.winnerValue(),
+			timestamp1:	startedAt,
+			timestamp2: endedAt,
+		};
+
+		try {
+			await api.sendPong(payload);
+			console.log("Successfully sent pong stats");
+
+			// update stress/confidence
+			if (this.ia_mode) {
+				await this.updateStressConfidence();
+			}
+		} catch (e) {
+			console.error("Failed to send pong stats [network error]", e);
+		}
+	}
+
+	private async updateStressConfidence(): Promise<void> {
+		// get current profile to know meter levels
+		try {
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+			
+			// calculate based on diff
+			let difficultyMultiplier = 1;
+			if (this.ia_difficulty < 0.2) {
+				difficultyMultiplier = 3; // HARD
+			} else if (this.ia_difficulty < 0.6) {
+				difficultyMultiplier = 2; // MEDIUM
+			} else {
+				difficultyMultiplier = 1; // EASY
+			}
+
+			const playerWon = this.score2 >= 5;
+			let newStress = currentStress;
+			let newConfidence = currentConfidence;
+
+			if (playerWon) {
+				newConfidence = Math.min(100, currentConfidence + (5 * difficultyMultiplier));
+				newStress = Math.max(0, currentStress - (2 * difficultyMultiplier));
+			} else {
+				newStress = Math.min(100, currentStress + (3 * difficultyMultiplier));
+				newConfidence = Math.max(0, currentConfidence - (2 * difficultyMultiplier));
+			}
+
+			// update profile with new values
+			await api.updateProfile({
+				stressLevel: Math.round(newStress),
+				confidenceLevel: Math.round(newConfidence),
+			});
+			console.log(`Updated stress: ${currentStress} -> ${Math.round(newStress)}, confidence: ${currentConfidence} -> ${Math.round(newConfidence)}`);
+		} catch (e) {
+			console.error("Failed to update stress/confidence:", e);
+		}
+	}
+
 	private updateScore() {
 		this.scoreText1.setText(this.score1.toString());
 		this.scoreText2.setText(this.score2.toString());
 		if (this.score1 >= 5 || this.score2 >= 5) {
+			// sends game stat to backend
+			console.log("sending pong stats...");
+			try {
+				this.sendPongStats();
+			} catch (e) {
+				console.error("Failed to send pong stats", e);
+			}
 			this.game_started = false;
 			if (!this.ia_mode) {
+				const winner = this.score1 >= 5 ? t("scenes.house.player1") : t("scenes.house.player2");
 				this.popup.show(
-					`Game Over! ${this.score1 >= 5 ? 'Player 1' : 'Player 2'} wins!`,
+					t("scenes.house.gameOverPlayer", { player: winner }),
 					[
 						{
-							label: "OK",
-							onClick: () => {
+							label: t("common.ok"),
+							onClick: async () => {
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();
@@ -384,12 +616,13 @@ export default class HouseScene extends Phaser.Scene {
 				)
 			}
 			else {
+				const message = this.score2 >= 5 ? t("scenes.house.youWin") : t("scenes.house.iaWins");
 				this.popup.show(
-					`Game Over! ${this.score2 >= 5 ? 'You win!' : 'IA wins!'}`,
+					message,
 					[
 						{
-							label: "OK",
-							onClick: () => {
+							label: t("common.ok"),
+							onClick: async () => {
 								this.score1 = 0;
 								this.score2 = 0;
 								this.updateScore();
@@ -400,5 +633,12 @@ export default class HouseScene extends Phaser.Scene {
 				)
 			}
 		}
+	}
+
+	private endGame() {
+		this.game_started = false;
+		this.score1 = 0;
+		this.score2 = 0;
+		this.scene.start("WorldMapScene");
 	}
 }

@@ -1,58 +1,49 @@
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
-# Create a non-root user inside builder for deterministic file ownership
-RUN addgroup -S node_user && adduser -S node_user -G node_user
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy package files first to leverage Docker layer caching for dependencies
-COPY packages/backend/auth-service/package*.json ./
-
-# Copy shared types used by the build (keeps imports resolvable during tsc)
+COPY packages/backend/auth-service/package.json ./
+COPY packages/backend/auth-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
 
-# Copy tsconfig and source files for building
-COPY packages/backend/auth-service/tsconfig.json ./
+WORKDIR /shared/types
+ENV CI=true
+RUN pnpm install && pnpm run build
+
+WORKDIR /app
+RUN pnpm install
+
+# IMPORTANT -> copies prisma schema to normalize across containers and correctly use it for ORM
+COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
+
 COPY packages/backend/auth-service/src ./src
 
-# Install dev + prod dependencies required to build
-RUN npm install --no-audit --no-fund
+RUN pnpm run build && test -f dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
+RUN pnpm prune --prod
 
-# Build TypeScript into dist/
-RUN npm run build
 
-### Runtime image
-FROM node:18-alpine AS runner
+FROM node:18-alpine
+
+RUN corepack enable
+RUN apk add --no-cache su-exec
 
 WORKDIR /app
 
-# Install small runtime tools used by healthchecks
-RUN apk add --no-cache wget
-
-# Ensure PATH is set for non-interactive shells
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Create runtime user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy package.json (and lock if present) from builder to install prod deps deterministically
-COPY --from=builder /app/package*.json ./
-
-# Install only production dependencies
-RUN npm install --production --no-audit --no-fund
-
-# Copy compiled output from builder
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+COPY packages/backend/auth-service/package.json ./
+COPY packages/backend/auth-service/entrypoint.sh ./
 
-# Copy shared types into the runtime image so compiled code can require them
-COPY --from=builder /shared/types ../shared/types
-
-# Ensure non-root user owns app files
-RUN chown -R nodejs:nodejs /app
-
-USER nodejs
+RUN chmod +x ./entrypoint.sh && chown -R nodejs:nodejs /app
 
 EXPOSE 3001
 
-# Start the service
-CMD ["node", "dist/index.js"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+	CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

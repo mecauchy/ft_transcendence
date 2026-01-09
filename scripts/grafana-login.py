@@ -32,7 +32,7 @@ def login_to_grafana(grafana_url, username, password):
     login_data = json.dumps({
         "user": username,
         "password": password
-    }).encode('utf-8')
+   }).encode('utf-8')
     
     headers = {"Content-Type": "application/json"}
     req = urllib.request.Request(login_url, data=login_data, headers=headers)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     username = "grafana_admin"
     
     if not vault_token:
-        print("ERROR: No Vault token available. Set VAULT_TOKEN env var or provide vault token file at ./infra/secret/vault_token.txt")
+        print("error:		No Vault token available. Set VAULT_TOKEN env var or provide vault token file at ./infra/secret/vault_token.txt")
         sys.exit(1)
 
     print("Fetching Grafana password from Vault...")

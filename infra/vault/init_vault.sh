@@ -12,7 +12,7 @@ get_secret_content() {
 	if [ -f "${file_path}" ]; then 
 		cat "${file_path}"
 	else 
-		echo "Error: Secret file not found at ${file_path}." >&2
+		echo "error:		Secret file not found at ${file_path}." >&2
 		exit 1
 	fi
 }
@@ -132,6 +132,13 @@ if [ -f "/tmp/vault-secrets/alertmanager_webhook.txt" ]; then
 else
 	echo -e "${YELLOW}⚠ Alertmanager webhook file not found${NC}"
 fi
+
+# 42 OAuth credentials (development defaults - replace in production!)
+vault kv put secret/oauth/42 \
+	client_id="${OAUTH_42_CLIENT_ID:-dev_client_id_placeholder}" \
+	client_secret="${OAUTH_42_CLIENT_SECRET:-dev_client_secret_placeholder}" 2>/dev/null && \
+	echo -e "${GREEN}✓ 42 OAuth credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ 42 OAuth credentials already exist${NC}"
 
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \

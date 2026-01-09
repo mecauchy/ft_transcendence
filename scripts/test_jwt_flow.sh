@@ -6,9 +6,16 @@ set -euo pipefail
 
 # Default to http://localhost:3000 (Local Dev)
 GATEWAY_URL=${GATEWAY_URL:-http://localhost:3000}
-AUTH_ENDPOINT=${AUTH_ENDPOINT:-/api/auth/token}
+REGISTER_ENDPOINT=${REGISTER_ENDPOINT:-/api/auth/register}
+LOGIN_ENDPOINT=${LOGIN_ENDPOINT:-/api/auth/login}
 PROTECTED_ENDPOINT=${PROTECTED_ENDPOINT:-/api/users/me}
 SKIP_PROTECTED=${SKIP_PROTECTED:-false}
+
+# CI test user credentials
+CI_USERNAME="ci_test_user_$(date +%s)"
+CI_EMAIL="${CI_USERNAME}@test.local"
+CI_PASSWORD="CiTest@123456"
+CI_DOB="1990-01-01"
 
 printf "Using gateway URL: %s\n" "$GATEWAY_URL"
 
@@ -41,17 +48,39 @@ if [ $retry -eq $max_retries ]; then
 fi
 
 # ---------------------------------------------------------
-# STEP 1: LOGIN
+# STEP 1: REGISTER TEST USER
 # ---------------------------------------------------------
-echo "1) Requesting token from auth endpoint: ${AUTH_ENDPOINT}"
-# Use a valid JSON body (username is optional for dev, but good practice)
+echo "1) Registering test user: ${CI_USERNAME}"
+register_resp=$(curl -sk -w "\n%{http_code}" -X POST "$GATEWAY_URL${REGISTER_ENDPOINT}" \
+  -H 'Content-Type: application/json' \
+  -d "{\"username\":\"${CI_USERNAME}\", \"email\":\"${CI_EMAIL}\", \"password\":\"${CI_PASSWORD}\", \"dob\":\"${CI_DOB}\"}" 2>&1 || true)
+
+register_code=$(echo "$register_resp" | tail -1)
+register_body=$(echo "$register_resp" | head -n -1)
+
+echo "   Registration response (HTTP $register_code):" >&2
+echo "$register_body" >&2
+
+if [ "$register_code" = "201" ]; then
+  echo "✅ Test user registered successfully"
+elif [ "$register_code" = "409" ]; then
+  echo "ℹ️  Test user already exists (continuing with login)"
+else
+  echo "❌ Failed to register test user (HTTP $register_code)" >&2
+  exit 2
+fi
+
+# ---------------------------------------------------------
+# STEP 2: LOGIN
+# ---------------------------------------------------------
+echo "2) Requesting token from login endpoint: ${LOGIN_ENDPOINT}"
 # Add retry logic in case auth service is still initializing
 retry=0
 max_retries=10
 while [ $retry -lt $max_retries ]; do
-  resp=$(curl -sk -w "\n%{http_code}" -X POST "$GATEWAY_URL${AUTH_ENDPOINT}" \
+  resp=$(curl -sk -w "\n%{http_code}" -X POST "$GATEWAY_URL${LOGIN_ENDPOINT}" \
     -H 'Content-Type: application/json' \
-    -d '{"username":"ci_user", "userId":"999"}' 2>&1 || true)
+    -d "{\"login\":\"${CI_USERNAME}\", \"password\":\"${CI_PASSWORD}\"}" 2>&1 || true)
   
   # Extract HTTP status code (last line)
   http_code=$(echo "$resp" | tail -1)
@@ -91,10 +120,10 @@ fi
 echo "✅ Obtained token: ${token:0:20}..." 
 
 # ---------------------------------------------------------
-# STEP 2: DECODE
+# STEP 3: DECODE
 # ---------------------------------------------------------
 echo
-echo "2) Decoding token payload (if JWT)"
+echo "3) Decoding token payload (if JWT)"
 if [[ $(awk -F. '{print NF-1}' <<<"$token") -ne 2 ]]; then
   echo "⚠️ Token is not a JWT (does not contain two dots)." >&2
 else
@@ -120,13 +149,13 @@ else
 fi
 
 # ---------------------------------------------------------
-# STEP 3: PROTECTED ROUTE (Conditional)
+# STEP 4: PROTECTED ROUTE (Conditional)
 # ---------------------------------------------------------
 echo
 if [ "$SKIP_PROTECTED" = "true" ]; then
-  echo "3) ⏭️  Skipping protected route check (SKIP_PROTECTED=true)"
+  echo "4) ⏭️  Skipping protected route check (SKIP_PROTECTED=true)"
 else
-  echo "3) Using token to call protected endpoint: ${PROTECTED_ENDPOINT}"
+  echo "4) Using token to call protected endpoint: ${PROTECTED_ENDPOINT}"
   http_status=$(curl -sk -o "$tmpfile" -w "%{http_code}" -H "Authorization: Bearer $token" "$GATEWAY_URL${PROTECTED_ENDPOINT}" || true)
   echo "   HTTP status: $http_status"
   cat "$tmpfile" | jq '.' 2>/dev/null || cat "$tmpfile"
@@ -138,10 +167,10 @@ else
 fi
 
 # ---------------------------------------------------------
-# STEP 4: SECURITY CHECK (Tampering)
+# STEP 5: SECURITY CHECK (Tampering)
 # ---------------------------------------------------------
 echo
-echo "4) Testing invalid token (tampered)"
+echo "5) Testing invalid token (tampered)"
 # Modify the last char of the signature
 tampered="${token%?}$(printf '%s' x)"
 
