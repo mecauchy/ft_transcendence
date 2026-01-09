@@ -7,12 +7,11 @@ server.name: kibana-transcendence
 server.host: "0.0.0.0"
 server.port: 5601
 
-# Elasticsearch connection
+# Elasticsearch connection (security disabled on ES side)
 elasticsearch.hosts: ["http://elasticsearch:9200"]
 
-# Security disabled for dev (matches ES config)
-# elasticsearch.username: "kibana_system"
-# elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
+# No authentication needed since Elasticsearch security is disabled
+# (Kibana will automatically connect without credentials)
 
 # Logging
 logging.root.level: info
@@ -23,7 +22,6 @@ logging.root.level: info
 # Saved objects encryption key (required for saved searches, dashboards)
 xpack.encryptedSavedObjects.encryptionKey: "transcendence-kibana-encryption-key-32chars!"
 xpack.reporting.encryptionKey: "transcendence-kibana-reporting-key-32chars!"
-xpack.security.encryptionKey: "transcendence-kibana-security-key-32chars!"
 
 # Disable telemetry
 telemetry.enabled: false

@@ -353,9 +353,7 @@ services:
       - service_mesh
     volumes:
       - ./infra/monitoring/elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - ./infra/monitoring/elk/elasticsearch/entrypoint.sh:/entrypoint.sh:ro
       - es_data:/usr/share/elasticsearch/data
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       vault:
         condition: service_healthy
@@ -433,23 +431,15 @@ services:
       start_period: 60s
 
   kibana:
-    build:
-      context: ./infra/monitoring/elk/kibana
-      dockerfile: Dockerfile
-    image: ft-transcendence/kibana:latest
+    image: docker.elastic.co/kibana/kibana:8.12.0
     container_name: kibana
     ports:
       - "5601:5601"
     networks:
       - logging_net
       - service_mesh
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_NAME=kibana-transcendence
     volumes:
       - ./infra/monitoring/elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
-      - ./infra/monitoring/elk/kibana/dashboards:/usr/share/kibana/config/dashboards:ro
-      - ./infra/monitoring/elk/kibana/init-dashboard.sh:/usr/local/bin/init-dashboard.sh:ro
       - kibana_data:/usr/share/kibana/data
     depends_on:
       elasticsearch:

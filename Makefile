@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway logs-elk kibana-init health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all monitoring monitoring-up monitoring-down
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway logs-elk kibana-init health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all monitoring monitoring-up monitoring-down urls
 
 # Colors for output
 BLUE := \033[0;34m
@@ -48,6 +48,7 @@ help:
 	@echo "                              (vault, postgres, redis, waf, api-gateway, elk)"
 	@echo "  make kibana-init          - Initialize Kibana dashboard (run after monitoring starts)"
 	@echo "  make health               - Check health of all services"
+	@echo "  make urls                 - Display all service URLs"
 	@echo ""
 	@echo "$(GREEN)🔧 Access:$(NC)"
 	@echo "  make vault                - Open Vault shell"
@@ -214,6 +215,45 @@ health:
 	@echo ""
 	@echo "$(YELLOW)API Gateway (dev mode only):$(NC)"
 	@curl -s http://localhost:3000/health >/dev/null 2>&1 && echo "$(GREEN)✓ Listening on port 3000$(NC)" || echo "$(YELLOW)○ Not exposed (production mode)$(NC)"
+
+urls:
+	@echo "$(BLUE)╔════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(BLUE)║              Service URLs - $(PROJECT_NAME)                 ║$(NC)"
+	@echo "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(GREEN)🌐 Frontend & Gateway:$(NC)"
+	@echo "  Frontend (HTTP):         http://localhost:3005"
+	@echo "  Frontend (HTTPS):        https://localhost:3006"
+	@echo "  WAF HTTP:                http://localhost:8080"
+	@echo "  WAF HTTPS:               https://localhost:8443"
+	@echo "  API Gateway (dev):       http://localhost:3000"
+	@echo ""
+	@echo "$(GREEN)🔐 Authentication:$(NC)"
+	@echo "  Auth Service (internal): http://auth-service:3001"
+	@echo "  Vault (dev):             http://localhost:8200"
+	@echo "  Vault (prod):            https://localhost:8200"
+	@echo ""
+	@echo "$(GREEN)💾 Data Services:$(NC)"
+	@echo "  PostgreSQL:              localhost:5432 (user: $(POSTGRES_USER))"
+	@echo "  Redis (dev):             localhost:6378"
+	@echo "  Redis (internal):        redis:6379"
+	@echo "  Elasticsearch:           http://localhost:9200"
+	@echo ""
+	@echo "$(GREEN)📊 Monitoring & Logging:$(NC)"
+	@echo "  Grafana:                 http://localhost:3009 (admin/admin)"
+	@echo "  Prometheus:              http://localhost:9090"
+	@echo "  Alertmanager:            http://localhost:9093"
+	@echo "  cAdvisor:                http://localhost:8081"
+	@echo "  Kibana:                  http://localhost:5601"
+	@echo "  Kibana Dashboard:        http://localhost:5601/app/dashboards#/view/ft-logs-dashboard"
+	@echo "  Uptime-Kuma:             http://localhost:3010 (kuma_admin/[vault password])"
+	@echo ""
+	@echo "$(YELLOW)📝 Note:$(NC)"
+	@echo "  - Dev mode exposes backend ports for development"
+	@echo "  - Prod mode only exposes WAF (80/443), access via hostname"
+	@echo "  - Run 'make monitoring' to start monitoring stack"
+	@echo "  - Use 'make urls' anytime to show this list"
+	@echo ""
 
 # ============================================================================
 # SERVICE ACCESS
