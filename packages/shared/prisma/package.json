@@ -2,8 +2,8 @@
   "name": "@speak-up/prisma",
   "version": "1.0.0",
   "description": "Shared Prisma client for Speak-Up platform",
-  "main": "generated/prisma/index.js",
-  "types": "generated/prisma/index.d.ts",
+  "main": "index.ts",
+  "types": "index.ts",
   "scripts": {
     "generate": "prisma generate",
     "db:push": "prisma db push",
@@ -11,16 +11,16 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio"
- },
+  },
   "dependencies": {
-    "@prisma/client": "5.22.0"
- },
+    "@prisma/client": "^6.1.0"
+  },
   "devDependencies": {
-    "prisma": "5.22.0",
+    "prisma": "^6.1.0",
     "tsx": "^4.7.0"
- },
+  },
   "prisma": {
     "schema": "schema.prisma",
     "seed": "tsx seed.ts"
- }
+  }
 }

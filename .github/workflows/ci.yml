@@ -184,13 +184,16 @@ jobs:
 
       - name: Start Services
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml build auth-service api-gateway redis vault
-          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d auth-service api-gateway redis vault
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml build auth-service api-gateway redis vault postgres
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d postgres redis vault
+          echo "Waiting for postgres to be ready..."
+          sleep 10
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d auth-service api-gateway
 
       - name: Wait for Health
         run: |
           echo "Waiting for services to stabilize..."
-          sleep 15
+          sleep 20
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml ps
 
       - name: Run JWT Flow Test

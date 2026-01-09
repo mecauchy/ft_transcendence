@@ -15,6 +15,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["index.ts", "seed.ts", "generated/**/*.ts"],
+  "include": ["index.ts", "seed.ts"],
   "exclude": ["node_modules", "dist"]
 }
