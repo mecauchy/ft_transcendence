@@ -187,7 +187,22 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml build auth-service api-gateway redis vault postgres
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d postgres redis vault
           echo "Waiting for postgres to be ready..."
-          sleep 10
+          sleep 15
+
+      - name: Initialize Database Schema
+        run: |
+          echo "Pushing Prisma schema to database..."
+          # Get postgres password from secrets
+          POSTGRES_PASSWORD=$(cat infra/secret/postgres_db_pass.txt)
+          # Run prisma db push to create tables
+          docker compose -f docker-compose.yml -f docker-compose.dev-test.yml exec -T postgres psql -U root_admin -c "SELECT 1" || echo "Postgres check failed"
+          # Use pnpm to run prisma with DATABASE_URL
+          export DATABASE_URL="postgresql://root_admin:${POSTGRES_PASSWORD}@localhost:5432/game_db"
+          cd packages/shared/prisma && npx prisma db push --skip-generate --accept-data-loss
+          echo "Database schema initialized"
+
+      - name: Start Application Services
+        run: |
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml up -d auth-service api-gateway
 
       - name: Wait for Health
