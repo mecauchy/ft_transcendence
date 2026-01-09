@@ -142,6 +142,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+
+      - name: 📥 Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
       # We add the matcher here too! 
       # If Docker prints TSC errors to stdout during build, GitHub might catch them.
       - name: Activate TS Problem Matcher
