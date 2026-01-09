@@ -96,6 +96,10 @@ jobs:
         - name: 🔍 Validate Shared Types
           working-directory: packages/shared/types
           run: pnpm tsc --noEmit
+
+        - name: 🔧 Generate Prisma Client
+          working-directory: packages/shared/prisma
+          run: pnpm prisma generate
   
         - name: ⚙️ Check Backend Compatibility
           run: pnpm --filter "@speak-up/*" exec tsc --noEmit
