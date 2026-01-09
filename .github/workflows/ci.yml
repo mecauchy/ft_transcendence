@@ -98,7 +98,7 @@ jobs:
           run: pnpm tsc --noEmit
   
         - name: ⚙️ Check Backend Compatibility
-          run: pnpm --filter "@speak-up/*" --filter "!@speak-up/prisma" exec tsc --noEmit
+          run: pnpm --filter "@speak-up/*" exec tsc --noEmit
   
         - name: 🎨 Check Frontend Compatibility
           run: pnpm --filter "front" exec tsc --noEmit
