@@ -14,6 +14,10 @@ volumes:
   postgres_data:
   redis_data:
   vault_data:
+  es_data:
+  filebeat_data:
+  logstash_data:
+  kibana_data:
 
 services:
   #WAF SERVICE - ModSecurity WAF with nginx reverse proxy
@@ -294,8 +298,9 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_ADDR=https://0.0.0.0:8200
-      - VAULT_CACERT=/vault/tls/vault.crt
+      - VAULT_ADDR=http://127.0.0.1:8200
+      # Disable TLS verification for dev mode
+      - VAULT_SKIP_VERIFY=true
     volumes:
       - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/vault/init_vault.sh:/init-vault.sh:ro
@@ -388,8 +393,6 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    profiles:
-      - "monitoring"
     restart: "no"
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -419,10 +422,10 @@ services:
       - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
       - alertmanager_data:/alertmanager
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       # Webhook Discord stocké dans Vault (secret/data/alertmanager)
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -438,8 +441,6 @@ services:
     container_name: grafana
     # On utilise profile en tant que "interupteur" pour eviter qu'il consomme de la memoire pr rien. 
     # Avec cette ligne, grafana ne démarrera que si je tape [docker compose --profile monitoring up] sinon éteint par default
-    profiles:
-      - "monitoring"
     user: "472"
     depends_on:
       prometheus:
@@ -456,7 +457,7 @@ services:
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
       - ./infra/monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
-    entrypoint: /entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     environment:
       - GF_SECURITY_ADMIN_USER=grafana_admin
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -464,7 +465,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -476,8 +477,6 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    profiles:
-      - "monitoring"
     privileged: true
     ports:
       - 8081:8080
@@ -485,8 +484,16 @@ services:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
       - /sys:/sys:ro
+      # VM path (Docker root mode)
       - /var/lib/docker/:/var/lib/docker:ro
+      # Local rootless path (42 school) - mounted via /goinfre in rootfs
       - /dev/disk/:/dev/disk:ro
+    # cgroup v2 support for rootless Docker
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=10s
+      - --max_housekeeping_interval=15s
+      - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,hugetlb,referenced_memory,cpu_topology,resctrl
     networks:
       - logging_net
 
@@ -499,11 +506,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
       - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro
-    entrypoint: ["/bin/bash", "-c", "if [ -f /app/data/kuma.db ]; then bash /setup-kuma.sh; fi && bash /entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
     ports:
       - 3010:3001
     environment:
-      - VAULT_ADDR=https://vault:8200
+      - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
       - source: vault_token
@@ -517,6 +524,119 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # ELK Stack services
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    networks:
+      - logging_net
+      - service_mesh
+    volumes:
+      - ./infra/monitoring/elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - es_data:/usr/share/elasticsearch/data
+    depends_on:
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    user: root
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - ELASTICSEARCH_PASSWORD=changeme123
+      # Docker root directory - auto-detected or set via DOCKER_ROOT_DIR env var
+      - DOCKER_ROOT_DIR=${DOCKER_ROOT_DIR:-/var/lib/docker}
+    volumes:
+      - ./infra/monitoring/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
+      # Mount Docker socket with environment-specific path
+      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:ro
+      # Mount Docker container logs directory
+      - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
+      - filebeat_data:/usr/share/filebeat/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x filebeat > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    ports:
+      - "5044:5044"
+      - "5000:5000"
+      - "9600:9600"
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - LS_JAVA_OPTS=-Xmx256m -Xms256m
+    volumes:
+      - ./infra/monitoring/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./infra/monitoring/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./infra/monitoring/elk/logstash/entrypoint.sh:/entrypoint.sh:ro
+      - logstash_data:/usr/share/logstash/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - logging_net
+      - service_mesh
+    volumes:
+      - ./infra/monitoring/elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana_data:/usr/share/kibana/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
 
 secrets:
   vault_token:

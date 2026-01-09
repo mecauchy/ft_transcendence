@@ -1,0 +1,2 @@
+{"type":"index-pattern","id":"filebeat-*","attributes":{"title":"filebeat-*","timeFieldName":"@timestamp"}}
+{"type":"dashboard","id":"ft-transcendence-logs","attributes":{"title":"FT Transcendence - Logs Dashboard","description":"Monitoring dashboard for application logs","panelsJSON":"[]","timeRestore":false}}

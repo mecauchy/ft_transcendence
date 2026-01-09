@@ -1,0 +1,41 @@
+# ======================== Kibana Configuration ================================
+# Kibana UI for ft_transcendence ELK stack
+# =============================================================================
+
+# Server settings
+server.name: kibana-transcendence
+server.host: "0.0.0.0"
+server.port: 5601
+
+# Elasticsearch connection (security disabled on ES side)
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+# No authentication needed since Elasticsearch security is disabled
+# (Kibana will automatically connect without credentials)
+
+# Logging
+logging.root.level: info
+
+# Internationalization (French available)
+# i18n.locale: "fr-FR"
+
+# Saved objects encryption key (required for saved searches, dashboards)
+xpack.encryptedSavedObjects.encryptionKey: "transcendence-kibana-encryption-key-32chars!"
+xpack.reporting.encryptionKey: "transcendence-kibana-reporting-key-32chars!"
+
+# Disable telemetry
+telemetry.enabled: false
+telemetry.optIn: false
+
+# Monitoring (disabled for simplicity)
+monitoring.ui.enabled: false
+
+# Migration settings - longer timeout for slow ES init / low disk scenarios
+migrations.retryAttempts: 20
+migrations.batchSize: 250
+
+# Default app on login
+uiSettings.overrides.defaultRoute: "/app/discover"
+
+# Data views / Index patterns
+# These will be auto-created on first access

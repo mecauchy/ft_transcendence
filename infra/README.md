@@ -39,3 +39,44 @@ http://localhost:9093/#/alerts
 
 cAdvisor :
 http://localhost:8081
+
+=========== Script pour afficher les credentials ============
+
+lancement :
+./scripts/show_creds.sh
+
+
+### 🖥️ Dashboard "Infrastructure Overview"
+
+Dashboard **global du système** - Vue d'ensemble de l'infrastructure complète.
+
+#### Métriques affichées :
+
+| Métrique									|		Description														|Unité |
+|----------									|		-------------													|-------|
+| **Prometheus Status**						|		État de Prometheus (UP/DOWN) 									| Status |
+| **Running Containers**					|		Nombre total de conteneurs Docker actifs 						| Nombre |
+| **System CPU Usage**						|		Graphique temporel avec 3 métriques CPU : <br>- **Total CPU** : Utilisation CPU
+											|		globale<br>- **System CPU** : CPU utilisé par le kernel<br>- **User CPU** : CPU utilisé
+											|		par les applications 											| % |
+| **System Memory Usage**					|		Graphique temporel avec 3 métriques mémoire : <br>- **Total Memory** : Mémoire totale
+											|		utilisée<br>- **Cache** : Mémoire en cache<br>- **RSS** : Resident Set Size (mémoire 	
+											|		physique réelle) 												| Bytes |
+| **System Network I/O**					|		Trafic réseau global du système (toutes interfaces confondues) 	| Bytes/s |
+| **Container Memory Usage % of Limit**		|		Pourcentage d'utilisation mémoire par rapport à la limite configurée pour chaque 
+											|		conteneur (si limite définie dans docker-compose) 				| % |
+
+**Cas d'usage** : Vue d'ensemble rapide de la santé du système, détection de problèmes globaux, monitoring de la charge système totale.
+
+---
+
+### 🔍 Différences clés entre les deux dashboards
+
+| Critère | Docker Containers | Infrastructure Overview |
+|---------|-------------------|------------------------|
+| **Niveau de détail** | Granulaire (par conteneur) | Global (système entier) |
+| **Objectif** | Debug et optimisation des conteneurs | Monitoring de la santé globale |
+| **Métriques CPU** | Par conteneur | Agrégées (total + system + user) |
+| **Métriques Mémoire** | Working Set, Cache par conteneur | Total + Cache + RSS global |
+| **Réseau** | Par interface (limité en rootless) | Agrégé global |
+| **Cas d'usage** | "Quel conteneur pose problème ?" | "Mon système est-il surchargé ?" |

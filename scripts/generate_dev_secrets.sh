@@ -48,7 +48,6 @@ for secret in "${REQUIRED_SECRETS[@]}"; do
     else
         # Generate a secure random password using base64
         openssl rand -base64 32 | tr -d '\n' > "$secret"
-        chmod 600 "$secret"
         echo -e "${YELLOW}✓${NC} Generated $secret"
         GENERATED=$((GENERATED + 1))
     fi

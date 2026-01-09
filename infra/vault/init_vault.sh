@@ -136,6 +136,16 @@ else
 	echo -e "${YELLOW}⚠ Alertmanager webhook file not found${NC}"
 fi
 
+# Elasticsearch credentials (only if password was loaded)
+if [ -n "$ELASTICSEARCH_PASS" ]; then
+	vault kv put secret/elasticsearch \
+		username="elastic_admin" \
+		password="${ELASTICSEARCH_PASS}" 2>/dev/null && \
+		echo -e "${GREEN}✓ Elasticsearch credentials stored${NC}" || \
+		echo -e "${YELLOW}⚠ Elasticsearch credentials already exist${NC}"
+else
+	echo -e "${YELLOW}⚠ Elasticsearch credentials skipped (no password)${NC}"
+fi
 # 42 OAuth credentials (development defaults - replace in production!)
 vault kv put secret/oauth/42 \
 	client_redirect_uri="${OAUTH_42_REDIRECT_URI}" \
