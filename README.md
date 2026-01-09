@@ -45,14 +45,12 @@ ft_transcendence is a full-stack web application that brings the classic Pong ga
 - Three AI difficulty levels (Easy, Medium, Hard)
 - Real-time multiplayer matches
 - Match history and statistics tracking
-- Game customization options
 
 ### 💬 Social
 - Real-time chat with typing indicators
-- Friends system with online status
+- Friends system
 - User profiles with avatars
 - Block/unblock users
-- Game invitations from chat
 
 ### 🏆 Gamification
 - XP and level progression system
@@ -216,30 +214,18 @@ Once setup completes:
 # View all available commands
 make help
 
-# Start development environment
-make dev
+# Set up the entire project from scratch
+make setup
 
-# Run tests
-make test
-
-# View logs
-make logs
-
-# Stop all services
-make stop
-
-# Clean up everything
+# Clean up everything (with options)
 make clean
-
-# Show credentials
-make show-creds
 ```
 
 ---
 
 ## 📊 Module Implementation
 
-Our project implements **35 points** worth of modules (14 required for completion).
+Our project implements **34 points** worth of modules (14 required for completion, 19 for bonus marks).
 
 ### Major Modules (9 × 2 = 18 points)
 
@@ -255,7 +241,7 @@ Our project implements **35 points** worth of modules (14 required for completio
 | 8 | Backend Microservices | DevOps | 5 independent services |
 | 9 | Web-based Game | Gaming | Pong with AI opponent |
 
-### Minor Modules (17 × 1 = 17 points)
+### Minor Modules (16 × 1 = 16 points)
 
 | # | Module | Category | Implementation |
 |---|--------|----------|----------------|
@@ -269,13 +255,12 @@ Our project implements **35 points** worth of modules (14 required for completio
 | 8 | OAuth 2.0 | User | 42 Intra authentication |
 | 9 | 2FA (TOTP) | User | QR code setup, verification |
 | 10 | AI Opponent | Gaming | 3 difficulty levels |
-| 11 | Advanced Chat | Gaming | Typing indicators, game invites |
+| 11 | Advanced Chat | Gaming | Typing indicators |
 | 12 | Gamification | Gaming | XP, achievements, leaderboards |
-| 13 | Game Customization | Gaming | Themes, power-ups |
-| 14 | Health Check/Status | DevOps | Uptime Kuma monitoring |
-| 15 | Data Export/Import | Data | JSON, CSV, XML formats |
-| 16 | GDPR Compliance | Data | Data export, deletion, consent |
-| 17 | AI Opponent (Extended) | AI | Adaptive difficulty |
+| 13 | Health Check/Status | DevOps | Uptime Kuma monitoring |
+| 14 | Data Export/Import | Data | JSON, CSV, XML formats |
+| 15 | GDPR Compliance | Data | Data export, deletion, consent |
+| 16 | AI Opponent (Extended) | AI | Adaptive difficulty |
 
 ---
 
