@@ -13,9 +13,12 @@ WORKDIR /app
 COPY packages/backend/game-service/package.json ./
 COPY packages/backend/game-service/tsconfig.json ./
 COPY packages/shared/types ../shared/types
-COPY packages/shared/prisma ../shared/prisma
 
 RUN pnpm install
+
+COPY packages/shared/prisma/schema.prisma ./node_modules/.prisma/schema.prisma
+
+RUN pnpm exec prisma generate --schema=./node_modules/.prisma/schema.prisma
 
 COPY packages/backend/game-service/src ./src
 
