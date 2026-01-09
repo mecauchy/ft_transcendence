@@ -148,6 +148,7 @@ export default function NotificationsDropdown({
 				onNavigate('network');
 				break;
 			case 'ACHIEVEMENT':
+			case 'LEVEL_UP':
 				onNavigate('profile');
 				break;
 			case 'GAME_INVITE':
@@ -156,6 +157,26 @@ export default function NotificationsDropdown({
 			case 'SYSTEM':
 			default:
 				break;
+		}
+	};
+
+	// Get icon for notification type
+	const getNotificationIcon = (type: string) => {
+		switch (type) {
+			case 'ACHIEVEMENT':
+				return 'ACHIEVEMENT';
+			case 'LEVEL_UP':
+				return 'LEVEL_UP';
+			case 'FRIEND_REQUEST':
+				return 'FRIEND_REQUEST';
+			case 'FRIEND_ACCEPTED':
+				return 'FRIEND_ACCEPTED';
+			case 'MESSAGE':
+				return 'MESSAGE';
+			case 'GAME_INVITE':
+				return 'GAME_INVITE';
+			default:
+				return 'NOTIFICATION';
 		}
 	};
 
@@ -211,12 +232,15 @@ export default function NotificationsDropdown({
 							}`}
 						>
 							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0 flex-1">
-									<div className={`text-sm ${!n.isRead ? 'font-semibold text-white' : 'text-white/90'}`}>
-										{n.title}
+								<div className="min-w-0 flex-1 flex gap-2">
+									<span className="text-lg shrink-0"></span>
+									<div className="min-w-0 flex-1">
+										<div className={`text-sm ${!n.isRead ? 'font-semibold text-white' : 'text-white/90'}`}>
+											{n.title}
+										</div>
+										<div className="text-xs text-white/70 mt-0.5 break-words">{n.message}</div>
+										<div className="text-[11px] text-white/50 mt-1">{formatTime(n.createdAt)}</div>
 									</div>
-									<div className="text-xs text-white/70 mt-0.5 break-words">{n.message}</div>
-									<div className="text-[11px] text-white/50 mt-1">{formatTime(n.createdAt)}</div>
 								</div>
 
 								<div className="flex flex-col gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>

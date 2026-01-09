@@ -291,6 +291,21 @@ export async function profileRoutes(fastify: FastifyInstance) {
 		const {username, email, displayName, stressLevel, confidenceLevel, preferences} = request.body;
 
 		try {
+			// block @student.42.fr emails for non oauth users
+			if (email && email.toLowerCase().endsWith('@student.42.fr')) {
+
+				const oauthLink = await prisma.oAuth.findUnique({
+					where: { userId },
+				});
+				if (!oauthLink) {
+					return reply.status(400).send({
+						statusCode: 400,
+						error: 'Bad Request',
+						message: 'Only OAuth users can use @student.42.fr email addresses',
+					});
+				}
+			}
+
 			// update user table if any user field given
 			const userUpdateData: Record<string, unknown> = {};
 			if (username) userUpdateData.username = username;

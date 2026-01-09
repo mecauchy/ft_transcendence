@@ -1,9 +1,16 @@
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import './styles/login.css'
 import {useAuth} from './contexts/AuthContext'
 import {useTranslation} from 'react-i18next'
 
-function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => void, onNavigateToLegal?: (page: string) => void}) {
+interface LoginProps {
+	onLogin: (username: string) => void;
+	onNavigateToLegal?: (page: string) => void;
+	initialShow2FA?: boolean;
+	onClose2FA?: () => void;
+}
+
+function Login({onLogin, onNavigateToLegal, initialShow2FA = false, onClose2FA}: LoginProps) {
 	const {login, verify2FALogin, register, loginWithOAuth} = useAuth();
 	const {t} = useTranslation();
 
@@ -15,8 +22,13 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 	const [errorMessage, setErrorMessage] = useState<string>('');
 	
 	// 2FA state
-	const [show2FAModal, setShow2FAModal] = useState<boolean>(false);
+	const [show2FAModal, setShow2FAModal] = useState<boolean>(initialShow2FA);
 	const [twoFACode, setTwoFACode] = useState<string>('');
+
+	// update modal state if initialShow2FA changes
+	useEffect(() => {
+		setShow2FAModal(initialShow2FA);
+	}, [initialShow2FA]);
 
 	const [createUsername, setCreateUsername] = useState<string>('');
 	const [createPassword, setCreatePassword] = useState<string>('');
@@ -314,7 +326,7 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 	  
 	  {/* 2FA Verification Modal */}
 	  {show2FAModal && (
-		<div className="p-4 bg-gray-800 bg-opacity-75 fixed inset-0 flex items-center justify-center" onClick={() => setShow2FAModal(false)}>
+		<div className="p-4 bg-gray-800 bg-opacity-75 fixed inset-0 flex items-center justify-center z-50" onClick={() => { setShow2FAModal(false); onClose2FA?.(); }}>
 			<div className="bg-white p-6 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
 				<h2 className="text-lg font-semibold mb-4">{t('auth.enter2FACode')}</h2>
 				<form onSubmit={handle2FASubmit}>
@@ -337,6 +349,8 @@ function Login({onLogin, onNavigateToLegal}: {onLogin: (username: string) => voi
 								setShow2FAModal(false);
 								setTwoFACode('');
 								setErrorMessage('');
+								onClose2FA?.();
+								localStorage.removeItem('pending2FAUserId');
 							}}
 							disabled={isLoading}
 						>

@@ -37,14 +37,28 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
+				// skip auth if pending 2FA
+				const pending2FA = localStorage.getItem('pending2FAUserId');
+				if (pending2FA) {
+					setIsLoading(false);
+					return;
+				}
+
 				// Check if we have a token in localStorage
 				const storedToken = localStorage.getItem('accessToken');
-				if (storedToken) {
-					api.setToken(storedToken);
+				console.log('[Auth] Stored token:', storedToken ? 'present' : 'missing');
+				if (!storedToken) {
+					console.log('[Auth] No token found, staying logged out');
+					setIsLoading(false);
+					return;
 				}
+
+				api.setToken(storedToken);
+				console.log('[Auth] Token set in API client, calling getProfile()...');
 
 				// try get current profile
 				const profile = await api.getProfile();
+				console.log('[Auth] Profile loaded successfully:', profile.username);
 				setUser({
 					userId: profile.userId || profile.id || '',
 					username: profile.username,
@@ -59,8 +73,19 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
 					i18n.changeLanguage(profile.preferences.language);
 				}
-			} catch {
-				// no auth - clear stored token
+			} catch (error) {
+				console.log('[Auth] checkAuth error:', error);
+				// check if required 2FA err
+				const apiError = error as { statusCode?: number; require2FA?: boolean; message?: string };
+				console.log('[Auth] Error details - statusCode:', apiError.statusCode, 'require2FA:', apiError.require2FA);
+				if (apiError.statusCode === 403 && apiError.require2FA) {
+					// if need 2fa, dont clear
+					console.log('[Auth] 2FA required for this token, keeping token');
+					setIsLoading(false);
+					return;
+				}
+				// else, clear auth state
+				console.error('[Auth] Auth check failed, clearing token');
 				localStorage.removeItem('accessToken');
 				setUser(null);
 			} finally {
@@ -83,6 +108,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
 		if (response.accessToken) {
 			localStorage.setItem('accessToken', response.accessToken);
+		}
+		// store refresh token for session refresh
+		if (response.refreshToken) {
+			localStorage.setItem('refreshToken', response.refreshToken);
 		}
 
 		if (response.user) {
@@ -118,6 +147,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 			if (response.verified && response.accessToken) {
 				localStorage.removeItem('pending2FAUserId');
 				localStorage.setItem('accessToken', response.accessToken);
+				// store refresh token for session refresh
+				if (response.refreshToken) {
+					localStorage.setItem('refreshToken', response.refreshToken);
+				}
 				api.setToken(response.accessToken);
 				
 				// fetch profile after auth
@@ -158,11 +191,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
 	const logout = async () => {
 		try {
-			await api.logout();
+			// send refresh token to backend for proper logout
+			const refreshToken = localStorage.getItem('refreshToken');
+			await api.logout(refreshToken || undefined);
 		} catch {
 			// clear local state
 		}
 		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('pending2FAUserId');
 		setUser(null);
 	};
 

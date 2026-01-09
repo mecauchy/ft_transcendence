@@ -52,6 +52,15 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			}
 
+			// manually block @student.42.fr emails
+			if (email.toLowerCase().endsWith('@student.42.fr')) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'Please use 42 OAuth login for @student.42.fr email addresses',
+				});
+			}
+
 			// validate password norm
 			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 			if (!passwordRegex.test(password)) {
@@ -264,6 +273,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				const oauthTokens = await fetchOAuthToken(code);
 				const userInfo = await fetch42UserInfo(oauthTokens.access_token);
 
+				
 				// find existing user by OAuth provider
 				let user = await prisma.user.findFirst({
 					where: {
@@ -281,10 +291,25 @@ export async function authRoutes(fastify: FastifyInstance) {
 				let isNewUser = false;
 
 				if (!user) {
+					// check for username collision
+					let finalUsername = userInfo.login;
+					const existingUserWithUsername = await prisma.user.findUnique({
+						where: { username: userInfo.login },
+					});
+					if (existingUserWithUsername) {
+						// username suffixing
+						let suffix = 1;
+						while (await prisma.user.findUnique({ where: { username: `${userInfo.login}${suffix}` } })) {
+							suffix++;
+						}
+						finalUsername = `${userInfo.login}${suffix}`;
+						request.log.info({ originalUsername: userInfo.login, finalUsername }, 'Username collision detected, using alternative');
+					}
+
 					// create new user with OAuth and settings in a transaction
 					user = await prisma.user.create({
 						data: {
-							username:	userInfo.login,
+							username:	finalUsername,
 							email:		userInfo.email,
 							dob:		new Date('2000-01-01'),
 							role:		'PATIENT',
@@ -308,7 +333,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 						},
 					});
 					isNewUser = true;
-					request.log.info({userId: user.id, login: userInfo.login}, 'New user created via 42 OAuth');
+					request.log.info({userId: user.id, login: finalUsername}, 'New user created via 42 OAuth');
 				} else {
 					request.log.info({userId: user.id}, 'Existing user logged in via 42 OAuth');
 				}
@@ -372,9 +397,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 				}
 
 				const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
-				return reply.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
-
-			} catch (error) {
+				// pass both access and refresh tokens, 2FA status, and userId - encode for URL
+				const tokenData = Buffer.from(JSON.stringify({
+					accessToken: tokens.accessToken,
+					refreshToken: tokens.refreshToken,
+					require2FA: requires2FA,
+					userId: user.id.toString()
+				})).toString('base64');
+				return reply.redirect(`${frontendUrl}/auth/callback?data=${tokenData}`);			} catch (error) {
 				request.log.error({error}, 'OAuth callback failed');
 				return reply.status(500).send({
 				statusCode:	500,

@@ -29,13 +29,11 @@ REQUIRED_SECRETS=(
     "game_db_pass.txt"
     "user_db_pass.txt"
     "redis_password.txt"
-	"grafana_pass.txt"
-	"kuma_pass.txt"
-	"vault_token.txt"
-	"postgres_db_pass.txt"
-	"redis_password.txt"
-	"jwt_secret.txt"
-	"session_secret.txt"
+    "grafana_pass.txt"
+    "kuma_pass.txt"
+    "vault_token.txt"
+    "jwt_secret.txt"
+    "session_secret.txt"
 )
 
 # Counter for generated secrets
@@ -52,6 +50,32 @@ for secret in "${REQUIRED_SECRETS[@]}"; do
         openssl rand -base64 32 | tr -d '\n' > "$secret"
         chmod 600 "$secret"
         echo -e "${YELLOW}✓${NC} Generated $secret"
+        GENERATED=$((GENERATED + 1))
+    fi
+done
+
+# Handle OAuth secrets separately (require user input or use placeholders)
+OAUTH_SECRETS=("oauth_client_id.txt" "oauth_client_secret.txt")
+
+for oauth_secret in "${OAUTH_SECRETS[@]}"; do
+    if [ -f "$oauth_secret" ]; then
+        # Check if it's just a placeholder
+        content=$(cat "$oauth_secret" 2>/dev/null | tr -d '[:space:]')
+        if [ "$content" = "YOUR_42_CLIENT_ID_HERE" ] || [ "$content" = "YOUR_42_CLIENT_SECRET_HERE" ] || [ -z "$content" ]; then
+            echo -e "${YELLOW}⚠${NC} $oauth_secret exists but contains placeholder value"
+        else
+            echo -e "${GREEN}✓${NC} $oauth_secret already exists"
+        fi
+        EXISTING=$((EXISTING + 1))
+    else
+        # Create placeholder file
+        if [ "$oauth_secret" = "oauth_client_id.txt" ]; then
+            echo -n "YOUR_42_CLIENT_ID_HERE" > "$oauth_secret"
+        else
+            echo -n "YOUR_42_CLIENT_SECRET_HERE" > "$oauth_secret"
+        fi
+        chmod 600 "$oauth_secret"
+        echo -e "${YELLOW}✓${NC} Created placeholder for $oauth_secret"
         GENERATED=$((GENERATED + 1))
     fi
 done

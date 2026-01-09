@@ -9,22 +9,69 @@ function OAuthCallback() {
 			try {
 				// Get token from URL query parameter
 				const params = new URLSearchParams(window.location.search);
-				const token = params.get('token');
+				
+				// try decode
+				const encodedData = params.get('data');
+				let accessToken: string | null = null;
+				let refreshToken: string | null = null;
+				let require2FA = false;
+				let userId: string | null = null;
 
-				if (!token) {
+				console.log('[OAuthCallback] Encoded data:', encodedData ? 'present' : 'missing');
+
+				if (encodedData) {
+					try {
+						const decoded = JSON.parse(atob(encodedData));
+						accessToken = decoded.accessToken;
+						refreshToken = decoded.refreshToken;
+						require2FA = decoded.require2FA || false;
+						userId = decoded.userId || null;
+						console.log('[OAuthCallback] Decoded:', { 
+							hasAccessToken: !!accessToken, 
+							hasRefreshToken: !!refreshToken, 
+							require2FA, 
+							userId 
+						});
+					} catch (decodeError) {
+						console.error('[OAuthCallback] Decode failed:', decodeError);
+						// else try without decode
+						accessToken = params.get('token');
+					}
+				} else {
+					// fallback to old format for backward compatibility
+					accessToken = params.get('token');
+					console.log('[OAuthCallback] Using fallback token:', !!accessToken);
+				}
+
+				if (!accessToken) {
 					setError('No token received from OAuth provider');
 					return;
 				}
 
-				// Set token in API client
-				api.setToken(token);
+				// check 2fa requirement
+				if (require2FA && userId) {
+					console.log('[OAuthCallback] 2FA required, setting up for 2FA flow');
+					// store userid to trigger modal
+					localStorage.setItem('pending2FAUserId', userId);
+					// store tokens temporarily
+					localStorage.setItem('accessToken', accessToken);
+					if (refreshToken) {
+						localStorage.setItem('refreshToken', refreshToken);
+					}
+					// redirect to home with 2FA flag
+					window.location.href = '/?require2fa=true';
+					return;
+				}
 
-				// Fetch user profile to verify token works
-				// COMMENTED FOR NOW BECAUSE NOT USED
-				// const profile = await api.getProfile();
-				
-				// Store token in localStorage for persistence
-				localStorage.setItem('accessToken', token);
+				console.log('[OAuthCallback] No 2FA required, proceeding with login');
+				// Set token in API client
+				api.setToken(accessToken);
+
+				// store tokens in localStorage for persistence
+				localStorage.setItem('accessToken', accessToken);
+				if (refreshToken) {
+					localStorage.setItem('refreshToken', refreshToken);
+				}
 
 				// Redirect to home page
 				window.location.href = '/';

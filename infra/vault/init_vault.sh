@@ -49,6 +49,9 @@ GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
 GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
 KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
+OAUTH_42_CLIENT_ID=$(get_secret_content "/run/secrets/oauth_client_id.txt")
+OAUTH_42_CLIENT_SECRET=$(get_secret_content "/run/secrets/oauth_client_secret.txt")
+OAUTH_42_REDIRECT_URI=https://localhost:8443/api/auth/callback/42
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -135,8 +138,9 @@ fi
 
 # 42 OAuth credentials (development defaults - replace in production!)
 vault kv put secret/oauth/42 \
-	client_id="${OAUTH_42_CLIENT_ID:-dev_client_id_placeholder}" \
-	client_secret="${OAUTH_42_CLIENT_SECRET:-dev_client_secret_placeholder}" 2>/dev/null && \
+	client_redirect_uri="${OAUTH_42_REDIRECT_URI}" \
+	client_id="${OAUTH_42_CLIENT_ID}" \
+	client_secret="${OAUTH_42_CLIENT_SECRET}" 2>/dev/null && \
 	echo -e "${GREEN}✓ 42 OAuth credentials stored${NC}" || \
 	echo -e "${YELLOW}⚠ 42 OAuth credentials already exist${NC}"
 
