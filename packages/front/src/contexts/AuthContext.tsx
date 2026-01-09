@@ -174,6 +174,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		}
 		localStorage.removeItem('accessToken');
 		localStorage.removeItem('refreshToken');
+		localStorage.removeItem('pending2FAUserId');
 		setUser(null);
 	};
 

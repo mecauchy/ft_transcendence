@@ -233,9 +233,6 @@ make clean
 
 # Show credentials
 make show-creds
-
-# Verify installation
-make verify
 ```
 
 ---
