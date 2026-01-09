@@ -1,5 +1,5 @@
-// prisma client singleton
-import {PrismaClient, Prisma} from '@prisma/client';
+// prisma client singleon
+import {PrismaClient} from './generated/prisma';
 
 // multi-instance security
 const globalForPrisma = globalThis as unknown as {
@@ -18,10 +18,9 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// re-export types from @prisma/client
-export * from '@prisma/client';
-export {Prisma};
-export type {PrismaClient};
+// re-export custom types
+export * from './generated/prisma';
+export {Prisma} from './generated/prisma';
 
 // export instance as default
 export default prisma;
