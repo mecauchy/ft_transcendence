@@ -37,11 +37,23 @@ export function AuthProvider({children}: {children: ReactNode}) {
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
+				// skip auth if pending 2FA
+				const pending2FA = localStorage.getItem('pending2FAUserId');
+				if (pending2FA) {
+					console.log('[Auth] Pending 2FA detected, skipping auto-auth');
+					setIsLoading(false);
+					return;
+				}
+
 				// Check if we have a token in localStorage
 				const storedToken = localStorage.getItem('accessToken');
-				if (storedToken) {
-					api.setToken(storedToken);
+				if (!storedToken) {
+					// No token = not logged in, this is fine
+					setIsLoading(false);
+					return;
 				}
+
+				api.setToken(storedToken);
 
 				// try get current profile
 				const profile = await api.getProfile();
@@ -59,8 +71,17 @@ export function AuthProvider({children}: {children: ReactNode}) {
 				if (profile.preferences?.language && ['en', 'fr', 'es'].includes(profile.preferences.language)) {
 					i18n.changeLanguage(profile.preferences.language);
 				}
-			} catch {
-				// no auth - clear stored token
+			} catch (error) {
+				// Check if this is a 2FA required error
+				const apiError = error as { statusCode?: number; require2FA?: boolean; message?: string };
+				if (apiError.statusCode === 403 && apiError.require2FA) {
+					// Token requires 2FA - don't clear, let user complete 2FA
+					console.log('[Auth] 2FA required for this token');
+					setIsLoading(false);
+					return;
+				}
+				// For other errors (401, network, etc), clear auth state
+				console.error('[Auth] Auth check failed:', error);
 				localStorage.removeItem('accessToken');
 				setUser(null);
 			} finally {

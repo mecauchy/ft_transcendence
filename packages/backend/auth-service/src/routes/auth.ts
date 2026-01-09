@@ -52,6 +52,15 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			}
 
+			// manually block @student.42.fr emails
+			if (email.toLowerCase().endsWith('@student.42.fr')) {
+				return reply.status(400).send({
+					statusCode:	400,
+					error:		'Bad Request',
+					message:	'Please use 42 OAuth login for @student.42.fr email addresses',
+				});
+			}
+
 			// validate password norm
 			const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 			if (!passwordRegex.test(password)) {

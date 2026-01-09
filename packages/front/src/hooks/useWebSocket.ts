@@ -121,22 +121,13 @@ export function useRealtimeNotifications(onNotification?: (notification: unknown
 	useEffect(() => {
 		if (!isConnected) return;
 
+		// subscribe to notification events
 		const unsubNotification = subscribe('NOTIFICATION', (message) => {
-			onNotification?.(message.data);
-		});
-
-		const unsubAchievement = subscribe('ACHIEVEMENT_UNLOCKED', (message) => {
-			onNotification?.(message.data);
-		});
-
-		const unsubLevelUp = subscribe('LEVEL_UP', (message) => {
 			onNotification?.(message.data);
 		});
 
 		return () => {
 			unsubNotification();
-			unsubAchievement();
-			unsubLevelUp();
 		};
 	}, [isConnected, subscribe, onNotification]);
 }

@@ -1,7 +1,7 @@
 import {prisma} from '../db';
 import Redis from 'ioredis';
 import {config} from '../config';
-import {awardXP} from './xp';
+import {awardXP, getUserXP} from './xp';
 
 const redis = new Redis({
 	host: config.redis.host,
@@ -27,6 +27,38 @@ export interface UserAchievement {
 	achievement: Achievement;
 	unlockedAt: Date;
 	progress: number; // 0-100
+}
+
+// notify for level-up (when achievement XP causes level-up)
+async function notifyLevelUp(userId: string, newLevel: number, oldLevel: number): Promise<void> {
+	const internalKey = process.env.INTERNAL_SERVICE_KEY;
+	const userServiceInternal =
+		process.env.USER_SERVICE_INTERNAL_URL ||
+		'http://user-service:3002';
+
+	if (!internalKey) {
+		return;
+	}
+
+	// send a notification for each level gained
+	for (let level = oldLevel + 1; level <= newLevel; level++) {
+		try {
+			await fetch(`${userServiceInternal}/internal/notifications/level-up`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-internal-key': internalKey,
+				},
+				body: JSON.stringify({
+					userId,
+					newLevel: level,
+					oldLevel: level - 1,
+				}),
+			});
+		} catch {
+			// ignore
+		}
+	}
 }
 
 async function notifyAchievementUnlocked(userId: string, achievement: Achievement): Promise<void> {
@@ -169,9 +201,17 @@ async function unlockAchievement(userId: string, achievement: Achievement): Prom
 		});
 	});
 
-	// give XP for achievement unlock
+	// give XP for achievement unlock and handle level-up notification
 	if (achievement.xpReward > 0) {
-		await awardXP(userId, achievement.xpReward, `Achievement: ${achievement.name}`);
+		const beforeXP = await getUserXP(userId);
+		const oldLevel = beforeXP.level;
+
+		const result = await awardXP(userId, achievement.xpReward, `Achievement: ${achievement.name}`);
+		
+		// Send level-up notification if XP from achievement caused a level-up
+		if (result.levelUp) {
+			await notifyLevelUp(userId, result.newLevel, oldLevel);
+		}
 	}
 
 	await notifyAchievementUnlocked(userId, achievement);

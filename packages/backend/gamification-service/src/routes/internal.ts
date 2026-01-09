@@ -13,21 +13,24 @@ async function notifyLevelUp(userId: string, newLevel: number, oldLevel: number)
 		return;
 	}
 
-	try {
-		await fetch(`${userServiceInternal}/internal/notifications/level-up`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'x-internal-key': internalKey,
-			},
-			body: JSON.stringify({
-				userId,
-				newLevel,
-				oldLevel,
-			}),
-		});
-	} catch {
-		// ignore
+	// send notif for each level gained
+	for (let level = oldLevel + 1; level <= newLevel; level++) {
+		try {
+			await fetch(`${userServiceInternal}/internal/notifications/level-up`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-internal-key': internalKey,
+				},
+				body: JSON.stringify({
+					userId,
+					newLevel: level,
+					oldLevel: level - 1,
+				}),
+			});
+		} catch {
+			// ignore
+		}
 	}
 }
 

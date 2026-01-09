@@ -27,9 +27,7 @@ function Login({onLogin, onNavigateToLegal, initialShow2FA = false, onClose2FA}:
 
 	// update modal state if initialShow2FA changes
 	useEffect(() => {
-		if (initialShow2FA) {
-			setShow2FAModal(true);
-		}
+		setShow2FAModal(initialShow2FA);
 	}, [initialShow2FA]);
 
 	const [createUsername, setCreateUsername] = useState<string>('');

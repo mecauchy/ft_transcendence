@@ -160,6 +160,26 @@ export default function NotificationsDropdown({
 		}
 	};
 
+	// Get icon for notification type
+	const getNotificationIcon = (type: string) => {
+		switch (type) {
+			case 'ACHIEVEMENT':
+				return 'ACHIEVEMENT';
+			case 'LEVEL_UP':
+				return 'LEVEL_UP';
+			case 'FRIEND_REQUEST':
+				return 'FRIEND_REQUEST';
+			case 'FRIEND_ACCEPTED':
+				return 'FRIEND_ACCEPTED';
+			case 'MESSAGE':
+				return 'MESSAGE';
+			case 'GAME_INVITE':
+				return 'GAME_INVITE';
+			default:
+				return 'NOTIFICATION';
+		}
+	};
+
 	return (
 		<div
 			ref={dropdownRef}
