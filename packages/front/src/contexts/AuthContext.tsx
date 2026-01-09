@@ -84,6 +84,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 		if (response.accessToken) {
 			localStorage.setItem('accessToken', response.accessToken);
 		}
+		// store refresh token for session refresh
+		if (response.refreshToken) {
+			localStorage.setItem('refreshToken', response.refreshToken);
+		}
 
 		if (response.user) {
 			setUser({
@@ -118,6 +122,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
 			if (response.verified && response.accessToken) {
 				localStorage.removeItem('pending2FAUserId');
 				localStorage.setItem('accessToken', response.accessToken);
+				// store refresh token for session refresh
+				if (response.refreshToken) {
+					localStorage.setItem('refreshToken', response.refreshToken);
+				}
 				api.setToken(response.accessToken);
 				
 				// fetch profile after auth
@@ -158,11 +166,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
 	const logout = async () => {
 		try {
-			await api.logout();
+			// send refresh token to backend for proper logout
+			const refreshToken = localStorage.getItem('refreshToken');
+			await api.logout(refreshToken || undefined);
 		} catch {
 			// clear local state
 		}
 		localStorage.removeItem('accessToken');
+		localStorage.removeItem('refreshToken');
 		setUser(null);
 	};
 

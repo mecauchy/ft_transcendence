@@ -50,12 +50,18 @@ class ApiClient {
 
 		this.refreshPromise = (async () => {
 			try {
+				const storedRefreshToken = localStorage.getItem('refreshToken');
+				if (!storedRefreshToken) {
+					throw new Error('No refresh token available');
+				}
+
 				const response = await fetch(`${API_BASE}/auth/refresh`, {
 					method: 'POST',
 					credentials: 'include',
 					headers: {
 						'Content-Type': 'application/json',
 					},
+					body: JSON.stringify({ refreshToken: storedRefreshToken }),
 				});
 
 				if (!response.ok) {
@@ -65,6 +71,10 @@ class ApiClient {
 				const data = await response.json();
 				this.token = data.accessToken;
 				localStorage.setItem('accessToken', data.accessToken);
+				// store new refresh token
+				if (data.refreshToken) {
+					localStorage.setItem('refreshToken', data.refreshToken);
+				}
 				
 				if (this.tokenRefreshCallback) {
 					await this.tokenRefreshCallback();
@@ -104,7 +114,7 @@ class ApiClient {
 		});
 
 		if (!response.ok) {
-			if (response.status === 401 && retryOnUnauthorized && !endpoint.includes('/auth/')) {
+				if (response.status === 401 && retryOnUnauthorized && !endpoint.includes('/auth/')) {
 				try {
 					await this.refreshTokenInternal();
 					// retry original token
@@ -112,6 +122,7 @@ class ApiClient {
 				} catch {
 					// if fail to refresh clear auth state
 					localStorage.removeItem('accessToken');
+					localStorage.removeItem('refreshToken');
 					this.token = null;
 					// only redirect if not logged in (fixes autoreload bug)
 					if (window.location.pathname !== '/' && window.location.pathname !== '/auth/callback') {
@@ -169,9 +180,10 @@ class ApiClient {
 		return response;
 	}
 
-	async logout() {
+	async logout(refreshToken?: string) {
 		const result = await this.request<{message:	string}>('/auth/logout', {
 			method: 'POST',
+			body: JSON.stringify({ refreshToken }),
 		});
 		this.setToken(null);
 		return result;

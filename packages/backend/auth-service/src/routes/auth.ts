@@ -372,9 +372,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 				}
 
 				const frontendUrl = process.env.FRONTEND_URL || 'https://localhost:8443';
-				return reply.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
-
-			} catch (error) {
+				// pass both access and refresh tokens, 2FA status, and userId - encode for URL
+				const tokenData = Buffer.from(JSON.stringify({
+					accessToken: tokens.accessToken,
+					refreshToken: tokens.refreshToken,
+					require2FA: requires2FA,
+					userId: user.id.toString()
+				})).toString('base64');
+				return reply.redirect(`${frontendUrl}/auth/callback?data=${tokenData}`);			} catch (error) {
 				request.log.error({error}, 'OAuth callback failed');
 				return reply.status(500).send({
 				statusCode:	500,

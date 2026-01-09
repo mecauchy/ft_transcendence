@@ -190,7 +190,7 @@ function Navbar({
 			{/* Collapsed desktop controls */}
 			{isCollapsed && (
 				<div
-					className="hidden md:flex items-center gap-2 ml-auto max-w-full overflow-hidden"
+					className="hidden md:flex items-center gap-2 ml-auto"
 					style={{ minWidth: 0 }}
 				>
 					<NotificationsBell onNavigate={setPage} />

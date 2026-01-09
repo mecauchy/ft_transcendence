@@ -1,5 +1,17 @@
 .PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-seed prisma-studio setup
 
+# make sure env is correctly loaded
+SHELL := /bin/bash
+export NVM_DIR := $(HOME)/.nvm
+export PATH := $(NVM_DIR)/versions/node/$(shell [ -s "$(NVM_DIR)/nvm.sh" ] && . "$(NVM_DIR)/nvm.sh" && nvm current 2>/dev/null | sed 's/v//')/bin:$(PATH)
+
+# load nvm if available
+define LOAD_NVM
+	@if [ -s "$(NVM_DIR)/nvm.sh" ]; then \
+		. "$(NVM_DIR)/nvm.sh"; \
+	fi
+endef
+
 # Colors for output
 BLUE := \033[0;34m
 GREEN := \033[0;32m

@@ -34,9 +34,12 @@ services:
       - dmz_net
       - logging_net
     depends_on:
-      - vault
-      - api-gateway
-      - front
+      vault:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+      front:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null http://127.0.0.1/api/health || exit 1"]
       interval: 10s
@@ -77,6 +80,8 @@ services:
       auth-service:
         condition: service_healthy
       user-service:
+        condition: service_healthy
+      game-service:
         condition: service_healthy
       gamification-service:
         condition: service_healthy
@@ -298,6 +303,7 @@ services:
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
       - ./infra/certs:/vault/tls:ro
       - ./infra/secret:/tmp/vault-secrets:rw
+      - ./infra/secret:/run/secrets:ro
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
@@ -320,7 +326,7 @@ services:
       - POSTGRES_USER=root_admin
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
     volumes:
-      - postgres_data:/var/lib/postgres/data
+      - postgres_data:/var/lib/postgresql/data
       - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./infra/secret:/run/secrets:ro
     networks:

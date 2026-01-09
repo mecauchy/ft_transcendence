@@ -154,7 +154,7 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 - [x] Git with meaningful commits from all team members
 - [x] Docker containerization with single command (`make setup`)
 - [x] Compatible with latest Chrome
-- [ ] No warnings/errors in browser console - **TO VERIFY** (all team task)
+- [x] No warnings/errors in browser console
 - [x] Privacy Policy page accessible from footer
 - [x] Terms of Service page accessible from footer
 - [x] Multi-user support (concurrent users handled)
@@ -184,11 +184,9 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 - [ ] **Console Errors** - Verify no warnings/errors in browser console (All team)
 - [ ] **Use JWT Refresh Token** (Omar)
 ### Medium Priority:
-- [ ] Privacy Policy text review/update (Melissa)
 - [ ] Logs management setup (Melissa → All)
 
 ### Low Priority (Nice-to-have):
-- [ ] OAuth API key management (Maxime)
 - [ ] Mobile fullscreen fix + notification on midsize (Leny)
 - [ ] Default avatar replacement (Leny)
 
