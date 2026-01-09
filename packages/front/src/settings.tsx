@@ -385,7 +385,7 @@ function Settings() {
 
 	return (
 		<div className="max-w-md mx-auto mt-32 p-6 bg-white/10 rounded-lg shadow-md">
-			<h1 className="text-2xl font-bold mb-6">{t('settings.title')}</h1>
+			<h1 className="text-2xl font-bold mb-6 text-white">{t('settings.title')}</h1>
 			
 			{message && (
 				<div className={`p-4 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -431,7 +431,7 @@ function Settings() {
 					<p className="text-xs text-gray-400 mt-2">{t('settings.avatar.hint')}</p>
 				</div>
 
-				<div>
+				<div className="text-white">
 					<label htmlFor="username" className="block text-sm font-medium mb-1">
 						{t('settings.username')}
 					</label>
@@ -440,12 +440,12 @@ function Settings() {
 						type="text"
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
-						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white/70"
 						placeholder={t('settings.enterUsername')}
 					/>
 				</div>
 
-				<div>
+				<div className="text-white">
 					<label htmlFor="email" className="block text-sm font-medium mb-1">
 						{t('settings.email')}
 					</label>
@@ -454,18 +454,18 @@ function Settings() {
 						type="email"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white/70"
 						placeholder={t('settings.enterEmail')}
 					/>
 				</div>
 
-				<div>
+				<div className="text-white">
 					<label htmlFor="language" className="block text-sm font-medium mb-1">
 						{t('settings.language')}
 					</label>
 					<select
 						id="language"
-						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white/70"
 						value={language}
 						onChange={handleLanguageChange}
 					>
@@ -474,7 +474,7 @@ function Settings() {
 						<option value="es">{t('languages.es')} (ES)</option>
 					</select>
 				</div>
-				<div>
+				<div className="text-white">
 					<label className="block text-sm font-medium mb-1">
 						{t('settings.twoFactor')}
 					</label>
