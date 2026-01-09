@@ -196,9 +196,9 @@ jobs:
           POSTGRES_PASSWORD=$(cat infra/secret/postgres_db_pass.txt)
           # Run prisma db push to create tables
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml exec -T postgres psql -U root_admin -c "SELECT 1" || echo "Postgres check failed"
-          # Use pnpm to run prisma with DATABASE_URL
+          # Use pnpm to run prisma with DATABASE_URL (use project's prisma version)
           export DATABASE_URL="postgresql://root_admin:${POSTGRES_PASSWORD}@localhost:5432/game_db"
-          cd packages/shared/prisma && npx prisma db push --accept-data-loss
+          cd packages/shared/prisma && pnpm exec prisma db push --accept-data-loss
           echo "Database schema initialized"
 
       - name: Start Application Services
