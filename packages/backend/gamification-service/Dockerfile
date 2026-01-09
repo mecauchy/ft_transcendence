@@ -14,9 +14,7 @@ ENV CI=true
 RUN pnpm install && pnpm run build
 
 WORKDIR /app
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 RUN pnpm install
-RUN pnpm exec prisma generate --schema=../shared/prisma/schema.prisma
 
 COPY packages/backend/gamification-service/src ./src
 
