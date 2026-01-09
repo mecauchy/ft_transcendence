@@ -15,6 +15,7 @@ RUN pnpm install && pnpm run build
 
 WORKDIR /app
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+ENV PRISMA_GENERATE_SKIP_AUTOINSTALL=true
 RUN pnpm install
 RUN pnpm exec prisma generate --schema=../shared/prisma/schema.prisma
 

@@ -16,6 +16,7 @@ COPY packages/shared/types ../shared/types
 COPY packages/shared/prisma ../shared/prisma
 
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+ENV PRISMA_GENERATE_SKIP_AUTOINSTALL=true
 RUN pnpm install
 RUN pnpm exec prisma generate --schema=../shared/prisma/schema.prisma
 
