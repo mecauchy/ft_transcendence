@@ -1,15 +1,35 @@
-import { useState } from 'react'
+import {useState, useEffect} from 'react'
 import './styles/login.css'
+import {useAuth} from './contexts/AuthContext'
+import {useTranslation} from 'react-i18next'
 
-function Login({onLogin}: {onLogin: (username: string) => void}) {
+interface LoginProps {
+	onLogin: (username: string) => void;
+	onNavigateToLegal?: (page: string) => void;
+	initialShow2FA?: boolean;
+	onClose2FA?: () => void;
+}
+
+function Login({onLogin, onNavigateToLegal, initialShow2FA = false, onClose2FA}: LoginProps) {
+	const {login, verify2FALogin, register, loginWithOAuth} = useAuth();
+	const {t} = useTranslation();
 
 	//state
-	const [username, setUsername] = useState<string>('');
+	const [ulogin, setLogin] = useState<string>('');
 	const [password, setPassword] = useState<string>('');
 	const [registerMode, setRegisterMode] = useState<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [errorMessage, setErrorMessage] = useState<string>('');
+	
+	// 2FA state
+	const [show2FAModal, setShow2FAModal] = useState<boolean>(initialShow2FA);
+	const [twoFACode, setTwoFACode] = useState<string>('');
 
-	const[user, setUser] = useState<{username: string, password: string} | null>(null);
-	const[newUser, setNewUser] = useState<{username: string, password: string, email: string, birthdate: string} | null>(null);
+	// update modal state if initialShow2FA changes
+	useEffect(() => {
+		setShow2FAModal(initialShow2FA);
+	}, [initialShow2FA]);
+
 	const [createUsername, setCreateUsername] = useState<string>('');
 	const [createPassword, setCreatePassword] = useState<string>('');
 	const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -21,24 +41,32 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	const [numberPresent, setNumberPresent] = useState<boolean>(false);
 	const [specialCharPresent, setSpecialCharPresent] = useState<boolean>(false);
 	const [birthdate, setBirthdate] = useState<string>('');
-
-	void user;
-	void newUser;
 	//handlers for registration
-	const handleRegister = (event: React.FormEvent) => {
+	const handleRegister = async (event: React.FormEvent) => {
 		event.preventDefault();
-		console.log('Registration form submitted');
-		if (createUsername && createPassword && createPassword === confirmPassword && passwordFormat) {
-			setNewUser({username: createUsername, password: createPassword, email: createEmail, birthdate: birthdate});
-			console.log('User registered:', {createUsername, createPassword, createEmail, birthdate});
-			onLogin(createUsername);
-		}
-		else if (createPassword !== confirmPassword) {
+		setErrorMessage('');
+
+		if (createPassword !== confirmPassword) {
 			setBadConfirmation(true);
-			console.log('Password confirmation does not match');
+			return;
+		}
+
+		if (!passwordFormat) {
+			setErrorMessage(t('auth.passwordRequirements'));
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await register(createUsername, createEmail, createPassword, birthdate);
+			onLogin(createUsername);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : t('auth.registerFailed'));
+		} finally {
+			setIsLoading(false);
 		}
 	}
-	
+
 	const handleCreateUsername = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setCreateUsername(event.target.value);
 	}
@@ -74,101 +102,152 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	}
 
 	//handlers
-	const handleSubmit = (event: React.FormEvent) => {
+	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
-		console.log('Form submitted');
-		if (username && password) {
-			setUser({username, password});
-			console.log('User logged in:', {username, password});
-			onLogin(username);
+		setErrorMessage('');
+
+		if (!ulogin || !password) {
+			setErrorMessage(t('auth.fillAllFields'));
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await login(ulogin, password);
+			// onLogin is handled by AuthContext - the user state change will trigger re-render
+		} catch (error) {
+			if (error instanceof Error && error.message === '2FA_REQUIRED') {
+				// show 2FA modal
+				setShow2FAModal(true);
+				setErrorMessage('');
+			} else {
+				setErrorMessage(error instanceof Error ? error.message : t('auth.loginFailed'));
+			}
+		} finally {
+			setIsLoading(false);
 		}
 	}
 
-	const handleChangeUsername = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setUsername(event.target.value);
+	const handle2FASubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
+		setErrorMessage('');
+
+		if (!twoFACode || twoFACode.length !== 6) {
+			setErrorMessage(t('auth.invalid2FACode'));
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			await verify2FALogin(twoFACode);
+			// success
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : t('auth.2faVerificationFailed'));
+		} finally {
+			setIsLoading(false);
+		}
+	}
+
+	const handleChangeLogin = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setLogin(event.target.value);
+		setErrorMessage('');
 	}
 
 	const handleChangePassword = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setPassword(event.target.value);
-	}
-
-	const handleGithubLogin = () => {
-		console.log('GitHub login clicked');
-		// Implement GitHub OAuth flow here
+		setErrorMessage('');
 	}
 
 	const handle42Login = () => {
-		console.log('42 login clicked');
-		// Implement 42 OAuth flow here
+		loginWithOAuth('42');
 	}
 
   return (
 	<div className='login_container'>
 		<img src='/controler.png' alt='Logo' className='login_logo_image' />
 	  <p className='login_title'>ft_transcendance</p>
-	  <p className='login_subtitle'>Quand parler devient une mécanique de jeu.</p>
+	  <p className='login_subtitle'>{t('home.subtitle')}</p>
+	  
+	  {errorMessage && (
+		<div className='login_error_message'>
+			{errorMessage}
+		</div>
+	  )}
+	  
 	  {!registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleSubmit} className='login_form'>
-			<p className='username'>Nom d'utilisateur</p>
+			<p className='username'>{t('auth.login')}</p>
 			<input
-			  type="text"
+			  type="string"
 			  className='username_input'
-			  placeholder="Entrez votre nom d'utilisateur"
-			  onChange={handleChangeUsername}
+			  placeholder={t('auth.enterUsernameOrEmail')}
+			  value={ulogin}
+			  onChange={handleChangeLogin}
+			  disabled={isLoading}
 			  required
 			/>
-			<p className='password'>Mot de passe</p>
+			<p className='password'>{t('auth.password')}</p>
 			<input
 			  type="password"
 			  className='password_input'
-			  placeholder="Entrez votre mot de passe"
+			  placeholder={t('auth.enterPassword')}
+			  value={password}
 			  onChange={handleChangePassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<br />
 			<button 
 			className='login_button'
-			type="submit">
-				Se connecter
+			type="submit"
+			disabled={isLoading}>
+				{isLoading ? t('auth.connecting') : t('auth.connect')}
 			</button>
 		</form>
 	  </div>
-	  }
+	 }
 	  {registerMode &&
 	  <div className='login_button_container'>
 		<form onSubmit={handleRegister} className='login_form'>
-			<p className='username'>Entrez votre adresse email</p>
+			<p className='username'>{t('auth.enterEmail')}</p>
 			<input
 			  type="email"
 			  className='username_input'
-			  placeholder="Entrez votre adresse email"
+			  placeholder={t('auth.enterEmail')}
+			  value={createEmail}
 			  onChange={handleCreateEmail}
+			  disabled={isLoading}
 			  required
 			/>
-			<p className='username'>Choisissez un nom d'utilisateur</p>
+			<p className='username'>{t('auth.chooseUsername')}</p>
 			<input
 			  type="text"
 			  className='username_input'
-			  placeholder="Entrez votre nom d'utilisateur"
+			  placeholder={t('auth.enterUsername')}
+			  value={createUsername}
 			  onChange={handleCreateUsername}
+			  disabled={isLoading}
 			  required
 			/>
-			<p className='birthdate'>Date de naissance</p>
+			<p className='birthdate'>{t('auth.birthdate')}</p>
 			<input 
 			  type="date"
 			  id="birthdate"
 			  className='birthdate_input'
 			  value={birthdate}
 			  onChange={handleBirthdateChange}
+			  disabled={isLoading}
 			  required
 			/>
-			<p className='password'>Choisissez un mot de passe</p>
+			<p className='password'>{t('auth.choosePassword')}</p>
 			<input
 			  type="password"
 			  className='password_input'
-			  placeholder="Entrez votre mot de passe"
+			  placeholder={t('auth.enterPassword')}
+			  value={createPassword}
 			  onChange={handleCreatePassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<div className={`password_requirements_wrapper ${
@@ -176,52 +255,53 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 			}`}>
 				<div className="password_requirements">
 					<p className={createPassword.length >= 8 ? 'requirement_met' : 'requirement_not_met'}>
-						{createPassword.length >= 8 ? '✔' : '✘'} Au moins 8 caractères
+						{createPassword.length >= 8 ? '✔' : '✘'} {t('passwordRequirements.minChars')}
 					</p>
 					<p className={uppercasePresent ? 'requirement_met' : 'requirement_not_met'}>
-						{uppercasePresent ? '✔' : '✘'} Une lettre majuscule
+						{uppercasePresent ? '✔' : '✘'} {t('passwordRequirements.uppercase')}
 					</p>
 					<p className={lowercasePresent ? 'requirement_met' : 'requirement_not_met'}>
-						{lowercasePresent ? '✔' : '✘'} Une lettre minuscule
+						{lowercasePresent ? '✔' : '✘'} {t('passwordRequirements.lowercase')}
 					</p>
 					<p className={numberPresent ? 'requirement_met' : 'requirement_not_met'}>
-						{numberPresent ? '✔' : '✘'} Un chiffre
+						{numberPresent ? '✔' : '✘'} {t('passwordRequirements.number')}
 					</p>
 					<p className={specialCharPresent ? 'requirement_met' : 'requirement_not_met'}>
-						{specialCharPresent ? '✔' : '✘'} Un caractère spécial (@$!%*?&)
+						{specialCharPresent ? '✔' : '✘'} {t('passwordRequirements.specialChar')}
 					</p>
 				</div>
 			</div>
 			<br />
 			{badConfirmation &&
-			<p className='password_confirmation_error'>Les mots de passe ne correspondent pas</p>
+			<p className='password_confirmation_error'>{t('auth.passwordsDontMatch')}</p>
 			}
 			<input
 			  type="password"
 			  readOnly={passwordFormat ? false : true}
 			  className={badConfirmation ? 'password_input_error' : 'password_input'}
-			  placeholder="Confirmez votre mot de passe"
+			  placeholder={t('auth.confirmPassword')}
+			  value={confirmPassword}
 			  onChange={handleConfirmPassword}
+			  disabled={isLoading}
 			  required
 			/>
 			<br />
 			<button 
 			className='login_button'
-			type="submit">
-				S'inscrire
+			type="submit"
+			disabled={isLoading}>
+				{isLoading ? t('auth.registering') : t('auth.signUp')}
 			</button>
 		</form>
 	  </div>
-	  }
+	 }
 	  <div className='login_api'>
-		<p>Se connecter avec :</p>
+		<p>{t('auth.loginWith')}</p>
 		<div className='login_api_buttons'>
-			<button className='login_api_button_github'
-			onClick={handleGithubLogin}>
-				<img src='/github_logo.png' alt='GitHub Logo' className='login_api_button_github_logo' />
-			</button>
 			<button className='login_api_button_42'
-			onClick={handle42Login}>
+			onClick={handle42Login}
+			disabled={isLoading}
+			type="button">
 				<img src='/42_logo.png' alt='42 Logo' className='login_api_button_42_logo' />
 			</button>
 		</div>
@@ -229,15 +309,83 @@ function Login({onLogin}: {onLogin: (username: string) => void}) {
 	  <div className='login_divider'>
 			{!registerMode &&
 			<button className='login_register_button'
-			onClick={() => setRegisterMode(true)}>
-				Pas encore de compte ? Créez-en un ici
+			onClick={() => setRegisterMode(true)}
+			disabled={isLoading}
+			type="button">
+				{t('auth.createAccountHere')}
 			</button>}
 			{registerMode &&
 			<button className='login_register_button'
-			onClick={() => setRegisterMode(false)}>
-				Déjà un compte ? Connectez-vous ici
+			onClick={() => setRegisterMode(false)}
+			disabled={isLoading}
+			type="button">
+				{t('auth.loginHere')}
 			</button>}
-			<p>Lancez une session et faites vos premiers choix.</p>
+			<p>{t('auth.startSession')}</p>
+	  </div>
+	  
+	  {/* 2FA Verification Modal */}
+	  {show2FAModal && (
+		<div className="p-4 bg-gray-800 bg-opacity-75 fixed inset-0 flex items-center justify-center z-50" onClick={() => { setShow2FAModal(false); onClose2FA?.(); }}>
+			<div className="bg-white p-6 rounded shadow-lg" onClick={(e) => e.stopPropagation()}>
+				<h2 className="text-lg font-semibold mb-4">{t('auth.enter2FACode')}</h2>
+				<form onSubmit={handle2FASubmit}>
+					<input
+						type="text"
+						className="border border-gray-300 rounded px-3 py-2 mb-4 w-full"
+						placeholder={t('auth.2faCodePlaceholder')}
+						value={twoFACode}
+						onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+						maxLength={6}
+						autoFocus
+						disabled={isLoading}
+					/>
+					{errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+					<div className="flex justify-end space-x-4">
+						<button
+							type="button"
+							className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
+							onClick={() => {
+								setShow2FAModal(false);
+								setTwoFACode('');
+								setErrorMessage('');
+								onClose2FA?.();
+								localStorage.removeItem('pending2FAUserId');
+							}}
+							disabled={isLoading}
+						>
+							{t('common.cancel')}
+						</button>
+						<button
+							type="submit"
+							className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+							disabled={isLoading || twoFACode.length !== 6}
+						>
+							{isLoading ? t('auth.verifying') : t('auth.verify')}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	  )}
+	  
+	  {/* Legal links */}
+	  <div className="login-footer">
+		<a 
+			href="/privacy" 
+			onClick={(e) => { e.preventDefault(); onNavigateToLegal?.('privacy'); }}
+			className="legal-link"
+		>
+			{t('legal.privacyPolicyLink', 'Privacy Policy')}
+		</a>
+		<span className="legal-separator">•</span>
+		<a 
+			href="/terms" 
+			onClick={(e) => { e.preventDefault(); onNavigateToLegal?.('terms'); }}
+			className="legal-link"
+		>
+			{t('legal.termsOfServiceLink', 'Terms of Service')}
+		</a>
 	  </div>
 	</div>
   )

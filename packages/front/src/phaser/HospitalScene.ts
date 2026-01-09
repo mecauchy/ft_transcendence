@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
+import { api } from "../api/client";
 
 export default class HospitalScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -11,6 +13,10 @@ export default class HospitalScene extends Phaser.Scene {
 
 	private game_started: boolean = false;
 
+	private patientsSaved: number = 0;
+	private readonly TOTAL_PATIENTS = 3;
+	private savedFolders: string[] = [];
+
 	private readonly DROP_ZONE = {
 		x: 0.5,
 		y: 0.15,
@@ -18,9 +24,9 @@ export default class HospitalScene extends Phaser.Scene {
 	}
 
 	private readonly FOLDERS_LAYOUT = [
-		{ folder:"folder1", x: 0.2, y: 0.64 },
-		{ folder:"folder2", x: 0.5, y: 0.59 },
-		{ folder:"folder3", x: 0.8, y: 0.64 },
+		{folder:"folder1", x: 0.2, y: 0.64},
+		{folder:"folder2", x: 0.5, y: 0.59},
+		{folder:"folder3", x: 0.8, y: 0.64},
 	];
 
 	private folders: Record<string, Phaser.GameObjects.Sprite> = {};
@@ -44,7 +50,7 @@ export default class HospitalScene extends Phaser.Scene {
 		this.load.image("document3", "assets/hospital/document3.png");
 	}
 
-	create() {
+	async create() {
 		this.bg = this.add.image(0, 0, "hospital_bg").setOrigin(0.5);
 		this.folders.folder1 = this.add.sprite(0, 0, "folder1");
 		this.folders.folder2 = this.add.sprite(0, 0, "folder2");
@@ -55,12 +61,48 @@ export default class HospitalScene extends Phaser.Scene {
 
 		this.popup = new Popup(this);
 
-		if (!this.game_started) {
+		// load saved patients from database
+		await this.loadSavedFolders();
+		this.patientsSaved = this.savedFolders.length;
+
+		// hide folders for saved patients
+		for (const folderKey of this.savedFolders) {
+			const folder = this.folders[folderKey];
+			if (folder) {
+				folder.setVisible(false);
+				folder.disableInteractive();
+			}
+		}
+
+		// check if all patients are saved
+		if (this.patientsSaved >= this.TOTAL_PATIENTS) {
 			this.popup.show(
-				"Due to limited resources, only one patient can be reviewed first.",
+				t("scenes.hospital.allSaved"),
 				[
 					{
-						label: "Got it",
+						label: t("common.ok"),
+						onClick: () => {
+							this.popup.hide();
+							this.scene.start("WorldMapScene");
+							this.popup.destroy();
+						},
+					},
+				]
+			);
+			this.centerScene();
+			this.scale.on("resize", this.onResize, this);
+			this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+				this.scale.off("resize", this.onResize, this);
+			});
+			return;
+		}
+
+		if (!this.game_started) {
+			this.popup.show(
+				t("scenes.hospital.welcome"),
+				[
+					{
+						label: t("scenes.hospital.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -71,9 +113,9 @@ export default class HospitalScene extends Phaser.Scene {
 			);
 		}
 		this.centerScene();
-		this.makeFolderInteractive(this.folders.folder1, "Folder 1");
-		this.makeFolderInteractive(this.folders.folder2, "Folder 2");
-		this.makeFolderInteractive(this.folders.folder3, "Folder 3");
+		this.makeFolderInteractive(this.folders.folder1, "folder1", t("scenes.hospital.folder1"));
+		this.makeFolderInteractive(this.folders.folder2, "folder2", t("scenes.hospital.folder2"));
+		this.makeFolderInteractive(this.folders.folder3, "folder3", t("scenes.hospital.folder3"));
 		this.makeDocumentInteractive(this.documents.document1);
 		this.makeDocumentInteractive(this.documents.document2);
 		this.makeDocumentInteractive(this.documents.document3);
@@ -115,8 +157,8 @@ export default class HospitalScene extends Phaser.Scene {
 		});
 	}
 
-	private makeFolderInteractive(folder: Phaser.GameObjects.Sprite, folderName: string) {
-		folder.setInteractive({ draggable: true });
+	private makeFolderInteractive(folder: Phaser.GameObjects.Sprite, folderKey: string, folderName: string) {
+		folder.setInteractive({draggable: true});
 		folder.on("pointerover", () => {
 			const baseScale = folder.getData("baseScale");
 			folder.setScale(baseScale * 1.05);
@@ -131,10 +173,10 @@ export default class HospitalScene extends Phaser.Scene {
 			if (this.popup_active) return;
 			const currentTime = this.time.now;
 			if (currentTime - this.lastClickTime < this.DOUBLE_CLICK_THRESHOLD) {
-				// Detected double click
+				// Detected double click - use folderKey to determine which document
 				this.openDocument(
-					folderName === "Folder 1" ? this.documents.document1 :
-					folderName === "Folder 2" ? this.documents.document2 :
+					folderKey === "folder1" ? this.documents.document1 :
+					folderKey === "folder2" ? this.documents.document2 :
 					this.documents.document3
 				);
 				this.popup_active = true;
@@ -170,7 +212,7 @@ export default class HospitalScene extends Phaser.Scene {
 				folder.setData("dropped", true);
 				folder.setData("dropNX", this.DROP_ZONE.x);
 				folder.setData("dropNY", this.DROP_ZONE.y);
-				this.confirmFolderDrop(folder, folderName);
+				this.confirmFolderDrop(folder, folderKey);
 				return;
 			}
 			this.tweens.add({
@@ -184,26 +226,32 @@ export default class HospitalScene extends Phaser.Scene {
 		});
 	}
 
-	private confirmFolderDrop(folder: Phaser.GameObjects.Sprite, folderName: string) {
+	private confirmFolderDrop(folder: Phaser.GameObjects.Sprite, folderKey: string) {
 		let name;
-		if (folderName === "Folder 1") name = "Alex";
-		else if (folderName === "Folder 2") name = "Maya";
-		else name = "Daniel";
+		if (folderKey === "folder1") {
+			name = "Alex";
+		} else if (folderKey === "folder2") {
+			name = "Maya";
+		} else {
+			name = "Daniel";
+		}
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			`You have selected ${name}'s medical records for review. Proceed?`,
+			t("scenes.hospital.confirmReview", { name }),
 			[
 				{
-					label: "Yes",
+					label: t("common.yes"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
-						this.end_game();
+						folder.setVisible(false);
+						folder.disableInteractive();
+						this.end_game(folderKey);
 					},
 				},
 				{
-					label: "No",
+					label: t("common.no"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -221,14 +269,55 @@ export default class HospitalScene extends Phaser.Scene {
 		);
 	}
 
-	private end_game() {
+	private async updateStressConfidence() {
+		// Placeholder for updating stress and confidence values
+		try {
+			const stressIncrease = 25;
+			const confidenceDecrease = 25;
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+			const newConfidence = Math.min(100, currentConfidence - confidenceDecrease);
+			const newStress = Math.max(0, currentStress + stressIncrease);
+
+			await api.updateProfile({
+				stressLevel: newStress,
+				confidenceLevel: newConfidence
+			});
+			console.log(`Hospital visit: increased stress by ${stressIncrease} (${currentStress} -> ${newStress}), decreased confidence by ${confidenceDecrease} (${currentConfidence} -> ${newConfidence})`);
+		} catch (error) {
+			console.error('Failed to update stress/confidence levels:', error);
+		}
+	}
+
+	private async end_game(folderKey?: string) {
+		this.patientsSaved++;
+
+		// save completed folder
+		if (folderKey) {
+			await this.saveFolderToStorage(folderKey);
+		}
+		
+		await this.updateStressConfidence();
+
+		// send result to backend for achievements
+		try {
+			await api.sendHospitalResult({
+				patientsSaved: this.patientsSaved,
+				totalPatients: this.TOTAL_PATIENTS,
+			});
+			console.log('Hospital result sent to backend:', this.patientsSaved, '/', this.TOTAL_PATIENTS);
+		} catch (error) {
+			console.error('Failed to send hospital result:', error);
+		}
+
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			"Thank you for reviewing the medical records. Your expertise is invaluable in providing the best care for our patients.",
+			t("scenes.hospital.thankYou"),
 			[
 				{
-					label: "Finish",
+					label: t("common.finish"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -238,6 +327,31 @@ export default class HospitalScene extends Phaser.Scene {
 				},
 			]
 		);
+	}
+
+	private async loadSavedFolders(): Promise<void> {
+		try {
+			const response = await api.getGameProgress();
+			if (response.success && response.progress.hospitalSavedFolders) {
+				this.savedFolders = response.progress.hospitalSavedFolders as string[];
+			} else {
+				this.savedFolders = [];
+			}
+		} catch (error) {
+			console.error('Failed to load game progress from server:', error);
+			this.savedFolders = [];
+		}
+	}
+
+	private async saveFolderToStorage(folderKey: string): Promise<void> {
+		try {
+			if (!this.savedFolders.includes(folderKey)) {
+				this.savedFolders.push(folderKey);
+				await api.updateGameProgress('hospitalSavedFolders', this.savedFolders);
+			}
+		} catch (error) {
+			console.error('Failed to save folder to server:', error);
+		}
 	}
 
 	private openDocument(document: Phaser.GameObjects.Sprite) {

@@ -68,7 +68,6 @@ services:
 
   api-gateway:
     environment:
-      - NODE_ENV=production
       - LOG_LEVEL=info
       - VAULT_ADDRESS=http://vault:8200
       - CORS_ORIGIN=https://192.168.1.57
@@ -81,7 +80,6 @@ services:
 
   auth-service:
     environment:
-      - NODE_ENV=production
       - LOG_LEVEL=info
       - VAULT_ADDR=http://vault:8200
       - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt

@@ -1,0 +1,429 @@
+generator client {
+	provider	= "prisma-client-js"
+}
+
+datasource db {
+	provider	= "postgresql"
+	url		= env("DATABASE_URL")
+}
+
+// ENUMS
+enum UserRole {
+	PATIENT
+	DOCTOR
+	ADMIN
+}
+
+enum FriendStatus {
+	PENDING
+	ACCEPTED
+	BLOCKED
+}
+
+enum PongMode {
+	AI
+	LOCAL
+}
+
+enum PongDifficulty {
+	EASY
+	MEDIUM
+	HARD
+	LOCAL
+}
+
+enum PongWinner {
+	PLAYER
+	AI
+	PLAYER1
+	PLAYER2
+}
+
+enum SessionMode {
+	AI
+	P2P
+}
+
+enum SessionStatus {
+	WAITING
+	ACTIVE
+	PAUSED
+	COMPLETED
+	TERMINATED
+}
+
+enum TokenStatus {
+	ACTIVE
+	REVOKED
+}
+
+enum TokenType {
+	REFRESH
+	API
+}
+
+enum AchievementRarity {
+	COMMON
+	UNCOMMON
+	RARE
+	EPIC
+	LEGENDARY
+}
+
+enum NotificationType {
+	FRIEND_REQUEST
+	FRIEND_ACCEPTED
+	MESSAGE
+	ACHIEVEMENT
+	LEVEL_UP
+	SYSTEM
+	GAME_INVITE
+}
+
+// MODELS
+
+model User {
+	id				BigInt		@id @default(autoincrement()) @map("user_id")
+	username		String		@unique @map("user_username") @db.VarChar(32)
+	email			String		@unique @map("user_email") @db.VarChar(255)
+	password		String?		@map("user_password")
+	dob				DateTime	@map("user_dob") @db.Date
+	role			UserRole	@default(PATIENT) @map("user_role")
+	twofaEnabled	Boolean		@default(false) @map("user_twofa_enabled")
+	twofaSecret		String?		@map("user_twofa_secret")
+	createdAt		DateTime	@default(now()) @map("user_creation_date") @db.Timestamptz
+	updatedAt		DateTime	@default(now()) @updatedAt @map("user_modification_date") @db.Timestamptz
+
+	// gamification fields
+	totalXp			Int		@default(0) @map("total_xp")
+	currentLevel	Int		@default(1) @map("current_level")
+	stressLevel		Int		@default(50) @map("stress_level")     // 0-100 scale
+	confidenceLevel	Int		@default(50) @map("confidence_level") // 0-100 scale
+	displayName		String?	@map("display_name") @db.VarChar(64)
+	avatarUrl		String?	@map("avatar_url")
+	isActive		Boolean	@default(true) @map("is_active")
+	lastActiveAt	DateTime?	@map("last_active_at") @db.Timestamptz
+
+	// relations
+	oauth		OAuth?
+	userKey		UserKey?
+	settings	Settings?
+
+	// friendships
+	friendsInitiated	Friend[]	@relation("FriendInitiator")
+	friendsReceived		Friend[]	@relation("FriendReceiver")
+	
+	// sessions
+	patientSessions	Session[]	@relation("PatientSessions")
+	doctorSessions	Session[]	@relation("DoctorSessions")
+	
+	// logs
+	eventLogs	EventLog[]
+	
+	// achievements
+	achievements	UserAchievement[]
+	xpLogs			XpLog[]
+
+	// chat
+	sentMessages		Message[]		@relation("MessageSender")
+	receivedMessages	Message[]		@relation("MessageReceiver")
+	conversations1		Conversation[]	@relation("ConversationUser1")
+	conversations2		Conversation[]	@relation("ConversationUser2")
+
+	// notifications
+	notifications		Notification[]
+
+	// api keys
+	apiKeys				ApiKey[]
+
+	@@index([email], map: "idx_users_email")
+	@@index([username], map: "idx_users_username")
+	@@index([totalXp(sort: Desc)], map: "idx_users_xp")
+	@@index([currentLevel(sort: Desc)], map: "idx_users_level")
+	@@map("users")
+}
+
+model OAuth {
+	id				BigInt		@id @default(autoincrement()) @map("oauth_id")
+	userId			BigInt		@unique @map("oauth_userid")
+	provider		String		@map("oauth_provider")
+	providerUserId	String		@map("oauth_provider_userid")
+	createdAt		DateTime	@default(now())@map("oauth_creation_date") @db.Timestamptz
+
+	// relations
+	user			User		@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@unique([provider, providerUserId])
+	@@map("oauth")
+}
+
+model UserKey {
+	id			BigInt		@id @default(autoincrement()) @map("key_id")
+	userId		BigInt		@unique @map("key_userid")
+	token		String		@map("key_token")
+	type		TokenType	@map("key_type")
+	status		TokenStatus	@default(ACTIVE) @map("key_status")
+	createdAt	DateTime	@default(now()) @map("key_creation_date") @db.Timestamptz
+	expiresAt	DateTime?	@map("key_expiry_date") @db.Timestamptz
+
+	// relations
+	user	User	@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_userkeys_userid")
+	@@index([status], map: "idx_userkeys_status")
+	@@map("user_keys")
+}
+
+model Settings {
+	id				BigInt	@id @default(autoincrement()) @map("settings_id")
+	userId			BigInt	@unique @map("settings_userid")
+	avatar			String?	@map("settings_avatar")
+	colour			String?	@map("settings_colour") @db.VarChar(32)
+	locale			String	@default("fr") @map("settings_locale") @db.VarChar(5)
+	gameProgress	Json	@default("{}") @map("game_progress")
+
+	// relations
+	user	User	@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_settings_user")
+	@@map("settings")
+}
+
+model Friend {
+	initiatorId BigInt			@map("friend_id")
+	receiverId	BigInt			@map("friend_userid")
+	status		FriendStatus	@default(PENDING) @map("friend_status")
+	createdAt	DateTime		@default(now()) @map("friend_creation_date") @db.Timestamptz
+
+	// relations
+	initiator	User	@relation("FriendInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+	receiver	User	@relation("FriendReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+	@@id([initiatorId, receiverId])
+	@@index([receiverId], map: "idx_friends_friend")
+	@@index([status], map: "idx_friends_status")
+	@@map("friends")
+}
+
+model GamePong {
+	id			BigInt			@id @default(autoincrement()) @map("game_pong_id")
+	playerId	BigInt?			@map("game_pong_player_id")
+	mode		PongMode		@map("game_pong_mode")
+	difficulty	PongDifficulty	@map("game_pong_difficulty")
+	score1		Int				@map("game_pong_score_1")
+	score2		Int				@map("game_pong_score_2")
+	winner		PongWinner		@map("game_pong_winner")
+	startedAt	DateTime?		@map("game_pong_started_at") @db.Timestamptz
+	endedAt		DateTime?		@map("game_pong_ended_at") @db.Timestamptz
+
+	@@index([playerId], map: "game_pong_player_id")
+}
+
+model GameBreathe {
+	id			BigInt		@id @default(autoincrement()) @map("game_breathe_id")
+	playerId	BigInt?		@map("game_breathe_player_id")
+	startedAt	DateTime?	@map("game_breathe_started_at") @db.Timestamptz
+	endedAt		DateTime?	@map("game_breathe_ended_at") @db.Timestamptz
+
+	@@index([playerId], map: "game_breathe_player_id")
+}
+
+model Scenario {
+	id					BigInt		@id @default(autoincrement()) @map("scenario_id")
+	title				String		@map("scenario_title")
+	description			String?		@map("scenario_description")
+	difficulty			String		@default("MEDIUM") @map("scenario_difficulty")
+	estimatedDuration	Int			@default(30) @map("estimated_duration")
+	logicTree			Json		@map("scenario_logic_tree")
+	version				Int			@default(1) @map("scenario_version")
+	createdAt			DateTime	@default(now()) @map("scenario_created_at") @db.Timestamptz
+	updatedAt			DateTime	@default(now()) @updatedAt @map("scenario_updated_at") @db.Timestamptz
+
+	// relations
+	sessions	Session[]
+
+	@@map("scenarios")
+}
+
+model Session {
+	id				String			@id @default(uuid())
+	patientId		BigInt?			@map("patient_id")
+	doctorId		BigInt?			@map("doctor_id")
+	scenarioId		BigInt?			@map("scenario_id")
+	mode			SessionMode
+	status			SessionStatus	@default(WAITING)
+	createdAt		DateTime		@default(now()) @map("created_at") @db.Timestamptz
+	updatedAt		DateTime		@default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+	endedAt			DateTime?		@map("ended_at") @db.Timestamptz
+	finalMetrics	Json?			@map("final_metrics")
+
+	// relations
+	patient		User?		@relation("PatientSessions", fields: [patientId], references: [id], onDelete: SetNull)
+	doctor		User?		@relation("DoctorSessions", fields: [doctorId], references: [id], onDelete: SetNull)
+	scenario	Scenario?	@relation(fields: [scenarioId], references: [id], onDelete: Restrict)
+	eventLogs	EventLog[]
+	xpLogs		XpLog[]
+
+	@@index([patientId], map: "idx_sessions_patient")
+	@@index([doctorId], map: "idx_sessions_doctor")
+	@@index([scenarioId], map: "idx_sessions_scenario")
+	@@index([status], map: "idx_sessions_status")
+	@@map("sessions")
+}
+
+model EventLog {
+	id			BigInt		@id @default(autoincrement())
+	sessionId	String		@map("session_id")
+	sequenceId	Int			@map("sequence_id")
+	eventType	String		@map("event_type")
+	emitterId	BigInt?		@map("emitter_id")
+	payload		Json
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	session		Session		@relation(fields: [sessionId], references: [id], onDelete: Cascade)
+	emitter		User?		@relation(fields: [emitterId], references: [id], onDelete: SetNull)
+
+	@@unique([sessionId, sequenceId])
+	@@index([sessionId, sequenceId], map: "idx_event_logs_session_seq")
+	@@index([emitterId], map: "idx_event_logs_emitter")
+	@@index([eventType], map: "idx_event_logs_type")
+	@@map("event_logs")
+}
+
+model Achievement {
+	id				String				@id @default(uuid())
+	code			String				@unique @db.VarChar(64)
+	name			String				@db.VarChar(128)
+	description		String
+	iconUrl			String?				@map("icon_url")
+	xpReward		Int					@default(0) @map("xp_reward")
+	rarity			AchievementRarity	@default(COMMON)
+	category		String				@default("general") @db.VarChar(64)
+	conditionJson	Json				@map("condition_json")
+	isHidden		Boolean				@default(false) @map("is_hidden")
+	createdAt		DateTime			@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	userAchievements UserAchievement[]
+
+	@@index([category], map: "idx_achievements_category")
+	@@index([rarity], map: "idx_achievements_rarity")
+	@@map("achievements")
+}
+
+model UserAchievement {
+	id				String		@id @default(uuid())
+	userId			BigInt		@map("user_id")
+	achievementId	String		@map("achievement_id")
+	unlockedAt		DateTime	@default(now()) @map("unlocked_at") @db.Timestamptz
+
+	// relations
+	user			User		@relation(fields: [userId], references: [id], onDelete: Cascade)
+	achievement	Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+	@@unique([userId, achievementId])
+	@@index([userId], map: "idx_user_achievements_user")
+	@@index([unlockedAt(sort: Desc)], map: "idx_user_achievements_date")
+	@@map("user_achievements")
+}
+
+model XpLog {
+	id			String		@id @default(uuid())
+	userId		BigInt		@map("user_id")
+	amount		Int
+	reason		String		@db.VarChar(255)
+	sessionId	String?		@map("session_id")
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	user		User		@relation(fields: [userId], references: [id], onDelete: Cascade)
+	session	Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+	@@index([userId], map: "idx_xp_logs_user")
+	@@index([createdAt(sort: Desc)], map: "idx_xp_logs_date")
+	@@index([sessionId], map: "idx_xp_logs_session")
+	@@map("xp_logs")
+}
+
+// CHAT MODELS
+
+model Conversation {
+	id			String		@id @default(uuid())
+	user1Id		BigInt		@map("user1_id")
+	user2Id		BigInt		@map("user2_id")
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+	updatedAt	DateTime	@default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+	// relations
+	user1		User		@relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+	user2		User		@relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+	messages	Message[]
+
+	@@unique([user1Id, user2Id])
+	@@index([user1Id], map: "idx_conversations_user1")
+	@@index([user2Id], map: "idx_conversations_user2")
+	@@map("conversations")
+}
+
+model Message {
+	id				String		@id @default(uuid())
+	conversationId	String		@map("conversation_id")
+	senderId		BigInt		@map("sender_id")
+	receiverId		BigInt		@map("receiver_id")
+	content			String		@db.Text
+	isRead			Boolean		@default(false) @map("is_read")
+	createdAt		DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	conversation	Conversation	@relation(fields: [conversationId], references: [id], onDelete: Cascade)
+	sender			User			@relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+	receiver		User			@relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+	@@index([conversationId], map: "idx_messages_conversation")
+	@@index([senderId], map: "idx_messages_sender")
+	@@index([receiverId], map: "idx_messages_receiver")
+	@@index([createdAt(sort: Desc)], map: "idx_messages_date")
+	@@map("messages")
+}
+
+// NOTIFICATION MODEL
+model Notification {
+	id			String				@id @default(uuid())
+	userId		BigInt				@map("user_id")
+	type		NotificationType
+	title		String				@db.VarChar(128)
+	message		String				@db.Text
+	data		Json?
+	isRead		Boolean				@default(false) @map("is_read")
+	createdAt	DateTime			@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	user		User				@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_notifications_user")
+	@@index([isRead], map: "idx_notifications_read")
+	@@index([createdAt(sort: Desc)], map: "idx_notifications_date")
+	@@map("notifications")
+}
+
+// API KEY MODEL
+model ApiKey {
+	id			String		@id @default(uuid())
+	userId		BigInt		@map("user_id")
+	name		String		@db.VarChar(64)
+	keyHash		String		@unique @map("key_hash")
+	keyPrefix	String		@map("key_prefix") @db.VarChar(8)
+	permissions	String[]	@default([])
+	lastUsedAt	DateTime?	@map("last_used_at") @db.Timestamptz
+	expiresAt	DateTime?	@map("expires_at") @db.Timestamptz
+	isActive	Boolean		@default(true) @map("is_active")
+	createdAt	DateTime	@default(now()) @map("created_at") @db.Timestamptz
+
+	// relations
+	user		User		@relation(fields: [userId], references: [id], onDelete: Cascade)
+
+	@@index([userId], map: "idx_api_keys_user")
+	@@index([isActive], map: "idx_api_keys_active")
+	@@map("api_keys")
+}

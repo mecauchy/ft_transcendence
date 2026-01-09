@@ -9,6 +9,11 @@ path "secret/data/global/*" {
   capabilities = ["read"]
 }
 
+# OAuth credentials (42 API)
+path "secret/data/oauth/*" {
+  capabilities = ["read", "list"]
+}
+
 # Vault token renewal
 path "sys/leases/renew" {
   capabilities = ["update"]

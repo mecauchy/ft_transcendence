@@ -19,8 +19,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Target {{ $labels.job }} est DOWN"
-          description: "La target {{ $labels.instance }} du job {{ $labels.job }} est inaccessible."
+          summary: "Target {{$labels.job}} est DOWN"
+          description: "La target {{$labels.instance}} du job {{$labels.job}} est inaccessible depuis plus d'1 minute."
 
       - alert: PrometheusConfigurationReloadFailure
         expr: prometheus_config_last_reload_successful != 1

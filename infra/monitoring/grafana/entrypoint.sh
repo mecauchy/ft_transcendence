@@ -45,7 +45,7 @@ while [ $ATTEMPTS -lt $MAX_ATTEMPTS ] && [ -z "$GRAFANA_PASS" ]; do
 done
 
 if [ -z "$GRAFANA_PASS" ]; then
-  echo "Error: Failed to fetch Grafana password from Vault after $MAX_ATTEMPTS attempts"
+  echo "error:		Failed to fetch Grafana password from Vault after $MAX_ATTEMPTS attempts"
   echo "Last Vault response: $VAULT_RESPONSE"
   exit 1
 fi

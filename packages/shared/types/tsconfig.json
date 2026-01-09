@@ -14,7 +14,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "noEmit": false
+    "noEmit": true
   },
   "include": [
     "./**/*.ts"

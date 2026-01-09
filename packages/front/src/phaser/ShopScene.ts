@@ -1,9 +1,29 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
+import { api } from "../api/client";
+
+// item effects on meters
+const ITEM_EFFECTS: Record<string, { stress?: number; confidence?: number }> = {
+	"anxiety pills": { stress: -10, confidence: -5 },
+	"sleeping pills": { stress: -5, confidence: -3 },
+	"wine": { confidence: 8, stress: 3 },
+	"chocolate": { stress: -3 }, 
+	"water": { stress: -2 }, 
+	"flower": { stress: -2, confidence: 2 },
+	"book": { stress: -3, confidence: 3 },
+	"bear": { stress: -4 }, 
+	"duck": { stress: -2, confidence: 1 }, 
+	"ball": { confidence: 2 },
+	"camera": { confidence: 3 },
+	"controller": { stress: -2 }, 
+	"phone": { stress: 2, confidence: -1 },
+	"soap": { stress: -1 },
+};
 
 export default class ShopScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
-	private readonly basket_position = { x: 0.5, y: 0.85 };
+	private readonly basket_position = {x: 0.5, y: 0.85};
 	
 
 	private bg!: Phaser.GameObjects.Image;
@@ -15,20 +35,20 @@ export default class ShopScene extends Phaser.Scene {
 	private popup_active: boolean = true;
 
 	private readonly ITEMS_LAYOUT = [
-		{ item: "duck", x: 0.1, y: 0.15 },
-		{ item: "ball", x: 0.3, y: 0.15 },
-		{ item: "anxiety pills", x: 0.5, y: 0.15 },
-		{ item: "bear", x: 0.7, y: 0.15 },
-		{ item: "book", x: 0.88, y: 0.15 },
-		{ item: "camera", x: 0.1, y: 0.37 },
-		{ item: "chocolate", x: 0.3, y: 0.37 },
-		{ item: "controller", x: 0.5, y: 0.37 },
-		{ item: "flower", x: 0.7, y: 0.37 },
-		{ item: "phone", x: 0.88, y: 0.37 },
-		{ item: "sleeping pills", x: 0.1, y: 0.57 },
-		{ item: "soap", x: 0.35, y: 0.57 },
-		{ item: "water", x: 0.65, y: 0.57 },
-		{ item: "wine", x: 0.88, y: 0.57 },
+		{item: "duck", x: 0.1, y: 0.15},
+		{item: "ball", x: 0.3, y: 0.15},
+		{item: "anxiety pills", x: 0.5, y: 0.15},
+		{item: "bear", x: 0.7, y: 0.15},
+		{item: "book", x: 0.88, y: 0.15},
+		{item: "camera", x: 0.1, y: 0.37},
+		{item: "chocolate", x: 0.3, y: 0.37},
+		{item: "controller", x: 0.5, y: 0.37},
+		{item: "flower", x: 0.7, y: 0.37},
+		{item: "phone", x: 0.88, y: 0.37},
+		{item: "sleeping pills", x: 0.1, y: 0.57},
+		{item: "soap", x: 0.35, y: 0.57},
+		{item: "water", x: 0.65, y: 0.57},
+		{item: "wine", x: 0.88, y: 0.57},
 	];
 
 	private items_picks: string[] = [];
@@ -74,14 +94,15 @@ export default class ShopScene extends Phaser.Scene {
 		this.items.water = this.add.sprite(0, 0, "water")
 		this.items.wine = this.add.sprite(0, 0, "wine")
 		this.popup = new Popup(this);
+
 		this.items_picks = [];
 
 		if (!this.game_started) {
 			this.popup.show(
-				"You have entered the shop. Browse 3 items and make your purchases.",
+				t("scenes.shop.welcome"),
 				[
 					{
-						label: "Got it",
+						label: t("scenes.shop.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
@@ -125,10 +146,10 @@ export default class ShopScene extends Phaser.Scene {
 			if (this.popup_active) return;
 			this.popup_active = true;
 			this.popup.show(
-				`You selected the ${itemName}. Would you like to purchase it?`,
+				t("scenes.shop.selectedItem", { item: itemName }),
 				[
 					{
-						label: "Buy",
+						label: t("common.buy"),
 						onClick: () => {
 							this.popup.hide();
 							item.setData("picked", true);
@@ -152,7 +173,7 @@ export default class ShopScene extends Phaser.Scene {
 						},
 					},
 					{
-						label: "Cancel",
+						label: t("common.cancel"),
 						onClick: () => {
 							this.popup.hide();
 							this.popup_active = false;
@@ -168,10 +189,10 @@ export default class ShopScene extends Phaser.Scene {
 		if (this.popup_active) return;
 		this.popup_active = true;
 		this.popup.show(
-			`You have purchased: ${items_list}.`,
+			t("scenes.shop.purchased", { items: items_list }),
 			[
 				{
-					label: "OK",
+					label: t("common.ok"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -182,14 +203,16 @@ export default class ShopScene extends Phaser.Scene {
 		);
 	}
 
-	private end_shopping() {
+	private async end_shopping() {
 		if (this.popup_active) return;
 		this.popup_active = true;
+		await this.applyItemEffects();
+		await this.sendShopResults();
 		this.popup.show(
-			"Returning to the world map.",
+			t("common.returningToMap"),
 			[
 				{
-					label: "OK",
+					label: t("common.ok"),
 					onClick: () => {
 						this.popup.hide();
 						this.popup_active = false;
@@ -198,6 +221,61 @@ export default class ShopScene extends Phaser.Scene {
 				},
 			]
 		);
+	}
+
+	private async sendShopResults(): Promise<void> {
+		try {
+			// addiction combo trigger
+			const hasWine = this.items_picks.includes("wine");
+			const hasSleepingPills = this.items_picks.includes("sleeping pills");
+			const hasAnxietyPills = this.items_picks.includes("anxiety pills");
+			const isAddiction = hasWine && hasSleepingPills && hasAnxietyPills;
+
+			await api.sendShopResult({
+				itemsBought: this.items_picks.length,
+				items: this.items_picks,
+				addiction: isAddiction,
+			});
+			console.log('Shop result sent to backend:', this.items_picks.length, 'items', isAddiction ? '(addiction combo)' : '');
+		} catch (error) {
+			console.error('Failed to send shop result:', error);
+		}
+	}
+
+	private async applyItemEffects(): Promise<void> {
+		try {
+			let totalStressChange = 0;
+			let totalConfidenceChange = 0;
+
+			for (const item of this.items_picks) {
+				const effect = ITEM_EFFECTS[item];
+				if (effect) {
+					totalStressChange += effect.stress ?? 0;
+					totalConfidenceChange += effect.confidence ?? 0;
+				}
+			}
+
+			if (totalStressChange === 0 && totalConfidenceChange === 0) return;
+
+			// get current profile
+			const profile = await api.getProfile();
+			const currentStress = profile.stressLevel ?? 50;
+			const currentConfidence = profile.confidenceLevel ?? 50;
+
+			// apply changes with clamping
+			const newStress = Math.max(0, Math.min(100, currentStress + totalStressChange));
+			const newConfidence = Math.max(0, Math.min(100, currentConfidence + totalConfidenceChange));
+
+			// update profiule
+			await api.updateProfile({
+				stressLevel: Math.round(newStress),
+				confidenceLevel: Math.round(newConfidence),
+			});
+
+			console.log(`Shop items effect: stress ${currentStress} -> ${Math.round(newStress)}, confidence ${currentConfidence} -> ${Math.round(newConfidence)}`);
+		} catch (error) {
+			console.error('Failed to apply shop item effects:', error);
+		}
 	}
 
 	private onResize() {

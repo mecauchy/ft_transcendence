@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import { t } from "./i18nHelper";
+import {api} from "../api"
 
 export default class WorldMapScene extends Phaser.Scene {
 	private player!: Phaser.GameObjects.Sprite;
@@ -18,6 +20,16 @@ export default class WorldMapScene extends Phaser.Scene {
 	private parkingLabel!: Phaser.GameObjects.Text;
 	private coffeeLabel!: Phaser.GameObjects.Text;
 
+	// meters
+	private stressMeterBg!: Phaser.GameObjects.Rectangle;
+	private stressMeterFill!: Phaser.GameObjects.Rectangle;
+	private stressMeterLabel!: Phaser.GameObjects.Text;
+	private confidenceMeterBg!: Phaser.GameObjects.Rectangle;
+	private confidenceMeterFill!: Phaser.GameObjects.Rectangle;
+	private confidenceMeterLabel!: Phaser.GameObjects.Text;
+	private stressValue: number = 50;
+	private confidenceValue: number = 50;
+
 	// Normalized player position (0–1)
 	private playerNX = 0.5;
 	private playerNY = 0.5;
@@ -25,23 +37,23 @@ export default class WorldMapScene extends Phaser.Scene {
 	private basePlayerScale = 0.3;
 
 	// Normalized building positions
-	private posShop = { x: 0.28, y: 0.34 };
-	private posHospital = { x: 0.09, y: 0.32 };
-	private posHouse = { x: 0.7, y: 0.19 };
-	private posParking = { x: 0.72, y: 0.74 };
-	private posCoffee = { x: 0.7, y: 0.58 };
+	private posShop = {x: 0.28, y: 0.34};
+	private posHospital = {x: 0.09, y: 0.32};
+	private posHouse = {x: 0.7, y: 0.19};
+	private posParking = {x: 0.72, y: 0.74};
+	private posCoffee = {x: 0.7, y: 0.58};
 
 	private waypoints = {
-		shop: { x: 0.25, y: 0.49 },
-		hospital: { x: 0.1, y: 0.49 },
-		house: { x: 0.7, y: 0.31 },
-		parking: { x: 0.79, y: 0.75 },
-		coffee: { x: 0.663, y: 0.73 },
-		center: { x: 0.5, y: 0.5 },
-		street: { x: 0.82, y: 0.4 },
+		shop: {x: 0.25, y: 0.49},
+		hospital: {x: 0.1, y: 0.49},
+		house: {x: 0.7, y: 0.31},
+		parking: {x: 0.79, y: 0.75},
+		coffee: {x: 0.663, y: 0.73},
+		center: {x: 0.5, y: 0.5},
+		street: {x: 0.82, y: 0.4},
 	}
 
-	private routes: Record<string, Array<{ x: number; y: number }>> = {
+	private routes: Record<string, Array<{x: number; y: number}>> = {
 		shop: [
 			this.waypoints.center,
 			this.waypoints.shop,
@@ -67,7 +79,7 @@ export default class WorldMapScene extends Phaser.Scene {
 		],
 	};
 
-	private moveQueue: Array<{ x: number; y: number }> = [];
+	private moveQueue: Array<{x: number; y: number}> = [];
 	private isMoving = false;
 	private moveSpeed = 0.25;
 
@@ -112,14 +124,20 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.parking = this.add.sprite(0, 0, "parking");
 		this.coffee = this.add.sprite(0, 0, "coffee");
 
-		this.shopLabel = this.add.text(0, 0, "Shop", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.hospitalLabel = this.add.text(0, 0, "Hospital", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.houseLabel = this.add.text(0, 0, "House", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.parkingLabel = this.add.text(0, 0, "Parking", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
-		this.coffeeLabel = this.add.text(0, 0, "Coffee", { fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff' });
+		this.shopLabel = this.add.text(0, 0, t("scenes.worldMap.shop"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.hospitalLabel = this.add.text(0, 0, t("scenes.worldMap.hospital"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.houseLabel = this.add.text(0, 0, t("scenes.worldMap.house"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.parkingLabel = this.add.text(0, 0, t("scenes.worldMap.parking"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
+		this.coffeeLabel = this.add.text(0, 0, t("scenes.worldMap.coffee"), {fontFamily: 'GameFont', fontSize: '16px', color: '#ffffffff'});
 
+		// create the meters
+		this.createMeters();
+		
 		this.popup = new Popup(this);
 		this.centerScene();
+
+		// fetch initial values
+		this.fetchStressConfidence();
 
 
 		this.scale.on("resize", this.onResize, this);
@@ -146,7 +164,7 @@ export default class WorldMapScene extends Phaser.Scene {
 	// Places a building using normalized coordinates relative to the map
 	private placeBuilding(
 		sprite: Phaser.GameObjects.Sprite,
-		pos: { x: number; y: number },
+		pos: {x: number; y: number},
 		size: number
 	) {
 		sprite.x = this.bg.x + (pos.x - 0.5) * size;
@@ -253,17 +271,20 @@ export default class WorldMapScene extends Phaser.Scene {
 	}
 
 	private createNurseAnimations() {
+		// fixes warnings for animations
+		if (this.anims.exists('nurse-down')) return;
+
 		this.anims.create({
 			key: "nurse-down",
 			frames: [
-				{ key: "nurse-down-1" },
-				{ key: "nurse-down-2" },
-				{ key: "nurse-down-3" },
-				{ key: "nurse-down-4" },
-				{ key: "nurse-down-5" },
-				{ key: "nurse-down-6" },
-				{ key: "nurse-down-7" },
-				{ key: "nurse-down-8" },
+				{key: "nurse-down-1"},
+				{key: "nurse-down-2"},
+				{key: "nurse-down-3"},
+				{key: "nurse-down-4"},
+				{key: "nurse-down-5"},
+				{key: "nurse-down-6"},
+				{key: "nurse-down-7"},
+				{key: "nurse-down-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -272,14 +293,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-left",
 			frames: [
-				{ key: "nurse-left-1" },
-				{ key: "nurse-left-2" },
-				{ key: "nurse-left-3" },
-				{ key: "nurse-left-4" },
-				{ key: "nurse-left-5" },
-				{ key: "nurse-left-6" },
-				{ key: "nurse-left-7" },
-				{ key: "nurse-left-8" },
+				{key: "nurse-left-1"},
+				{key: "nurse-left-2"},
+				{key: "nurse-left-3"},
+				{key: "nurse-left-4"},
+				{key: "nurse-left-5"},
+				{key: "nurse-left-6"},
+				{key: "nurse-left-7"},
+				{key: "nurse-left-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -288,14 +309,14 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-right",
 			frames: [
-				{ key: "nurse-right-1" },
-				{ key: "nurse-right-2" },
-				{ key: "nurse-right-3" },
-				{ key: "nurse-right-4" },
-				{ key: "nurse-right-5" },
-				{ key: "nurse-right-6" },
-				{ key: "nurse-right-7" },
-				{ key: "nurse-right-8" },
+				{key: "nurse-right-1"},
+				{key: "nurse-right-2"},
+				{key: "nurse-right-3"},
+				{key: "nurse-right-4"},
+				{key: "nurse-right-5"},
+				{key: "nurse-right-6"},
+				{key: "nurse-right-7"},
+				{key: "nurse-right-8"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -304,11 +325,11 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.anims.create({
 			key: "nurse-up",
 			frames: [
-				{ key: "nurse-up-1" },
-				{ key: "nurse-up-2" },
-				{ key: "nurse-up-3" },
-				{ key: "nurse-up-4" },
-				{ key: "nurse-up-5" },
+				{key: "nurse-up-1"},
+				{key: "nurse-up-2"},
+				{key: "nurse-up-3"},
+				{key: "nurse-up-4"},
+				{key: "nurse-up-5"},
 			],
 			frameRate: 8,
 			repeat: -1,
@@ -339,6 +360,94 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.makeInteractiveBuilding(this.coffee);
 	}
 
+	private createMeters() {
+		const meterWidth = 100;
+		const meterHeight = 14;
+		
+		// stress meter
+		this.stressMeterBg = this.add.rectangle(0, 0, meterWidth, meterHeight, 0x333333);
+		this.stressMeterBg.setOrigin(0, 0.5);
+		this.stressMeterFill = this.add.rectangle(0, 0, meterWidth * (this.stressValue / 100), meterHeight - 4, 0xff4444);
+		this.stressMeterFill.setOrigin(0, 0.5);
+		this.stressMeterLabel = this.add.text(0, 0, t("common.stress") + ":", {
+			fontSize: '12px',
+			color: '#ffffff',
+		});
+		this.stressMeterLabel.setOrigin(1, 0.5);
+
+		// confidence meter
+		this.confidenceMeterBg = this.add.rectangle(0, 0, meterWidth, meterHeight, 0x333333);
+		this.confidenceMeterBg.setOrigin(0, 0.5);
+		this.confidenceMeterFill = this.add.rectangle(0, 0, meterWidth * (this.confidenceValue / 100), meterHeight - 4, 0x44cc44);
+		this.confidenceMeterFill.setOrigin(0, 0.5);
+		this.confidenceMeterLabel = this.add.text(0, 0, t("common.confidence") + ":", {
+			fontSize: '12px',
+			color: '#ffffff',
+		});
+		this.confidenceMeterLabel.setOrigin(1, 0.5);
+
+		this.stressMeterBg.setDepth(100);
+		this.stressMeterFill.setDepth(101);
+		this.stressMeterLabel.setDepth(100);
+		this.confidenceMeterBg.setDepth(100);
+		this.confidenceMeterFill.setDepth(101);
+		this.confidenceMeterLabel.setDepth(100);
+	}
+
+	private async fetchStressConfidence(): Promise<void> {
+		try {
+			const profile = await api.getProfile();
+			this.stressValue = profile.stressLevel ?? 50;
+			this.confidenceValue = profile.confidenceLevel ?? 50;
+			this.updateMeterFills();
+		} catch (error) {
+			console.error('Failed to fetch stress/confidence:', error);
+		}
+	}
+
+	private updateMeterFills() {
+		const meterWidth = 100;
+		// const meterHeight = 14;
+
+		this.stressMeterFill.width = Math.max(2, meterWidth * (this.stressValue / 100));
+		this.confidenceMeterFill.width = Math.max(2, meterWidth * (this.confidenceValue / 100));
+
+		// color gradient for stress green to red
+		const stressR = Math.floor(255 * (this.stressValue / 100));
+		const stressG = Math.floor(255 * (1 - this.stressValue / 100));
+		this.stressMeterFill.fillColor = (stressR << 16) | (stressG << 8) | 0x44;
+
+		// color for confidence green to blue
+		const confG = Math.floor(150 + 105 * (this.confidenceValue / 100));
+		this.confidenceMeterFill.fillColor = (0x44 << 16) | (confG << 8) | 0x44;
+	}
+
+	private positionMeters() {
+		const padding = 15;
+		// const labelGap = 5;
+		// const meterWidth = 100;
+		const scaleFactor = Math.min(this.scale.width, this.scale.height) / 600;
+
+		const scale = Math.max(0.8, Math.min(1.5, scaleFactor));
+
+		const stressY = padding + 15;
+		this.stressMeterLabel.setPosition(padding + 60 * scale, stressY);
+		this.stressMeterLabel.setScale(scale);
+		this.stressMeterBg.setPosition(padding + 65 * scale, stressY);
+		this.stressMeterBg.setScale(scale);
+		this.stressMeterFill.setPosition(padding + 67 * scale, stressY);
+		this.stressMeterFill.setScale(scale);
+		
+		// Position confidence meter below stress
+		const confidenceY = stressY + 22 * scale;
+		this.confidenceMeterLabel.setPosition(padding + 60 * scale, confidenceY);
+		this.confidenceMeterLabel.setScale(scale);
+		this.confidenceMeterBg.setPosition(padding + 65 * scale, confidenceY);
+		this.confidenceMeterBg.setScale(scale);
+		this.confidenceMeterFill.setPosition(padding + 67 * scale, confidenceY);
+		this.confidenceMeterFill.setScale(scale);
+	}
+
 	// Recomputes layout when screen size or player position changes
 	centerScene() {
 		const size = Math.min(this.scale.width, this.scale.height);
@@ -355,6 +464,9 @@ export default class WorldMapScene extends Phaser.Scene {
 		this.placeAllBuildings(size);
 
 		this.placeAllLabels(size);
+
+		// Position stress/confidence meters
+		this.positionMeters();
 
 		// this.makeAllInteractiveBuildings();
 	}
@@ -378,7 +490,23 @@ export default class WorldMapScene extends Phaser.Scene {
 		}
 	}
 
-	private goPopup(target: { x: number; y: number }) {
+	private showHospitalWarning(locationName: string) {
+		const translatedLocation = t(`scenes.worldMap.${locationName.toLowerCase()}`);
+		this.popup.show(
+			t("scenes.worldMap.hospitalWarning", { location: translatedLocation }),
+			[
+				{
+					label: t("common.ok"),
+					onClick: () => {
+						this.popup.hide();
+						this.moveToCenter();
+					},
+				},
+			]
+		);
+	}
+
+	private goPopup(target: {x: number; y: number}) {
 		let locationName = "";
 		if (target === this.waypoints.shop) locationName = "Shop";
 		else if (target === this.waypoints.hospital) locationName = "Hospital";
@@ -387,12 +515,23 @@ export default class WorldMapScene extends Phaser.Scene {
 		else if (target === this.waypoints.coffee) locationName = "Coffee";
 
 		if (locationName === "") return;
+
+		if (locationName === "Hospital")
+		{
+			this.fetchStressConfidence();
+			if (this.stressValue > 40 || this.confidenceValue < 60) {
+				this.showHospitalWarning(locationName);
+				return;
+			}
+		}
+
+		const translatedLocation = t(`scenes.worldMap.${locationName.toLowerCase()}`);
 		
 		this.popup.show(
-			`You have arrived at the ${locationName}. What would you like to do?`,
+			t("scenes.worldMap.arrivedAt", { location: translatedLocation }),
 			[
 				{
-					label: "Enter",
+					label: t("common.enter"),
 					onClick: () => {
 						console.log(`Entering the ${locationName}...`);
 						this.popup.hide();
@@ -401,7 +540,7 @@ export default class WorldMapScene extends Phaser.Scene {
 					},
 				},
 				{
-					label: "Leave",
+					label: t("common.leave"),
 					onClick: () => {
 						console.log(`Leaving the ${locationName}...`);
 						this.popup.hide();

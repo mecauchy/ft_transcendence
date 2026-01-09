@@ -22,7 +22,7 @@ export interface IInvestigationState {
 
 	// Narrative Progression
 	actionNodeId: string;     // Current dialogue/scenario node identifier
-	narrativeFlags: Record<string, boolean>; // e.g. { "FOUND_DIARY": true} for branching paths
+	narrativeFlags: Record<string, boolean>; // e.g. {"FOUND_DIARY": true} for branching paths
 
 	// Inventory Management (Evidence/Items)
 	inventory: IInventoryItem[]; // List of items/evidence collected during the session

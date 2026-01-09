@@ -1,69 +1,94 @@
-import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
-import { IAuthResponse } from '../../../shared/types/auth'; // importing the contract
-import { UserRole } from '../../../shared/types/user'; // importing enum for user roles
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import {config} from './config';
+import {authRoutes} from './routes/auth';
+import {twoFactorRoutes} from './routes/2fa';
 
-const fastify = Fastify({ logger: false });
-
-console.log('Auth service starting...');
-
-// example route adhering to the contract
-import JwtService from './jwt.service';
-
-fastify.post<{ Reply: IAuthResponse }>('/auth/token', async (request: FastifyRequest, reply: FastifyReply) => {
-	// NOTE: This route is a simplified example. Replace the authentication
-	// checks below with your actual credential validation (passwords, 42 OAuth, etc.).
-
-	// Accept username/userId from body for demo; default to a test user.
-	const body = (request.body as any) || {};
-	const userId = body.userId || '1';
-	const username = body.username || 'dev_user';
-
-	// Sign an access token (15m expiry)
-	const accessToken = JwtService.signToken(userId, username);
-
-	const response: IAuthResponse = {
-		accessToken,
-		refreshToken: 'refreshTokenPlaceholder', // implement refresh token flow separately
-		require2FA: false,
-		user: {
-			id: userId,
-			alias: username,
-			username,
-			email: `${username}@example.com`,
-			avatarUrl: 'https://example.com/avatar.jpg',
-			role: UserRole.ADMIN,
-			preferences: {
-				language: 'en',
-				theme: 'light',
-				accessibility: {
-					highContrast: false,
-					textToSpeech: false,
-					fontSize: 'medium',
-				},
-			},
-			stats: {
-				sessionsCompleted: 0,
-				averageTrustScore: 0,
+const fastify = Fastify({
+	logger: {
+		level:		config.logLevel,
+		transport: {
+			target:	'pino-pretty',
+			options: {
+				colorize:		true,
+				translateTime:	'HH:MM:ss Z',
+				ignore:			'pid,hostname',
 			},
 		},
-	};
-
-	return response;
+	},
 });
 
-// Health check endpoint
-fastify.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
-	return { status: 'ok' };
-});
-
-const start = async () => {
+async function start() {
 	try {
-		await fastify.listen({ port: 3001, host: '0.0.0.0' });
-		fastify.log.info('Auth Service listening on http://0.0.0.0:3001');
+		// cors security middleware
+		await fastify.register(helmet);
+		await fastify.register(cors, {
+			origin:			config.cors.origin,
+			credentials:	true,
+		});
+
+		// health check
+		fastify.get('/health', async () => ({
+			status:		'healthy',
+			service:	'auth-service',
+			timestamp:	new Date().toISOString(),
+			uptime:		process.uptime(),
+		}));
+
+		// register routes
+		await fastify.register(authRoutes, {prefix: '/api/auth'});
+		await fastify.register(twoFactorRoutes, {prefix: '/api/auth/2fa'});
+
+		// error handler
+		fastify.setErrorHandler((error:		Error & {statusCode?: number}, request, reply) => {
+			request.log.error({error}, 'Unhandled error');
+
+			const statusCode = error.statusCode || 500;
+			reply.status(statusCode).send({
+				statusCode,
+				error:		error.name		|| 'Internal Server Error',
+				message:	error.message	|| 'An unexpected error occurred',
+			});
+		});
+
+		// start server
+		const address = await fastify.listen({
+			port:	config.port,
+			host:	config.host,
+		});
+
+		fastify.log.info(`
+|Auth Service - Speak Up Platform|
+	Server:	${address}
+
+	Endpoints:
+		POST /api/auth/login/42		- OAuth login with 42 API
+		POST /api/auth/refresh		- Refresh access token
+		POST /api/auth/logout		- Invalidate session
+		POST /api/auth/2fa/setup	- Enable 2FA
+		POST /api/auth/2fa/verify	- Verify 2FA code
+		POST /api/auth/2fa/disable	- Disable 2FA
+
+	Database:	${config.database.host}:${config.database.port}
+	Vault:		${config.vault.address}
+		`);
+
 	} catch (err) {
-		fastify.log.error(err);
+		fastify.log.error(err, 'Failed to start auth service');
 		process.exit(1);
 	}
-};
+}
 
+// shutdown without breaking
+const signals = ['SIGINT', 'SIGTERM'];
+signals.forEach((signal) => {
+	process.on(signal, async () => {
+		fastify.log.info(`Received ${signal}, shutting down gracefully...`);
+		await fastify.close();
+		process.exit(0);
+	});
+});
+
+// start the server
 start();

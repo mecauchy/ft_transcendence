@@ -13,7 +13,7 @@ for (let i = 0; i < args.length; i++) {
     const key = args[i].replace(/^--/, '');
     const val = args[i+1] && !args[i+1].startsWith('--') ? args[++i] : true;
     opts[key] = val;
-  }
+ }
 }
 const PORT = process.env.PORT || opts.port || 3005;
 const DIST = path.resolve('/app/dist');
@@ -39,10 +39,10 @@ function sendFile(res, filePath) {
       res.writeHead(500);
       res.end('Internal Server Error');
       return;
-    }
-    res.writeHead(200, { 'Content-Type': type });
+   }
+    res.writeHead(200, {'Content-Type': type});
     res.end(data);
-  });
+ });
 }
 
 function requestHandler(req, res) {
@@ -54,19 +54,19 @@ function requestHandler(req, res) {
     if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
       sendFile(res, filePath);
       return;
-    }
+   }
     // SPA fallback to index.html
     const indexFile = path.join(DIST, 'index.html');
     if (fs.existsSync(indexFile)) {
       sendFile(res, indexFile);
       return;
-    }
+   }
     res.writeHead(404);
     res.end('Not Found');
-  } catch (e) {
+ } catch (e) {
     res.writeHead(500);
     res.end('Server Error');
-  }
+ }
 }
 
 if (opts.https || opts.cert) {
@@ -75,16 +75,16 @@ if (opts.https || opts.cert) {
   if (!certPath || !keyPath) {
     console.error('HTTPS requested but --cert or --key missing');
     process.exit(1);
-  }
+ }
   const cert = fs.readFileSync(certPath);
   const key = fs.readFileSync(keyPath);
-  const server = https.createServer({ key, cert }, requestHandler);
+  const server = https.createServer({key, cert}, requestHandler);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Listening (HTTPS) on ${PORT}`);
-  });
+ });
 } else {
   const server = http.createServer(requestHandler);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Listening (HTTP) on ${PORT}`);
-  });
+ });
 }

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import Popup from "./ui/Popup";
+import BackButton from "./ui/BackButton";
+import { t } from "./i18nHelper";
+import { api } from "../api/client";
 
 export default class ParkingScene extends Phaser.Scene {
 	private readonly BASE_SIZE = 600;
@@ -10,8 +13,10 @@ export default class ParkingScene extends Phaser.Scene {
 	private breathe_text!: Phaser.GameObjects.Text;
 
 	private game_started: boolean = false;
+	private session_start_time: number | null = null;
 
 	private popup!: Popup;
+	private backButton!: BackButton;
 
 	constructor() {
 		super("ParkingScene");
@@ -25,16 +30,25 @@ export default class ParkingScene extends Phaser.Scene {
 		this.bg = this.add.image(0, 0, "parking_bg").setOrigin(0.5);
 
 		this.popup = new Popup(this);
+		this.backButton = new BackButton(this, async () => {
+			if (this.session_start_time !== null) {
+				await this.sendBreatheStats();
+			}
+			this.backButton?.destroy();
+			this.popup.destroy();
+			this.scene.start("WorldMapScene");
+		});
 
 		if (!this.game_started) {
 			this.popup.show(
-				"You have parked your car. Now, breathe. Press ESC to go back.",
+				t("scenes.parking.welcome"),
 				[
 					{
-						label: "Got it",
+						label: t("scenes.parking.gotIt"),
 						onClick: () => {
 							this.popup.hide();
 							this.game_started = true;
+							this.session_start_time = Date.now();
 							this.breathe_exercise();
 						},
 					},
@@ -50,7 +64,11 @@ export default class ParkingScene extends Phaser.Scene {
 		//wait if not true
 		const keyboard = this.input.keyboard;
 		if (!keyboard) return;
-		keyboard.once("keydown-ESC", () => {
+		keyboard.once("keydown-ESC", async () => {
+			// if a session is started await sending breathe stats before reloading
+			if (this.session_start_time !== null) {
+				await this.sendBreatheStats();
+			}
 			this.scene.start("WorldMapScene");
 			this.popup.destroy();
 		});
@@ -62,10 +80,10 @@ export default class ParkingScene extends Phaser.Scene {
 		const cy = Math.round(this.scale.height / 2);
 		this.breathe_circle = this.add.circle(cx, cy, 60, 0x88cffa)
 
-		this.breathe_text = this.add.text(cx, cy, "Inspire", { fontSize: "24px", color: "#ffffff" }).setOrigin(0.5);
+		this.breathe_text = this.add.text(cx, cy, t("scenes.parking.inspire"), {fontSize: "24px", color: "#ffffff"}).setOrigin(0.5);
 
 		const breatheIn = () => {
-			this.breathe_text.setText("Inspire");
+			this.breathe_text.setText(t("scenes.parking.inspire"));
 
 			this.tweens.add({
 				targets: this.breathe_circle,
@@ -77,12 +95,12 @@ export default class ParkingScene extends Phaser.Scene {
 		};
 
 		const hold = (expire: boolean) => {
-			this.breathe_text.setText("Hold");
+			this.breathe_text.setText(t("scenes.parking.hold"));
 			this.time.delayedCall(2000, expire ? breatheOut : breatheIn);
 		};
 
 		const breatheOut = () => {
-			this.breathe_text.setText("Expire");
+			this.breathe_text.setText(t("scenes.parking.expire"));
 
 			this.tweens.add({
 				targets: this.breathe_circle,
@@ -94,6 +112,42 @@ export default class ParkingScene extends Phaser.Scene {
 		};
 
 		breatheIn();
+	}
+
+	private async sendBreatheStats(): Promise<void> {
+		if (this.session_start_time === null) return;
+
+		try {
+			const payload = {
+				playerid: "",
+				timestamp1: new Date(this.session_start_time).toISOString(),
+				timestamp2: new Date().toISOString(),
+			};
+
+			await api.sendBreathe(payload);
+			console.log('Breathe session saved successfully');
+
+			const sessionDurationMs = Date.now() - this.session_start_time;
+			const sessionDurationMinutes = sessionDurationMs / (1000 * 60);
+			const stressReduction = sessionDurationMinutes * 2.5;
+
+			if (stressReduction > 0) {
+				try {
+					const profile = await api.getProfile();
+					const currentStress = profile.stressLevel ?? 50;
+					const newStress = Math.max(0, currentStress - stressReduction);
+
+					await api.updateProfile({
+						stressLevel: Math.round(newStress),
+					});
+					console.log(`Breathe session: reduced stress by ${stressReduction.toFixed(1)} (${currentStress} -> ${Math.round(newStress)})`);
+				} catch (e) {
+					console.error('Failed to update stress level:', e);
+				}
+			}
+		} catch (error) {
+			console.error('Failed to save breathe session:', error);
+		}
 	}
 
 	private onResize() {

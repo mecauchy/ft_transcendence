@@ -12,7 +12,7 @@ get_secret_content() {
 	if [ -f "${file_path}" ]; then 
 		cat "${file_path}"
 	else 
-		echo "Error: Secret file not found at ${file_path}." >&2
+		echo "error:		Secret file not found at ${file_path}." >&2
 		exit 1
 	fi
 }
@@ -42,21 +42,16 @@ echo ""
 echo -e "${YELLOW} Reading secrets from files...${NC}"
 
 # Retrieve database passwords from infra/secrets/
-POSTGRES_PASS=$(get_secret_content "/tmp/vault-secrets/postgres_db_pass.txt")
-AUTH_PASS=$(get_secret_content "/tmp/vault-secrets/auth_db_pass.txt")
-CHAT_PASS=$(get_secret_content "/tmp/vault-secrets/chat_db_pass.txt")
-GAME_PASS=$(get_secret_content "/tmp/vault-secrets/game_db_pass.txt")
-USER_PASS=$(get_secret_content "/tmp/vault-secrets/user_db_pass.txt")
-GRAFANA_PASS=$(get_secret_content "/tmp/vault-secrets/grafana_pass.txt")
-KUMA_PASS=$(get_secret_content "/tmp/vault-secrets/kuma_pass.txt")
-
-# Optional secrets (may not exist)
-if [ -f "/tmp/vault-secrets/elasticsearch_pass.txt" ]; then
-	ELASTICSEARCH_PASS=$(cat "/tmp/vault-secrets/elasticsearch_pass.txt")
-else
-	ELASTICSEARCH_PASS=""
-	echo -e "${YELLOW}⚠ Elasticsearch password file not found, skipping${NC}"
-fi
+POSTGRES_PASS=$(get_secret_content "/run/secrets/postgres_db_pass.txt")
+AUTH_PASS=$(get_secret_content "/run/secrets/auth_db_pass.txt")
+CHAT_PASS=$(get_secret_content "/run/secrets/chat_db_pass.txt")
+GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
+USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
+GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
+KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
+OAUTH_42_CLIENT_ID=$(get_secret_content "/run/secrets/oauth_client_id.txt")
+OAUTH_42_CLIENT_SECRET=$(get_secret_content "/run/secrets/oauth_client_secret.txt")
+OAUTH_42_REDIRECT_URI=https://localhost:8443/api/auth/callback/42
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
 
@@ -151,6 +146,13 @@ if [ -n "$ELASTICSEARCH_PASS" ]; then
 else
 	echo -e "${YELLOW}⚠ Elasticsearch credentials skipped (no password)${NC}"
 fi
+# 42 OAuth credentials (development defaults - replace in production!)
+vault kv put secret/oauth/42 \
+	client_redirect_uri="${OAUTH_42_REDIRECT_URI}" \
+	client_id="${OAUTH_42_CLIENT_ID}" \
+	client_secret="${OAUTH_42_CLIENT_SECRET}" 2>/dev/null && \
+	echo -e "${GREEN}✓ 42 OAuth credentials stored${NC}" || \
+	echo -e "${YELLOW}⚠ 42 OAuth credentials already exist${NC}"
 
 # PostgreSQL root credentials
 vault kv put secret/database/postgres \

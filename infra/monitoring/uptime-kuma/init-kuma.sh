@@ -52,9 +52,9 @@ create_admin_user_with_node() {
             const salt = bcryptjs.genSaltSync(10);
             const hash = bcryptjs.hashSync('$password', salt);
             console.log(hash);
-        } catch(e) {
+       } catch(e) {
             console.log('');
-        }
+       }
     " 2>/dev/null)
     
     if [ -z "$hashed_pw" ]; then

@@ -3,9 +3,9 @@
 # Uptime-Kuma Setup Script
 DB="/app/data/kuma.db"
 
-log_info() { echo "ℹ️  $1"; }
-log_success() { echo "✓ $1"; }
-log_error() { echo "✗ $1"; }
+log_info() {echo "ℹ️  $1";}
+log_success() {echo "✓ $1";}
+log_error() {echo "✗ $1";}
 
 log_info "Uptime-Kuma setup..."
 
@@ -16,7 +16,7 @@ echo "${KUMA_ADMIN_PASSWORD}" > /tmp/.kuma_pass
 ADMIN_USER="${KUMA_ADMIN_USER:-kuma_admin}"
 ADMIN_PASS=$(cat /tmp/.kuma_pass)
 
-[ -z "$ADMIN_PASS" ] && { log_error "No password provided"; rm -f /tmp/.kuma_pass; exit 0; }
+[ -z "$ADMIN_PASS" ] && {log_error "No password provided"; rm -f /tmp/.kuma_pass; exit 0;}
 
 # Use Node to hash the password via environment variable
 HASHED=$(KUMA_ADMIN_PASSWORD="$ADMIN_PASS" node -e "const bcryptjs = require('bcryptjs'); const password = process.env.KUMA_ADMIN_PASSWORD; const salt = bcryptjs.genSaltSync(10); console.log(bcryptjs.hashSync(password, salt));" 2>/dev/null) || {
@@ -35,16 +35,16 @@ USER_EXISTS=$(sqlite3 "$DB" "SELECT id FROM user WHERE username = '$ADMIN_USER';
 if [ -z "$USER_EXISTS" ]; then
     # Insert new user
     sqlite3 "$DB" "INSERT INTO user (username, password, active) VALUES ('$ADMIN_USER', '$HASHED', 1);" 2>/dev/null
-    [ $? -eq 0 ] && log_success "User created" || { log_error "User creation failed"; exit 0; }
+    [ $? -eq 0 ] && log_success "User created" || {log_error "User creation failed"; exit 0;}
 else
     # Update existing user
     sqlite3 "$DB" "UPDATE user SET password = '$HASHED' WHERE username = '$ADMIN_USER';" 2>/dev/null
-    [ $? -eq 0 ] && log_success "Password set" || { log_error "Password update failed"; exit 0; }
+    [ $? -eq 0 ] && log_success "Password set" || {log_error "Password update failed"; exit 0;}
 fi
 
 # Get user ID
 ADMIN_ID=$(sqlite3 "$DB" "SELECT id FROM user WHERE username = '$ADMIN_USER';" 2>/dev/null)
-[ -z "$ADMIN_ID" ] && { log_error "User ID not found"; exit 0; }
+[ -z "$ADMIN_ID" ] && {log_error "User ID not found"; exit 0;}
 
 log_info "User ID: $ADMIN_ID"
 

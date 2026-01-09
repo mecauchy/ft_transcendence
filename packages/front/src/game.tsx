@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import {useState, useEffect, useRef} from "react";
 import Phaser from "phaser";
 import WorldMapScene from "./phaser/WorldMapScene";
 import ShopScene from "./phaser/ShopScene";
@@ -7,15 +7,21 @@ import HouseScene from "./phaser/HouseScene";
 import ParkingScene from "./phaser/ParkingScene";
 import HospitalScene from "./phaser/HospitalScene";
 import "./styles/game.css";
+import {useTranslation} from "react-i18next";
 
 export default function Game() {
 	const gameContainerRef = useRef<HTMLDivElement | null>(null);
 	const phaserRef = useRef<Phaser.Game | null>(null);
+	const {t} = useTranslation();
 
 	const [gameInPlay, setGameInPlay] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
-	const ORIGINAL_SIZE = "600px";
+	// Responsive game size
+	const getGameSize = () => {
+		const vwSize = window.innerWidth * 0.9;
+		return Math.min(600, vwSize);
+	};
 
 	useEffect(() => {
 		return () => {
@@ -29,11 +35,12 @@ export default function Game() {
 		if (phaserRef.current) return;
 
 		const container = gameContainerRef.current;
-		container.style.width = ORIGINAL_SIZE;
-		container.style.height = ORIGINAL_SIZE;
+		const size = getGameSize();
+		container.style.width = `${size}px`;
+		container.style.height = `${size}px`;
 
 		phaserRef.current = new Phaser.Game({
-			type: Phaser.WEBGL,
+			type: Phaser.CANVAS, // Use Canvas to avoid WebGL deprecation warnings
 			parent: container,
 			width: "100%",
 			height: "100%",
@@ -62,12 +69,14 @@ export default function Game() {
 		const el = gameContainerRef.current;
 		if (el) {
 			el.classList.remove("fullscreen");
-			el.style.width = ORIGINAL_SIZE;
-			el.style.height = ORIGINAL_SIZE;
+			const size = getGameSize();
+			el.style.width = `${size}px`;
+			el.style.height = `${size}px`;
 		}
 
 		setTimeout(() => {
-			scale.setParentSize(600, 600);
+			const size = getGameSize();
+			scale.setParentSize(size, size);
 			scale.refresh();
 		}, 0);
 	};
@@ -112,7 +121,7 @@ export default function Game() {
 					className="start_game_btn"
 					onClick={() => setGameInPlay(true)}
 				>
-					LANCER LE JEU
+					{t('game.launchGame')}
 				</button>
 			)}
 

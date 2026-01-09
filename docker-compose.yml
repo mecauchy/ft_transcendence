@@ -25,8 +25,8 @@ services:
     image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "8080:80"     # Access HTTP traffic (container 80)
-      - "8443:443"   # Access HTTPS traffic (container 443)
+      - "8080:80"   # Access HTTP traffic (rootless Docker fix)
+      - "8443:443"  # Access HTTPS traffic (rootless Docker fix)
     volumes:
       - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
@@ -38,9 +38,12 @@ services:
       - dmz_net
       - logging_net
     depends_on:
-      - vault
-      - api-gateway
-      - front
+      vault:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+      front:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null http://127.0.0.1/api/health || exit 1"]
       interval: 10s
@@ -59,13 +62,33 @@ services:
       - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - PORT=3000
       - HOST=0.0.0.0
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USER_SERVICE_URL=http://user-service:3002
+      - GAME_SERVICE_URL=http://game-service:3003
+      - GAMIFICATION_SERVICE_URL=http://gamification-service:3004
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "3000:3000"
     networks:
       - dmz_net
       - service_mesh
       - logging_net
     depends_on:
-      - vault
-      - redis
+      vault:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      game-service:
+        condition: service_healthy
+      gamification-service:
+        condition: service_healthy
     secrets:
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
@@ -80,7 +103,7 @@ services:
       - source: redis_password
         target: /run/secrets/redis_password.txt
 
-  # AUTH SERVICE - Provides token issuance and auth endpoints
+  # AUTH SERVICE - OAuth 2.0, JWT, 2FA
   auth-service:
     build:
       context: .
@@ -90,23 +113,184 @@ services:
     environment:
       - PORT=3001
       - HOST=0.0.0.0
-      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
       - VAULT_ADDR=http://vault:8200
-    networks:
-      - service_mesh
-      - dmz_net
-    depends_on:
-      - vault
-      - redis
+      - VAULT_TOKEN_FILE=/tmp/vault_token
     secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
       - source: jwt_secret
         target: /run/secrets/jwt_secret.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
       - source: auth_service_role_id
         target: /run/secrets/vault_role_id
       - source: auth_service_secret_id
         target: /run/secrets/vault_secret_id
       - source: vault_token
         target: /run/secrets/vault_token.txt
+
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # USER SERVICE - Profile, Friends, Settings, GDPR
+  user-service:
+    build:
+      context: .
+      dockerfile: packages/backend/user-service/Dockerfile
+    container_name: user-service
+    restart: unless-stopped
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - GAMIFICATION_SERVICE_INTERNAL_URL=http://gamification-service:3004
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GAME SERVICE - Narrative Engine, WebSocket, Sessions
+  game-service:
+    build:
+      context: .
+      dockerfile: packages/backend/game-service/Dockerfile
+    container_name: game-service
+    restart: unless-stopped
+    environment:
+      - PORT=3003
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - GAME_TICK_RATE=20
+      - SESSION_TIMEOUT=3600000
+      - RECONNECT_WINDOW=30000
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - GAMIFICATION_SERVICE_INTERNAL_URL=http://gamification-service:3004
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GAMIFICATION SERVICE - XP, Achievements, Leaderboards
+  gamification-service:
+    build:
+      context: .
+      dockerfile: packages/backend/gamification-service/Dockerfile
+    container_name: gamification-service
+    restart: unless-stopped
+    environment:
+      - PORT=3004
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   vault:
     image: hashicorp/vault:1.13.3
@@ -124,6 +308,7 @@ services:
       - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
       - ./infra/certs:/vault/tls:ro
       - ./infra/secret:/tmp/vault-secrets:rw
+      - ./infra/secret:/run/secrets:ro
     entrypoint: /entrypoint.sh
     networks:
       - service_mesh
@@ -146,12 +331,14 @@ services:
       - POSTGRES_USER=root_admin
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
     volumes:
-      - postgres_data:/var/lib/postgres/data
+      - postgres_data:/var/lib/postgresql/data
       - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./infra/secret:/run/secrets:ro
     networks:
       - service_mesh
       - logging_net
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U root_admin"]
       interval: 10s
@@ -206,6 +393,8 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    profiles:
+      - "monitoring"
     restart: "no"
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -332,7 +521,7 @@ services:
       - logging_net
       - service_mesh
     healthcheck:
-      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => { if (r.statusCode !== 200 && r.statusCode !== 302) { console.error(\"Status: \" + r.statusCode); process.exit(1); } process.exit(0); }).on(\"error\", (e) => { console.error(e); process.exit(1); })'"
+      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => {if (r.statusCode !== 200 && r.statusCode !== 302) {console.error(\"Status: \" + r.statusCode); process.exit(1);} process.exit(0);}).on(\"error\", (e) => {console.error(e); process.exit(1);})'"
       interval: 30s
       timeout: 10s
       retries: 5
@@ -468,3 +657,5 @@ secrets:
     file: ./infra/secret/auth-service_role_id
   auth_service_secret_id:
     file: ./infra/secret/auth-service_secret_id
+  postgres_db_pass:
+    file: ./infra/secret/postgres_db_pass.txt

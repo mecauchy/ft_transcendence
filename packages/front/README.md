@@ -36,10 +36,10 @@ export default defineConfig([
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
-      },
+     },
       // other options...
-    },
-  },
+   },
+ },
 ])
 ```
 
@@ -65,9 +65,9 @@ export default defineConfig([
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
-      },
+     },
       // other options...
-    },
-  },
+   },
+ },
 ])
 ```
