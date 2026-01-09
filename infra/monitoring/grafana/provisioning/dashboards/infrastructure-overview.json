@@ -424,7 +424,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(container_last_seen{id=~\".*/docker-.*\"})",
+          "expr": "count(container_last_seen{id=~\"/docker/.*|.*/docker-.*\\.scope\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -527,7 +527,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{id=~\".*/docker-.*\"}[5m])) / sum(machine_cpu_cores) * 100",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{id=~\"/docker/.*|.*/docker-.*\\.scope\"}[5m])) / sum(machine_cpu_cores) * 100",
           "legendFormat": "Total CPU Usage",
           "range": true,
           "refId": "A"
@@ -538,7 +538,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_system_seconds_total{id=~\".*/docker-.*\"}[5m])) / sum(machine_cpu_cores) * 100",
+          "expr": "sum(rate(container_cpu_system_seconds_total{id=~\"/docker/.*|.*/docker-.*\\.scope\"}[5m])) / sum(machine_cpu_cores) * 100",
           "hide": false,
           "legendFormat": "System CPU",
           "range": true,
@@ -550,7 +550,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_user_seconds_total{id=~\".*/docker-.*\"}[5m])) / sum(machine_cpu_cores) * 100",
+          "expr": "sum(rate(container_cpu_user_seconds_total{id=~\"/docker/.*|.*/docker-.*\\.scope\"}[5m])) / sum(machine_cpu_cores) * 100",
           "hide": false,
           "legendFormat": "User CPU",
           "range": true,
@@ -654,7 +654,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{id=~\".*/docker-.*\"} / scalar(machine_memory_bytes) * 100",
+          "expr": "container_memory_working_set_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"} / scalar(machine_memory_bytes) * 100",
           "legendFormat": "Memory Used %",
           "range": true,
           "refId": "A"
@@ -665,7 +665,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_cache{id=~\".*/docker-.*\"} / scalar(machine_memory_bytes) * 100",
+          "expr": "container_memory_cache{id=~\"/docker/.*|.*/docker-.*\\.scope\"} / scalar(machine_memory_bytes) * 100",
           "hide": false,
           "legendFormat": "Cache %",
           "range": true,
@@ -677,7 +677,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_rss{id=~\".*/docker-.*\"} / scalar(machine_memory_bytes) * 100",
+          "expr": "container_memory_rss{id=~\"/docker/.*|.*/docker-.*\\.scope\"} / scalar(machine_memory_bytes) * 100",
           "hide": false,
           "legendFormat": "RSS %",
           "range": true,
@@ -869,7 +869,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "(container_memory_working_set_bytes{id=~\".*/docker-.*\"} / container_spec_memory_limit_bytes{id=~\".*/docker-.*\"}) * 100",
+          "expr": "(container_memory_working_set_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"} / container_spec_memory_limit_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"}) * 100",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"

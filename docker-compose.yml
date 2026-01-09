@@ -206,8 +206,6 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    profiles:
-      - "monitoring"
     restart: "no"
     volumes:
       - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -256,8 +254,6 @@ services:
     container_name: grafana
     # On utilise profile en tant que "interupteur" pour eviter qu'il consomme de la memoire pr rien. 
     # Avec cette ligne, grafana ne démarrera que si je tape [docker compose --profile monitoring up] sinon éteint par default
-    profiles:
-      - "monitoring"
     user: "472"
     depends_on:
       prometheus:
@@ -294,8 +290,6 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    profiles:
-      - "monitoring"
     privileged: true
     ports:
       - 8081:8080
@@ -303,8 +297,16 @@ services:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
       - /sys:/sys:ro
+      # VM path (Docker root mode)
       - /var/lib/docker/:/var/lib/docker:ro
+      # Local rootless path (42 school) - mounted via /goinfre in rootfs
       - /dev/disk/:/dev/disk:ro
+    # cgroup v2 support for rootless Docker
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=10s
+      - --max_housekeeping_interval=15s
+      - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,hugetlb,referenced_memory,cpu_topology,resctrl
     networks:
       - logging_net
 
@@ -340,8 +342,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: elasticsearch
-    profiles:
-      - "monitoring"
     ports:
       - "9200:9200"
     environment:
@@ -369,8 +369,6 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.12.0
     container_name: filebeat
-    profiles:
-      - "monitoring"
     user: root
     networks:
       - logging_net
@@ -379,11 +377,13 @@ services:
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=root_token_dev_only
       - ELASTICSEARCH_PASSWORD=changeme123
+      # Docker root directory - auto-detected or set via DOCKER_ROOT_DIR env var
+      - DOCKER_ROOT_DIR=${DOCKER_ROOT_DIR:-/var/lib/docker}
     volumes:
       - ./infra/monitoring/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
-      - /goinfre:/goinfre:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount Docker socket with environment-specific path
+      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:ro
       - filebeat_data:/usr/share/filebeat/data
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
@@ -401,8 +401,6 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.12.0
     container_name: logstash
-    profiles:
-      - "monitoring"
     ports:
       - "5044:5044"
       - "5000:5000"
@@ -433,10 +431,11 @@ services:
       start_period: 60s
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.12.0
+    build:
+      context: ./infra/monitoring/elk/kibana
+      dockerfile: Dockerfile
+    image: ft-transcendence/kibana:latest
     container_name: kibana
-    profiles:
-      - "monitoring"
     ports:
       - "5601:5601"
     networks:
@@ -447,6 +446,8 @@ services:
       - SERVER_NAME=kibana-transcendence
     volumes:
       - ./infra/monitoring/elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ./infra/monitoring/elk/kibana/dashboards:/usr/share/kibana/config/dashboards:ro
+      - ./infra/monitoring/elk/kibana/init-dashboard.sh:/usr/local/bin/init-dashboard.sh:ro
       - kibana_data:/usr/share/kibana/data
     depends_on:
       elasticsearch:

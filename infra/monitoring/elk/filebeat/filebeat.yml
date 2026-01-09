@@ -1,5 +1,6 @@
 # ======================== Filebeat Configuration =============================
 # Filebeat for ft_transcendence - Collects Docker container logs
+# Compatible VM (Docker root) ET Local (Docker rootless)
 # =============================================================================
 
 # ================================== Inputs ===================================
@@ -7,16 +8,24 @@
 filebeat.inputs:
 
 # --------------- Docker Container Logs (stdout/stderr) -----------------------
-- type: container
+- type: log
   enabled: true
   paths:
-    # Docker logs - 42 school goinfre path (primary)
+    # Docker logs - Multiple paths for VM and local compatibility
+    # VM path (Docker root mode): /var/lib/docker/containers/
+    - /var/lib/docker/containers/*/*.log
+    # Local path (42 school goinfre - Docker rootless): /goinfre/*/docker/containers/
     - /goinfre/*/docker/containers/*/*.log
+    # Alternative rootless path: ~/.local/share/docker/containers/
+    - /home/*/docker/containers/*/*.log
   
-  # JSON parsing for Docker log format
-  json.keys_under_root: true
-  json.add_error_key: true
-  json.message_key: log
+  # Parse JSON manually in processors (avoid json.keys_under_root due to malformed logs)
+  encoding: utf-8
+  
+  # Keep files open to tail new logs continuously
+  close_eof: false
+  close_inactive: 5m
+  scan_frequency: 10s
   
   # Multiline support for stack traces (Node.js, Python, Java)
   multiline.type: pattern
@@ -28,11 +37,25 @@ filebeat.inputs:
 # ================================ Processors =================================
 
 processors:
-  # Add Docker metadata (container name, image, labels)
+  # Parse Docker JSON log format manually
+  - decode_json_fields:
+      fields: ["message"]
+      target: ""
+      overwrite_keys: true
+      add_error_key: true
+      max_depth: 3
+  
+  # Extract container ID from log file path using Dissect (safer than JavaScript)
+  - dissect:
+      tokenizer: "%{?prefix}/containers/%{container.id}/[^/]*log"
+      field: "log.file.path"
+      ignore_missing: true
+  
+  # Fetch container metadata from Docker API (works in VM, may fail in rootless)
   - add_docker_metadata:
-      host: "unix:///var/run/docker.sock"
-      match_fields:
-        - log.file.path
+      host: "unix://${DOCKER_SOCKET_PATH:-/var/run/docker.sock}"
+      match_source_index: 4
+      match_short_id: false
   
   # Add host metadata
   - add_host_metadata:
@@ -47,33 +70,6 @@ processors:
         - '2024-01-01T12:00:00.000000000Z'
       ignore_missing: true
       ignore_failure: true
-
-  # Extract service name from container name
-  - script:
-      lang: javascript
-      source: |
-        function process(event) {
-          var containerName = event.Get("container.name");
-          if (containerName) {
-            event.Put("service.name", containerName);
-            
-            // Categorize by service type
-            if (containerName.includes("api") || containerName.includes("gateway")) {
-              event.Put("service.type", "backend");
-            } else if (containerName.includes("front")) {
-              event.Put("service.type", "frontend");
-            } else if (containerName.includes("postgres") || containerName.includes("redis")) {
-              event.Put("service.type", "database");
-            } else if (containerName.includes("waf") || containerName.includes("nginx")) {
-              event.Put("service.type", "proxy");
-            } else if (containerName.includes("vault")) {
-              event.Put("service.type", "security");
-            } else {
-              event.Put("service.type", "infrastructure");
-            }
-          }
-          return event;
-        }
 
   # Drop empty or health check logs (reduce noise)
   - drop_event:

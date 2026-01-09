@@ -74,7 +74,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(container_last_seen{id=~\".*/docker-.*\"})",
+          "expr": "count(container_last_seen{id=~\"/docker/.*|.*/docker-.*\\.scope\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -136,7 +136,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_working_set_bytes{id=~\".*/docker-.*\"})",
+          "expr": "sum(container_memory_working_set_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -198,7 +198,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "avg(rate(container_cpu_usage_seconds_total{id=~\".*/docker-.*\"}[5m])) * 100",
+          "expr": "avg(rate(container_cpu_usage_seconds_total{id=~\"/docker/.*|.*/docker-.*\\.scope\"}[5m])) * 100",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -260,7 +260,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_cache{id=~\".*/docker-.*\"})",
+          "expr": "sum(container_memory_cache{id=~\"/docker/.*|.*/docker-.*\\.scope\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -355,7 +355,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{id=~\".*/docker-.*\"}",
+          "expr": "container_memory_working_set_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -450,7 +450,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_cpu_load_average_10s{id=~\".*/docker-.*\"}",
+          "expr": "container_cpu_load_average_10s{id=~\"/docker/.*|.*/docker-.*\\.scope\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -521,7 +521,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(container_cpu_usage_seconds_total{id=~\".*/docker-.*\"}[5m]) * 100",
+          "expr": "rate(container_cpu_usage_seconds_total{id=~\"/docker/.*|.*/docker-.*\\.scope\"}[5m]) * 100",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -592,7 +592,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{id=~\".*/docker-.*\"}",
+          "expr": "container_memory_working_set_bytes{id=~\"/docker/.*|.*/docker-.*\\.scope\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"
@@ -687,7 +687,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "container_memory_cache{id=~\".*/docker-.*\"}",
+          "expr": "container_memory_cache{id=~\"/docker/.*|.*/docker-.*\\.scope\"}",
           "legendFormat": "{{id}}",
           "range": true,
           "refId": "A"

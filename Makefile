@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all monitoring monitoring-up monitoring-down
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway logs-elk kibana-init health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all monitoring monitoring-up monitoring-down
 
 # Colors for output
 BLUE := \033[0;34m
@@ -45,7 +45,8 @@ help:
 	@echo "$(GREEN)📊 Monitoring:$(NC)"
 	@echo "  make logs                 - View live logs from all services"
 	@echo "  make logs-[service]       - View logs for specific service"
-	@echo "                              (vault, postgres, redis, waf, api-gateway)"
+	@echo "                              (vault, postgres, redis, waf, api-gateway, elk)"
+	@echo "  make kibana-init          - Initialize Kibana dashboard (run after monitoring starts)"
 	@echo "  make health               - Check health of all services"
 	@echo ""
 	@echo "$(GREEN)🔧 Access:$(NC)"
@@ -66,20 +67,28 @@ help:
 # RUNTIME
 # ============================================================================
 
-up: secrets
+up: secrets detect-docker-mode
 	@echo "$(BLUE)→ Checking if images need to be built...$(NC)"
 	@docker compose build
 	@echo "$(BLUE)→ Starting production stack (idempotent)...$(NC)"
-	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@if [ -f .env ] && grep -q "DOCKER_MODE=rootless" .env; then \
+		docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.rootless.yml up -d; \
+	else \
+		docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d; \
+	fi
 	@docker compose ps
 	@echo "$(GREEN)✓ Production stack started$(NC)"
 
-dev: secrets
+dev: secrets detect-docker-mode
 	@echo "$(BLUE)→ Starting containers in DEVELOPMENT mode...$(NC)"
 	@echo "$(YELLOW)  - Ports exposed: 3000 (api-gateway), 3011 (auth-service), 5432 (postgres), 6378 (redis)$(NC)"
 	@echo "$(YELLOW)  - Vault: HTTP mode at http://vault:8200$(NC)"
 	@echo "$(YELLOW)  - AppRole credentials: Auto-generated$(NC)"
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+	@if [ -f .env ] && grep -q "DOCKER_MODE=rootless" .env; then \
+		docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.rootless.yml up -d; \
+	else \
+		docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d; \
+	fi
 	@sleep 5
 	@echo "$(BLUE)→ Checking AppRole credentials...$(NC)"
 	@if [ -s infra/secret/api-gateway_role_id ] && [ -s infra/secret/api-gateway_secret_id ]; then \
@@ -89,21 +98,29 @@ dev: secrets
 	fi
 	@docker compose ps
 
-prod: secrets
+prod: secrets detect-docker-mode
 	@echo "$(BLUE)→ Starting containers in PRODUCTION mode...$(NC)"
 	@echo "$(GREEN)  - Network isolation: No backend ports exposed$(NC)"
 	@echo "$(GREEN)  - Vault: TLS enabled$(NC)"
 	@echo "$(GREEN)  - Access via WAF only (ports 80/443)$(NC)"
-	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@if [ -f .env ] && grep -q "DOCKER_MODE=rootless" .env; then \
+		docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.rootless.yml up -d; \
+	else \
+		docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d; \
+	fi
 	@sleep 3
 	@docker compose ps
 
-monitoring: secrets
+monitoring: secrets detect-docker-mode
 	@echo "$(BLUE)→ Starting containers with MONITORING stack...$(NC)"
 	@echo "$(YELLOW)  - Services: Prometheus, Grafana, Alertmanager, cAdvisor$(NC)"
 	@echo "$(YELLOW)  - ELK Stack: Elasticsearch, Kibana, Logstash, Filebeat$(NC)"
 	@echo "$(YELLOW)  - Uptime-Kuma for availability monitoring$(NC)"
-	@docker compose --profile monitoring up -d
+	@if [ -f .env ] && grep -q "DOCKER_MODE=rootless" .env; then \
+		docker compose --profile monitoring -f docker-compose.yml -f docker-compose.rootless.yml up -d; \
+	else \
+		docker compose --profile monitoring up -d; \
+	fi
 	@sleep 10
 	@docker compose ps
 	@echo ""
@@ -130,6 +147,11 @@ secrets:
 	@echo "$(BLUE)→ Creating AppRole credential placeholders...$(NC)"
 	@touch infra/secret/api-gateway_role_id infra/secret/api-gateway_secret_id infra/secret/auth-service_role_id infra/secret/auth-service_secret_id 2>/dev/null || true
 	@chmod 600 infra/secret/api-gateway_* infra/secret/auth-service_* 2>/dev/null || true
+
+detect-docker-mode:
+	@echo "$(BLUE)→ Detecting Docker deployment mode...$(NC)"
+	@./scripts/init-docker-env.sh
+	@echo "$(GREEN)✓ Environment configured$(NC)"
 
 down:
 	@echo "$(BLUE)→ Stopping containers...$(NC)"
@@ -165,6 +187,15 @@ logs-waf:
 
 logs-api-gateway:
 	@docker compose logs -f api-gateway
+
+logs-elk:
+	@docker compose logs -f elasticsearch logstash kibana filebeat
+
+kibana-init:
+	@echo "$(BLUE)→ Initializing Kibana dashboard...$(NC)"
+	@docker compose exec kibana /usr/local/bin/init-dashboard.sh
+	@echo "$(GREEN)✓ Dashboard initialized!$(NC)"
+	@echo "$(YELLOW)Access Kibana at: http://localhost:5601$(NC)"
 
 health:
 	@echo "$(BLUE)→ Checking service health...$(NC)"
