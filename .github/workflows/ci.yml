@@ -198,7 +198,7 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.dev-test.yml exec -T postgres psql -U root_admin -c "SELECT 1" || echo "Postgres check failed"
           # Use pnpm to run prisma with DATABASE_URL
           export DATABASE_URL="postgresql://root_admin:${POSTGRES_PASSWORD}@localhost:5432/game_db"
-          cd packages/shared/prisma && npx prisma db push --skip-generate --accept-data-loss
+          cd packages/shared/prisma && npx prisma db push --accept-data-loss
           echo "Database schema initialized"
 
       - name: Start Application Services
