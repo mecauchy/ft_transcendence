@@ -4,7 +4,6 @@
 	"description": "Gamification microservice - XP, levels, achievements, leaderboards",
 	"private": true,
 	"scripts": {
-		"postinstall": "prisma generate",
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc",
 		"start": "node dist/index.js",
