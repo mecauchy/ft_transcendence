@@ -49,8 +49,22 @@ GAME_PASS=$(get_secret_content "/run/secrets/game_db_pass.txt")
 USER_PASS=$(get_secret_content "/run/secrets/user_db_pass.txt")
 GRAFANA_PASS=$(get_secret_content "/run/secrets/grafana_pass.txt")
 KUMA_PASS=$(get_secret_content "/run/secrets/kuma_pass.txt")
-OAUTH_42_CLIENT_ID=$(get_secret_content "/run/secrets/oauth_client_id.txt")
-OAUTH_42_CLIENT_SECRET=$(get_secret_content "/run/secrets/oauth_client_secret.txt")
+
+# OAuth credentials - prefer environment variables over files
+if [ -n "$OAUTH_42_CLIENT_ID" ]; then
+	echo -e "${GREEN}✓ Using OAUTH_42_CLIENT_ID from environment${NC}"
+else
+	echo -e "${YELLOW}  Reading OAUTH_42_CLIENT_ID from file...${NC}"
+	OAUTH_42_CLIENT_ID=$(get_secret_content "/run/secrets/oauth_client_id.txt")
+fi
+
+if [ -n "$OAUTH_42_CLIENT_SECRET" ]; then
+	echo -e "${GREEN}✓ Using OAUTH_42_CLIENT_SECRET from environment${NC}"
+else
+	echo -e "${YELLOW}  Reading OAUTH_42_CLIENT_SECRET from file...${NC}"
+	OAUTH_42_CLIENT_SECRET=$(get_secret_content "/run/secrets/oauth_client_secret.txt")
+fi
+
 OAUTH_42_REDIRECT_URI=https://localhost:8443/api/auth/callback/42
 
 echo -e "${GREEN}✓ All secrets loaded${NC}"
