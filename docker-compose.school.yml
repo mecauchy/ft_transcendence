@@ -1,0 +1,35 @@
+# Docker Compose override for 42 school PCs (no root/admin privileges)
+# This file disables services that require privileged access:
+# - filebeat: needs access to /var/lib/docker/containers
+# - cadvisor: needs privileged mode and system mounts
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.school.yml up -d
+# Or: make setup-school
+
+services:
+  # Disable filebeat - it needs /var/lib/docker/containers access
+  filebeat:
+    profiles:
+      - disabled
+    # Override to prevent startup
+    entrypoint: ["echo", "Filebeat disabled on school PCs (no docker containers access)"]
+    deploy:
+      replicas: 0
+
+  # Disable cadvisor - it needs privileged mode and system mounts
+  cadvisor:
+    profiles:
+      - disabled
+    privileged: false
+    volumes: []
+    entrypoint: ["echo", "cAdvisor disabled on school PCs (requires privileged mode)"]
+    deploy:
+      replicas: 0
+
+  # Uptime-kuma might also have issues with docker.sock - make it optional
+  uptime-kuma:
+    volumes:
+      - uptime-kuma:/app/data
+      # Remove docker.sock mount - not accessible without privileges
+      - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro

@@ -1,4 +1,4 @@
-.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-seed prisma-studio setup
+.PHONY: help up dev down restart secrets logs logs-vault logs-postgres logs-redis logs-waf logs-api-gateway health vault db redis build build-local build-docker clean clean-soft clean-hard clean-volumes clean-images clean-all prisma-env prisma-migrate prisma-seed prisma-studio setup setup-school down-school
 
 # make sure env is correctly loaded
 SHELL := /bin/bash
@@ -32,6 +32,7 @@ help:
 	@printf "\n"
 	@printf "$(GREEN)🚀 Quick Start:$(NC)\n"
 	@echo "  make setup                - Full setup: secrets + db + prisma + start"
+	@echo "  make setup-school         - Setup for 42 school PCs (no admin rights)"
 	@printf "\n"
 	@printf "$(GREEN)🚀 Runtime:$(NC)\n"
 # 	@echo "  make up                   - Start all containers (production mode)"
@@ -172,6 +173,55 @@ setup: secrets
 	@echo "    -H 'Content-Type: application/json' \\"
 	@echo "    -d '{\"username\":\"test\",\"email\":\"test@example.com\",\"password\":\"SecurePass123!\",\"dob\":\"1995-01-01\"}'"
 	@printf "\n"
+
+# ============================================================================
+# SCHOOL SETUP (42 school PCs without admin rights)
+# ============================================================================
+
+setup-school: secrets
+	@printf "$(BLUE)╔════════════════════════════════════════════════════════════╗$(NC)\n"
+	@printf "$(BLUE)║    42 School Setup (No Admin Rights Required)              ║$(NC)\n"
+	@printf "$(BLUE)╚════════════════════════════════════════════════════════════╝$(NC)\n"
+	@printf "\n"
+	@printf "$(YELLOW)⚠ Disabled services: filebeat, cadvisor (require privileged access)$(NC)\n"
+	@printf "\n"
+	@printf "$(BLUE)→ Step 1/4: Starting database...$(NC)\n"
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml up -d postgres
+	@printf "$(YELLOW)→ Waiting for PostgreSQL to be ready...$(NC)\n"
+	@sleep 5
+	@until docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) > /dev/null 2>&1; do \
+		echo "$(YELLOW)  Waiting for PostgreSQL...$(NC)"; \
+		sleep 2; \
+	done
+	@printf "$(GREEN)✓ PostgreSQL is ready$(NC)\n"
+	@printf "\n"
+	@printf "$(BLUE)→ Step 2/4: Generating Prisma .env...$(NC)\n"
+	@$(MAKE) -s prisma-env
+	@printf "\n"
+	@printf "$(BLUE)→ Step 3/4: Deploying database migrations...$(NC)\n"
+	@$(MAKE) -s prisma-migrate
+	@printf "\n"
+	@printf "$(BLUE)→ Step 4/4: Starting all services (school mode)...$(NC)\n"
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml up -d
+	@sleep 3
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml ps
+	@printf "\n"
+	@printf "$(GREEN)╔════════════════════════════════════════════════════════════╗$(NC)\n"
+	@printf "$(GREEN)║           ✓ School Setup Complete!                         ║$(NC)\n"
+	@printf "$(GREEN)╚════════════════════════════════════════════════════════════╝$(NC)\n"
+	@printf "\n"
+	@printf "$(YELLOW)Access the application:$(NC)\n"
+	@echo "  Frontend:      https://localhost:8443"
+	@echo "  API:           https://localhost:8443/api"
+	@echo "  Prisma Studio: make prisma-studio"
+	@printf "\n"
+	@printf "$(YELLOW)Note: Monitoring features (filebeat, cadvisor) are disabled.$(NC)\n"
+	@printf "$(YELLOW)Kibana/Elasticsearch logs will not show container logs.$(NC)\n"
+	@printf "\n"
+
+down-school:
+	@printf "$(BLUE)→ Stopping school mode containers...$(NC)\n"
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml down
 
 # ============================================================================
 # PRISMA / DATABASE

@@ -89,7 +89,7 @@ export const config = {
 
 	// ratelimit config
 	rateLimit: {
-		max:		parseInt(process.env.RATE_LIMIT_MAX || '100'),
+		max:		parseInt(process.env.RATE_LIMIT_MAX || '1000'),
 		timeWindow:	process.env.RATE_LIMIT_WINDOW || '1 minute',
 		ban:		parseInt(process.env.RATE_LIMIT_BAN || '10'),
 	},

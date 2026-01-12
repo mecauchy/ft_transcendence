@@ -190,6 +190,20 @@ cd ft_transcendence
 make setup
 ```
 
+### 🏫 42 School PCs (No Admin Rights)
+
+If you're running on a 42 school PC without admin privileges, use the school mode:
+
+```bash
+# Setup for school PCs (disables services requiring privileged access)
+make setup-school
+
+# Stop school mode containers
+make down-school
+```
+
+> **Note**: This disables `filebeat` and `cadvisor` which require access to `/var/lib/docker/containers`. The app works normally, but container log aggregation in Kibana won't be available.
+
 That's it! The Makefile handles:
 - ✅ NVM installation and Node.js setup
 - ✅ pnpm installation
