@@ -170,7 +170,7 @@ Based on the subject requirements, here's a detailed analysis of what you're cla
 - [x] HTTPS everywhere (TLS certificates)
 
 ### Required Documentation:
-- [x] README.md with team roles - **Maxime's task**
+- [x] README.md with team roles
 - [x] Privacy Policy content
 - [x] Terms of Service content
 - [x] API Documentation (docs/API_DOCUMENTATION.md)
