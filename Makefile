@@ -90,37 +90,24 @@ help:
 # RUNTIME
 # ============================================================================
 
-# up: secrets
-# 	@printf "$(BLUE)→ Checking if images need to be built...$(NC)\n"
-# 	@docker compose build
-# 	@printf "$(BLUE)→ Starting production stack (idempotent)...$(NC)\n"
-# 	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# 	@docker compose ps
-# 	@printf "$(GREEN)✓ Production stack started$(NC)\n"
+up: 
+	@printf "$(BLUE)→ Starting containers in PRODUCTION mode...$(NC)\n"
+	@printf "$(GREEN)  - Network isolation: No backend ports exposed$(NC)\n"
+	@printf "$(GREEN)  - Vault: TLS enabled$(NC)\n"
+	@printf "$(GREEN)  - Access via WAF only (ports 80/443)$(NC)\n"
+	@docker compose docker-compose.yml up -d
+	@sleep 3
+	@docker compose ps
 
-# dev: secrets
-# 	@printf "$(BLUE)→ Starting containers in DEVELOPMENT mode...$(NC)\n"
-# 	@printf "$(YELLOW)  - Ports exposed: 3000 (api-gateway), 3011 (auth-service), 5432 (postgres), 6378 (redis)$(NC)\n"
-# 	@printf "$(YELLOW)  - Vault: HTTP mode at http://vault:8200$(NC)\n"
-# 	@printf "$(YELLOW)  - AppRole credentials: Auto-generated$(NC)\n"
-# 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-# 	@sleep 5
-# 	@printf "$(BLUE)→ Checking AppRole credentials...$(NC)\n"
-# 	@if [ -s infra/secret/api-gateway_role_id ] && [ -s infra/secret/api-gateway_secret_id ]; then \
-# 		echo "$(GREEN)✓ AppRole credentials generated$(NC)"; \
-# 	else \
-# 		echo "$(YELLOW)⚠ AppRole credentials not found - check vault logs$(NC)"; \
-# 	fi
-# 	@docker compose ps
+up-school: 
+	@printf "$(BLUE)→ Starting containers in SCHOOL mode...$(NC)\n"
+	@printf "$(GREEN)  - Network isolation: No backend ports exposed$(NC)\n"
+	@printf "$(GREEN)  - Vault: TLS enabled$(NC)\n"
+	@printf "$(GREEN)  - Access via WAF only (ports 80/443)$(NC)\n"
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml up -d
+	@sleep 3
+	@docker compose -f docker-compose.yml -f docker-compose.school.yml ps
 
-# prod: secrets
-# 	@printf "$(BLUE)→ Starting containers in PRODUCTION mode...$(NC)\n"
-# 	@printf "$(GREEN)  - Network isolation: No backend ports exposed$(NC)\n"
-# 	@printf "$(GREEN)  - Vault: TLS enabled$(NC)\n"
-# 	@printf "$(GREEN)  - Access via WAF only (ports 80/443)$(NC)\n"
-# 	@docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# 	@sleep 3
-# 	@docker compose ps
 
 secrets:
 	@printf "$(BLUE)→ Generating development secrets...$(NC)\n"
@@ -291,14 +278,9 @@ down:
 	@printf "$(BLUE)→ Stopping containers...$(NC)\n"
 	@docker compose down || docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
-restart: down up
+restart: down  up
 	@printf "$(GREEN)✓ Containers restarted$(NC)\n"
 
-restart-dev:
-	@printf "$(BLUE)→ Restarting in development mode...$(NC)\n"
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-	@printf "$(GREEN)✓ Development stack restarted$(NC)\n"
 
 # ============================================================================
 # MONITORING & LOGS
@@ -400,28 +382,6 @@ db:
 
 redis:
 	@docker compose exec redis redis-cli
-
-# ============================================================================
-# BUILD (Development)
-# ============================================================================
-
-# build: build-local
-# 	@printf "$(GREEN)✓ Local TypeScript built successfully$(NC)\n"
-
-# build-local:
-# 	@printf "$(BLUE)→ Building TypeScript locally...$(NC)\n"
-# 	@cd packages/backend/api-gateway && npm run build && cd ../../..
-# 	@printf "$(GREEN)✓ api-gateway built$(NC)\n"
-
-# build-docker:
-# 	@printf "$(BLUE)→ Building Docker images...$(NC)\n"
-# 	@docker compose build
-# 	@printf "$(GREEN)✓ Docker images built$(NC)\n"
-
-# rebuild:
-# 	@printf "$(BLUE)→ Forcing rebuild of all Docker images (no cache)...$(NC)\n"
-# 	@docker compose build --no-cache
-# 	@printf "$(GREEN)✓ Docker images rebuilt from scratch$(NC)\n"
 
 # ============================================================================
 # UPTIME-KUMA SETUP
