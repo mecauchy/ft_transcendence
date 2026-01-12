@@ -123,9 +123,9 @@ Our team of 4 developers from 42 Paris, each bringing specialized expertise:
 | **Omar Ben Hamza** | [@floppy727](https://github.com/floppy727) | Backend Lead | Microservices, database design, API development, WebSocket implementation |
 
 ### Role Distribution (4-member team)
-- **Product Owner**: Omar Ben Hamza - Feature prioritization, backlog management
+- **Product Owner**: Maxime Cauchy - Feature prioritization, backlog management
 - **Scrum Master**: Melissa Cauchy - Sprint planning, team coordination
-- **Technical Lead**: Maxime Cauchy - Architecture decisions, security reviews
+- **Technical Lead**: Omar Ben Hamza - Architecture decisions, security reviews
 - **Developers**: All team members contribute to implementation
 
 ---
@@ -180,7 +180,7 @@ Our team of 4 developers from 42 Paris, each bringing specialized expertise:
 - **Docker** & **Docker Compose** (v2.0+)
 - **Node.js** 20+ and **pnpm** (auto-installed via Makefile)
 - **Git**
-- Modern web browser (Chrome recommended)
+- Modern web browser (Chrome or FireFox recommended)
 
 ### Installation
 
