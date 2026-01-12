@@ -402,7 +402,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/goinfre/lengarci/ft_transcendence/packages/shared/prisma/generated/prisma",
+      "value": "./generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -416,7 +416,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/goinfre/lengarci/ft_transcendence/packages/shared/prisma/schema.prisma",
+    "sourceFilePath": "./schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
