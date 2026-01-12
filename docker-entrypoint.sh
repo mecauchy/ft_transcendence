@@ -5,7 +5,7 @@
 set -e
 
 # Run the initialization script
-/goinfre/mcauchy-/ft_transcendence/scripts/init-docker-env.sh
+./ft_transcendence/scripts/init-docker-env.sh
 
 # If a main entrypoint was specified, run it
 if [ -n "$1" ]; then
