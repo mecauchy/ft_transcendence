@@ -104,8 +104,11 @@ ft_transcendence is a full-stack web application that brings the classic Pong ga
 | **HashiCorp Vault** | Secrets Management |
 | **Prometheus** | Metrics Collection |
 | **Grafana** | Monitoring Dashboards |
-| **Uptime Kuma** | Health Monitoring |
-
+| **Uptime Kuma** | Health Monitoring
+| **Elasticsearch** | Search & Analytics Engine |
+| **Logstash** | Log Processing Pipeline |
+| **Kibana** | Log Visualization |
+| **Filebeat** | Log Shipping |
 ---
 
 ## 👥 Team & Roles
@@ -114,7 +117,7 @@ Our team of 4 developers from 42 Paris, each bringing specialized expertise:
 
 | Member | GitHub | Role | Responsibilities |
 |--------|--------|------|------------------|
-| **Melissa Cauchy** | [@mecauchy](https://github.com/mecauchy) | DevOps Lead | Docker orchestration, CI/CD, Prometheus/Grafana monitoring, infrastructure automation |
+| **Melissa Cauchy** | [@mecauchy](https://github.com/mecauchy) | DevOps Lead | Docker orchestration, CI/CD, Prometheus/Grafana monitoring, ELK stack, infrastructure automation |
 | **Maxime Cauchy** | [@maxime-c16](https://github.com/maxime-c16) | DevSecOps Lead | WAF/ModSecurity, HashiCorp Vault, security hardening, SSL/TLS configuration |
 | **Leny Garcia** | [@lewwny](https://github.com/lewwny) | Frontend Lead | React components, game UI, responsive design, i18n implementation |
 | **Omar Ben Hamza** | [@floppy727](https://github.com/floppy727) | Backend Lead | Microservices, database design, API development, WebSocket implementation |
@@ -241,7 +244,7 @@ make clean
 
 Our project implements **34 points** worth of modules (14 required for completion, 19 for bonus marks).
 
-### Major Modules (9 × 2 = 18 points)
+### Major Modules (10 × 2 = 20 points)
 
 | # | Module | Category | Implementation |
 |---|--------|----------|----------------|
@@ -252,8 +255,9 @@ Our project implements **34 points** worth of modules (14 required for completio
 | 5 | Standard User Management | User | Profile editing, avatars, online status |
 | 6 | WAF/ModSecurity + Vault | Security | OWASP CRS, HashiCorp Vault |
 | 7 | Prometheus + Grafana | DevOps | Full monitoring stack with alerts |
-| 8 | Backend Microservices | DevOps | 5 independent services |
-| 9 | Web-based Game | Gaming | Pong with AI opponent |
+| 8 | ELK Stack | DevOps | Elasticsearch, Logstash, Kibana, Filebeat for log aggregation |
+| 9 | Backend Microservices | DevOps | 5 independent services |
+| 10 | Web-based Game | Gaming | Pong with AI opponent |
 
 ### Minor Modules (16 × 1 = 16 points)
 
