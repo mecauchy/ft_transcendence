@@ -1,0 +1,17 @@
+# Elasticsearch Configuration
+cluster.name: ft-transcendence-es
+node.name: es-node-1
+
+# Network settings
+network.host: 0.0.0.0
+http.port: 9200
+
+# Discovery settings for single-node cluster
+discovery.type: single-node
+
+# Security settings - disabled for development
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+
+# Auto-create index settings (allow filebeat, logstash, and system indices)
+action.auto_create_index: "+filebeat-*,+logstash-*,+.*,-apm-*"

@@ -1,0 +1,165 @@
+# Prometheus Alert Rules
+# Règles d'alertes pour surveiller les conteneurs via cAdvisor
+# Compatible VM (Docker root) ET Local (Docker rootless)
+
+# Filter universel pour conteneurs Docker:
+# - VM: id=~"/docker/.*" 
+# - Local rootless: id=~".*/docker-.*\\.scope"
+# Combined: id=~"/docker/.*|.*/docker-.*\\.scope"
+
+groups:
+  # ============================================
+  # GROUPE 1: Santé des Targets Prometheus
+  # ============================================
+  - name: prometheus_health
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target {{$labels.job}} est DOWN"
+          description: "La target {{$labels.instance}} du job {{$labels.job}} est inaccessible depuis plus d'1 minute."
+
+      - alert: PrometheusConfigurationReloadFailure
+        expr: prometheus_config_last_reload_successful != 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Échec du rechargement de la config Prometheus"
+
+  # ============================================
+  # GROUPE 2: Alertes CPU Containers
+  # ============================================
+  - name: container_cpu_alerts
+    rules:
+      - alert: ContainerHighCpuUsage
+        expr: |
+          (sum(rate(container_cpu_usage_seconds_total{id=~"/docker/.*|.*/docker-.*\\.scope"}[5m])) by (id) 
+          / sum(container_spec_cpu_quota{id=~"/docker/.*|.*/docker-.*\\.scope"}/container_spec_cpu_period{id=~"/docker/.*|.*/docker-.*\\.scope"}) by (id) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU élevé sur container"
+          description: "Container {{ $labels.id }} utilise {{ printf \"%.2f\" $value }}% CPU."
+
+      - alert: ContainerCriticalCpuUsage
+        expr: |
+          (sum(rate(container_cpu_usage_seconds_total{id=~"/docker/.*|.*/docker-.*\\.scope"}[5m])) by (id) 
+          / sum(container_spec_cpu_quota{id=~"/docker/.*|.*/docker-.*\\.scope"}/container_spec_cpu_period{id=~"/docker/.*|.*/docker-.*\\.scope"}) by (id) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 CPU CRITIQUE"
+
+      - alert: ContainerHighCpuUsageSimple
+        expr: sum(rate(container_cpu_usage_seconds_total{id=~"/docker/.*|.*/docker-.*\\.scope"}[5m])) by (id) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU élevé sur container"
+
+  # ============================================
+  # GROUPE 3: Alertes Mémoire Containers
+  # ============================================
+  - name: container_memory_alerts
+    rules:
+      - alert: ContainerHighMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{id=~"/docker/.*|.*/docker-.*\\.scope"} 
+          / container_spec_memory_limit_bytes{id=~"/docker/.*|.*/docker-.*\\.scope"} * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mémoire élevée sur container"
+
+      - alert: ContainerCriticalMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{id=~"/docker/.*|.*/docker-.*\\.scope"} 
+          / container_spec_memory_limit_bytes{id=~"/docker/.*|.*/docker-.*\\.scope"} * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 MÉMOIRE CRITIQUE"
+
+      - alert: ContainerHighMemoryAbsolute
+        expr: container_memory_usage_bytes{id=~"/docker/.*|.*/docker-.*\\.scope"} > 1073741824
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container utilise >1GB mémoire"
+
+  # ============================================
+  # GROUPE 4: Alertes Réseau (VM only)
+  # ============================================
+  - name: container_network_alerts
+    rules:
+      - alert: ContainerHighNetworkTraffic
+        expr: |
+          sum(rate(container_network_receive_bytes_total{id=~"/docker/.*"}[5m]) 
+          + rate(container_network_transmit_bytes_total{id=~"/docker/.*"}[5m])) by (id) > 104857600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Trafic réseau élevé"
+
+      - alert: ContainerNetworkErrors
+        expr: |
+          sum(rate(container_network_receive_errors_total{id=~"/docker/.*"}[5m]) 
+          + rate(container_network_transmit_errors_total{id=~"/docker/.*"}[5m])) by (id) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Erreurs réseau sur container"
+
+  # ============================================
+  # GROUPE 5: Alertes État des Containers
+  # ============================================
+  - name: container_state_alerts
+    rules:
+      - alert: ContainerAbsent
+        expr: absent(container_last_seen{id=~"/docker/.*|.*/docker-.*\\.scope"})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Aucun container Docker détecté"
+
+      - alert: ContainerFrequentRestart
+        expr: increase(container_start_time_seconds{id=~"/docker/.*|.*/docker-.*\\.scope"}[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container redémarre fréquemment"
+
+  # ============================================
+  # GROUPE 6: Alertes Disque
+  # ============================================
+  - name: container_disk_alerts
+    rules:
+      - alert: ContainerHighDiskWrite
+        expr: sum(rate(container_fs_writes_bytes_total{id=~"/docker/.*|.*/docker-.*\\.scope"}[5m])) by (id) > 52428800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Écriture disque élevée"
+
+      - alert: ContainerFilesystemFull
+        expr: (container_fs_usage_bytes{id=~"/docker/.*"} / container_fs_limit_bytes{id=~"/docker/.*"} * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Filesystem presque plein"

@@ -1,0 +1,310 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+.tournament_container {
+	color: rgb(255, 255, 255);
+	margin-top: 5rem;
+}
+
+.tournament_title {
+	font-size: 2rem;
+	font-weight: 400;
+	margin-bottom: -0.2rem;
+	margin-left: 1rem;
+}
+
+.tournament_subtitle {
+	font-size: 1rem;
+	font-weight: 300;
+	margin-bottom: 1.5rem;
+	color: rgba(213, 140, 255, 0.753);
+	margin-left: 1rem;
+}
+
+.tournament_create_button {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: white;
+	font-size: 1rem;
+	font-weight: 600;
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.2s;
+	display: flex;
+	justify-content: flex-end;
+	margin-right: 3rem;
+}
+
+.tournament_create_button:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: scale(1.02);
+}
+
+.inline_section {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.create_tournament_section {
+	background: rgba(255, 255, 255, 0.1);
+	padding: 1.5rem;
+	border-radius: 1rem;
+	border: 0.0625rem solid rgba(255, 255, 255, 0.3);
+	margin: 1rem 3rem;
+	box-shadow: 0 0.25rem 1.875rem rgba(0, 0, 0, 0.1);
+}
+
+.create_title {
+	font-size: 1.4rem;
+	font-weight: 550;
+	margin-bottom: 1.3rem;
+	margin-top : 0;
+}
+
+.create_name {
+	margin-bottom: 0.2rem;
+	color:rgba(223, 152, 255, 0.658)
+}
+
+
+.create_name_input {
+	padding: 0.7rem;
+	margin-bottom: 1rem;
+	width: 95%;
+	border: none;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	color: rgba(255, 255, 255, 0.705);
+	background-color: rgba(240, 240, 240, 0.3);
+}
+
+.create_players {
+	margin-bottom: 0.2rem;
+	color:rgba(223, 152, 255, 0.658)
+}
+
+.create_players_input {
+	padding: 0.7rem;
+	margin-bottom: 1rem;
+	width: 80%;
+	border: none;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	color: rgba(255, 255, 255, 0.705);
+	background-color: rgba(240, 240, 240, 0.3);
+}
+
+.create_add_button {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: rgba(246, 147, 255, 0.705);
+	font-size: 1.1rem;
+	font-weight: 600;
+	margin-left: 1.4rem;
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.2s;
+}
+
+.create_add_button:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: translateY(-2px);
+}
+
+.create_submit_button, .create_cancel_button {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: white;
+	font-size: 1rem;
+	font-weight: 600;
+	padding: 0.5rem 1.5rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.2s;
+	margin-right: 1rem;
+}
+
+.create_submit_button:hover {
+	background: rgba(145, 52, 252, 0.479);
+	transform: translateY(-2px);
+}
+
+.create_cancel_button:hover {
+	background: rgba(255, 70, 70, 0.473);
+	transform: translateY(-2px);
+}
+
+.player_list_ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	gap: .625rem;
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.delete_button {
+	background: none;
+	border: none;
+	color: rgba(255, 100, 100, 0.705);
+	font-size: 1rem;
+	font-weight: 600;
+	transition: color 0.2s;
+}
+
+.delete_button:hover {
+	color: rgba(255, 150, 150, 0.905);
+}
+
+.players_list {
+	margin-bottom: 1rem;
+}
+
+.tournament_list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	margin-top: 4rem;
+}
+
+.tournament_item {
+	background: rgba(255, 255, 255, 0.1);
+	padding: 1.5rem;
+	border-radius: 1rem;
+	border: 0.0625rem solid rgba(255, 255, 255, 0.3);
+	margin: 1rem 3rem;
+	box-shadow: 0 0.25rem 1.875rem rgba(0, 0, 0, 0.1);
+}
+
+.tournament_name {
+	font-size: 1.2rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+	color: rgba(225, 159, 255, 0.658);
+	margin-top : 0;
+}
+
+.tournament_players_number {
+	font-size: 1rem;
+	font-weight: 400;
+	margin-top: -0.3rem;
+	color: rgba(200, 200, 200, 0.753);
+}
+
+.tournament_players {
+	font-size: 0.9rem;
+	font-weight: 300;
+	margin-top: 0.5rem;
+	color: rgb(255, 255, 255);
+}
+
+.tournament_status_bad {
+	font-size: 1rem;
+	font-weight: 500;
+	margin-top: -2rem;
+	display: flex;
+	justify-content: flex-end;
+	color: rgba(255, 65, 65, 0.753);
+}
+
+.tournament_status_good {
+	font-size: 1rem;
+	font-weight: 500;
+	margin-top: -2rem;
+	display: flex;
+	justify-content: flex-end;
+	color: rgba(100, 255, 100, 0.753);
+}
+
+.start_tournament_button {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: white;
+	font-size: 1rem;
+	font-weight: 600;
+	padding: 0.5rem 1.5rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.2s;
+	margin-top: 1rem;
+	display: flex;
+	justify-content: flex-end;
+	margin-left: auto;
+}
+
+.start_tournament_button:hover {
+	background: rgba(145, 52, 252, 0.479);
+	transform: translateY(-2px);
+}
+
+.tournament_in_progress {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: rgba(0, 0, 0, 0.8);
+	padding: 100%;
+	border-radius: 1rem;
+	size: auto;
+	border: 0.0625rem solid rgba(255, 255, 255, 0.3);
+	box-shadow: 0 0.25rem 1.875rem rgba(0, 0, 0, 0.1);
+}
+
+.game_canva {
+	border: 0.125rem solid rgba(255, 255, 255, 0.3);
+	border-radius: 1rem;
+	box-shadow: 0 0.25rem 1.875rem rgba(0, 0, 0, 0.1);
+	background-color: rgb(0, 0, 0);
+}
+
+.tournament_winner {
+	display: flex;
+	justify-content:flex-end;
+	margin-bottom: -1rem;
+	color: rgba(255, 255, 67, 0.535)
+}
+
+.current_match_title {
+	font-size: 1.2rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+	color: rgba(225, 159, 255, 0.658);
+	margin-top : 0;
+	display: flex;
+	justify-content: center;
+}
+
+.start_match_button {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: white;
+	font-size: 1rem;
+	font-weight: 600;
+	padding: 0.5rem 1.5rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.2s;
+	margin-top: 1rem;
+	display: flex;
+	justify-content: center;
+	margin-left: auto;
+	font-family: 'Press Start 2P', cursive;
+	text-align: center;
+}
+
+.start_match_button:hover {
+	background: rgba(145, 52, 252, 0.479);
+	transform: translateY(-2px);
+}
+
+.current_tournament_title {
+	font-size: 2rem;
+	font-weight: 400;
+	margin-bottom: 1rem;
+	margin-left: 1rem;
+	display: flex;
+	justify-content: center;
+	text-align: center;
+}

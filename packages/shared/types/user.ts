@@ -1,0 +1,45 @@
+// packages/shared/types/user.ts
+
+export enum UserRole {
+	PATIENT = 'PATIENT',
+	DOCTOR = 'DOCTOR',
+	ADMIN = 'ADMIN'
+}
+
+export interface IUserProfile {
+	id:			string;
+	alias:		string;
+	username:	string;
+	email:		string;
+	displayName?: string;
+	avatarUrl:	string;
+	role:		UserRole;
+	twofaEnabled?: boolean;
+	totalXp?: number;
+	level?: number;
+	stressLevel?: number;
+	confidenceLevel?: number;
+	lastActiveAt?: string;
+	createdAt?: string;
+	preferences: {
+		language:	'fr' | 'en';
+		theme:		'light' | 'dark';
+		accessibility: {
+			highContrast:	boolean;
+			textToSpeech:	boolean;
+			fontSize:		'small' | 'medium' | 'large';
+		};
+	};
+	stats: {
+		sessionsCompleted: number;
+		averageTrustScore: number;
+	};
+}
+
+export interface IFriend {
+	id:	string;
+	username: string;
+	avatarUrl?: string;
+	status: 'ONLINE' | 'OFFLINE' | 'IN_SESSION';
+	lastSeen: number;
+}

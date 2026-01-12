@@ -6,46 +6,659 @@ networks:
   service_mesh:
   logging_net:
 
+volumes:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  uptime-kuma:
+  postgres_data:
+  redis_data:
+  vault_data:
+  es_data:
+  filebeat_data:
+  logstash_data:
+  kibana_data:
+
 services:
-  #WAF SERVICE
+  #WAF SERVICE - ModSecurity WAF with nginx reverse proxy
   waf:
-    image: owasp/modsecurity-crs:nginx-alpine
+    image: openresty/openresty:latest
     container_name: waf
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "8080:80"   # Access HTTP traffic (rootless Docker fix)
+      - "8443:443"  # Access HTTPS traffic (rootless Docker fix)
     volumes:
-      - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:rw
+      - ./infra/waf/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/waf/modsecurity.conf:/etc/nginx/modsecurity.conf:ro
+      - ./infra/certs:/etc/nginx/certs:rw
+      - ./infra/waf/waf_entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     networks:
       - public_net
       - dmz_net
       - logging_net
     depends_on:
-      - vault
-    # API GATEWAY SERVICE
-  # api_gateway:
-  #   build:
-  #     context: .
-  #     dockerfile: ops/docker/backend.Dockerfile
-  #   networks:
-  #     - dmz_net
-  #     - service_mesh
-  #     - logging_net
-  #   environment:
-  #     - VAULT_ADDR=http://vault:8200
-  #   depends_on:
-  #     - vault
-  #     - logstash
-    # VAULT SERVICE
+      vault:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+      front:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -k -f -s -o /dev/null http://127.0.0.1/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: packages/backend/api-gateway/Dockerfile
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - PORT=3000
+      - HOST=0.0.0.0
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USER_SERVICE_URL=http://user-service:3002
+      - GAME_SERVICE_URL=http://game-service:3003
+      - GAMIFICATION_SERVICE_URL=http://gamification-service:3004
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "3000:3000"
+    networks:
+      - dmz_net
+      - service_mesh
+      - logging_net
+    depends_on:
+      vault:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      game-service:
+        condition: service_healthy
+      gamification-service:
+        condition: service_healthy
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: session_secret
+        target: /run/secrets/session_secret
+      - source: api_gateway_role_id
+        target: /run/secrets/vault_role_id
+      - source: api_gateway_secret_id
+        target: /run/secrets/vault_secret_id
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+
+  # AUTH SERVICE - OAuth 2.0, JWT, 2FA
+  auth-service:
+    build:
+      context: .
+      dockerfile: packages/backend/auth-service/Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+      - source: auth_service_role_id
+        target: /run/secrets/vault_role_id
+      - source: auth_service_secret_id
+        target: /run/secrets/vault_secret_id
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # USER SERVICE - Profile, Friends, Settings, GDPR
+  user-service:
+    build:
+      context: .
+      dockerfile: packages/backend/user-service/Dockerfile
+    container_name: user-service
+    restart: unless-stopped
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - GAMIFICATION_SERVICE_INTERNAL_URL=http://gamification-service:3004
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GAME SERVICE - Narrative Engine, WebSocket, Sessions
+  game-service:
+    build:
+      context: .
+      dockerfile: packages/backend/game-service/Dockerfile
+    container_name: game-service
+    restart: unless-stopped
+    environment:
+      - PORT=3003
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+      - GAME_TICK_RATE=20
+      - SESSION_TIMEOUT=3600000
+      - RECONNECT_WINDOW=30000
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - GAMIFICATION_SERVICE_INTERNAL_URL=http://gamification-service:3004
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GAMIFICATION SERVICE - XP, Achievements, Leaderboards
+  gamification-service:
+    build:
+      context: .
+      dockerfile: packages/backend/gamification-service/Dockerfile
+    container_name: gamification-service
+    restart: unless-stopped
+    environment:
+      - PORT=3004
+      - HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root_admin
+      - DB_NAME=game_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password.txt
+      - VAULT_ADDR=http://vault:8200
+      - INTERNAL_SERVICE_KEY=internal-service-key-dev-2024
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+      - source: postgres_db_pass
+        target: /run/secrets/postgres_db_pass.txt
+      - source: redis_password
+        target: /run/secrets/redis_password.txt
+    networks:
+      - service_mesh
+      - logging_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   vault:
     image: hashicorp/vault:1.13.3
     container_name: vault
-    ports:
-      - "8200:8200"
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
-      - VAULT_API_ADDR=http://0.0.0.0:8200
+      - VAULT_ADDR=http://127.0.0.1:8200
+      # Disable TLS verification for dev mode
+      - VAULT_SKIP_VERIFY=true
+      # OAuth credentials from .env file (optional - falls back to secrets)
+      - OAUTH_42_CLIENT_ID=${OAUTH_42_CLIENT_ID}
+      - OAUTH_42_CLIENT_SECRET=${OAUTH_42_CLIENT_SECRET}
+    volumes:
+      - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/vault/init_vault.sh:/init-vault.sh:ro
+      - ./infra/vault/policies:/policies:ro
+      - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
+      - ./infra/certs:/vault/tls:ro
+      - ./infra/secret:/tmp/vault-secrets:rw
+      - ./infra/secret:/run/secrets:ro
+    entrypoint: /entrypoint.sh
     networks:
       - service_mesh
+    secrets:
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+    healthcheck:
+      # Dev mode uses HTTP, prod uses HTTPS via override file
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # DATABASE SERVICE
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=root_admin
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_db_pass.txt
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/secret:/run/secrets:ro
+    networks:
+      - service_mesh
+      - logging_net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - vault
+
+  front:
+    build:
+      context: .
+      dockerfile: packages/front/Dockerfile
+    container_name: front
+    restart: unless-stopped
+    environment:
+      - PORT=3005
+      - HOST=0.0.0.0
+    ports:
+      - "3005:3005"
+      - "3006:3005"
+    volumes:
+      - ./infra/certs:/app/certs:rw
+    networks:
+      - public_net
+      - dmz_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3005/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # REDIS SERVICE
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
+    volumes:
+      - redis_data:/data
+      - ./infra/secret:/run/secrets:ro
+    networks:
+      - service_mesh
+      - logging_net
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a \"$(cat /run/secrets/redis_password.txt)\" ping 2>/dev/null | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - vault
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: "no"
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/monitoring/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - logging_net
+    depends_on:
+      - alertmanager
+
+  # Alertmanager - Gestion et envoi des alertes vers Discord
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./infra/monitoring/alertmanager/entrypoint.sh:/entrypoint.sh
+      - alertmanager_data:/alertmanager
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      # Webhook Discord stocké dans Vault (secret/data/alertmanager)
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+    ports:
+      - "9093:9093"
+    networks:
+      - service_mesh
+      - logging_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    # On utilise profile en tant que "interupteur" pour eviter qu'il consomme de la memoire pr rien. 
+    # Avec cette ligne, grafana ne démarrera que si je tape [docker compose --profile monitoring up] sinon éteint par default
+    user: "472"
+    depends_on:
+      prometheus:
+        condition: service_started
+      vault:
+        condition: service_healthy
+    # https://localhost:3009 -> voir les graphiques sur le navigateur
+    ports:
+      - 3009:3000
+    volumes:
+      # l1: persistance, si power off alors comptes utilisateurs et dashboards sauvegardés 
+      #l2: script d'automatisation qui évite de configurer grafana a prometheus a la main
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/monitoring/grafana/entrypoint.sh:/entrypoint.sh
+      - ./infra/monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    environment:
+      - GF_SECURITY_ADMIN_USER=grafana_admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+    networks:
+      - service_mesh
+      - logging_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    privileged: true
+    ports:
+      - 8081:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      # VM path (Docker root mode)
+      - /var/lib/docker/:/var/lib/docker:ro
+      # Local rootless path (42 school) - mounted via /goinfre in rootfs
+      - /dev/disk/:/dev/disk:ro
+    # cgroup v2 support for rootless Docker
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=10s
+      - --max_housekeeping_interval=15s
+      - --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,hugetlb,referenced_memory,cpu_topology,resctrl
+    networks:
+      - logging_net
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    volumes:
+    # persistance des données d'uptime kuma
+      - uptime-kuma:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/monitoring/uptime-kuma/entrypoint.sh:/entrypoint.sh:ro
+      - ./infra/monitoring/uptime-kuma/setup-kuma.sh:/setup-kuma.sh:ro
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    ports:
+      - 3010:3001
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN_FILE=/tmp/vault_token
+    secrets:
+      - source: vault_token
+        target: /tmp/vault_token
+    networks:
+      - logging_net
+      - service_mesh
+    healthcheck:
+      test: "node -e 'require(\"http\").get(\"http://127.0.0.1:3001\", (r) => {if (r.statusCode !== 200 && r.statusCode !== 302) {console.error(\"Status: \" + r.statusCode); process.exit(1);} process.exit(0);}).on(\"error\", (e) => {console.error(e); process.exit(1);})'"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ELK Stack services
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+    networks:
+      - logging_net
+      - service_mesh
+    volumes:
+      - ./infra/monitoring/elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - es_data:/usr/share/elasticsearch/data
+    depends_on:
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    user: root
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - ELASTICSEARCH_PASSWORD=changeme123
+      # Docker root directory - auto-detected or set via DOCKER_ROOT_DIR env var
+      - DOCKER_ROOT_DIR=${DOCKER_ROOT_DIR:-/var/lib/docker}
+    volumes:
+      - ./infra/monitoring/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./infra/monitoring/elk/filebeat/entrypoint.sh:/entrypoint.sh:ro
+      # Mount Docker socket with environment-specific path
+      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:ro
+      # Mount Docker container logs directory
+      - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
+      - filebeat_data:/usr/share/filebeat/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x filebeat > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    ports:
+      - "5044:5044"
+      - "5000:5000"
+      - "9600:9600"
+    networks:
+      - logging_net
+      - service_mesh
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_dev_only
+      - LS_JAVA_OPTS=-Xmx256m -Xms256m
+    volumes:
+      - ./infra/monitoring/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./infra/monitoring/elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./infra/monitoring/elk/logstash/entrypoint.sh:/entrypoint.sh:ro
+      - logstash_data:/usr/share/logstash/data
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  kibana:
+    build:
+      context: ./infra/monitoring/elk/kibana
+      dockerfile: Dockerfile
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - logging_net
+      - service_mesh
+    volumes:
+      - ./infra/monitoring/elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana_data:/usr/share/kibana/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 120s
+
+secrets:
+  vault_token:
+    file: ./infra/secret/vault_token.txt
+  jwt_secret:
+    file: ./infra/secret/jwt_secret.txt
+  session_secret:
+    file: ./infra/secret/session_secret.txt
+  redis_password:
+    file: ./infra/secret/redis_password.txt
+  api_gateway_role_id:
+    file: ./infra/secret/api-gateway_role_id
+  api_gateway_secret_id:
+    file: ./infra/secret/api-gateway_secret_id
+  auth_service_role_id:
+    file: ./infra/secret/auth-service_role_id
+  auth_service_secret_id:
+    file: ./infra/secret/auth-service_secret_id
+  postgres_db_pass:
+    file: ./infra/secret/postgres_db_pass.txt

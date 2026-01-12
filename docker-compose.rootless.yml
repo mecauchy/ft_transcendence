@@ -1,0 +1,30 @@
+# Docker Compose Override for Rootless Mode
+# This file will be auto-applied when docker-compose detects a rootless Docker installation
+# It overrides the main docker-compose.yml with rootless-specific configurations
+
+version: "3.9"
+
+services:
+  filebeat:
+    volumes:
+      # In rootless mode, we mount both the docker root and goinfre
+      - ${DOCKER_ROOT_DIR}/containers:${DOCKER_ROOT_DIR}/containers:ro
+      - /goinfre:/goinfre:ro
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock:ro
+    environment:
+      - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH}
+
+  cadvisor:
+    # Rootless mode requires cgroup v2 and adjusted metrics
+    command:
+      - "--docker_only=true"
+      - "--housekeeping_interval=15s"
+      - "--storage_duration=1m"
+      # cgroup v2 metrics for rootless
+      - "--enable_metrics=memory,cpu,network,disk,tcp,udp"
+
+  uptime-kuma:
+    volumes:
+      - uptime-kuma:/app/data
+      # Mount Docker socket (rootless specific path set by init-docker-env.sh)
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock:ro

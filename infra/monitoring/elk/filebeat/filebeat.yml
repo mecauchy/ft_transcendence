@@ -1,0 +1,39 @@
+filebeat.inputs:
+- type: container
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+  processors:
+    - add_docker_metadata:
+        host: unix:///var/run/docker.sock
+    - add_kubernetes_metadata: ~
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  protocol: "http"
+  # No authentication needed - Elasticsearch security is disabled
+  index: "filebeat-%{+yyyy.MM.dd}"
+
+setup.dashboards.enabled: false
+
+# Disable ILM, data streams, and template setup (template created manually)
+setup.ilm.enabled: false
+setup.template.enabled: false
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644

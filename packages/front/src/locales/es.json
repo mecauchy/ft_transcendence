@@ -1,0 +1,456 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "back": "Volver",
+    "confirm": "Confirmar",
+    "gotIt": "Entendido",
+    "yes": "Sí",
+    "no": "No",
+    "error": "Error",
+    "success": "Éxito",
+    "ok": "OK",
+    "buy": "Comprar",
+    "finish": "Terminar",
+    "returningToMap": "Volviendo al mapa del mundo.",
+    "enter": "Entrar",
+    "leave": "Salir",
+    "stress": "Estrés",
+    "confidence": "Confianza"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "password": "Contraseña",
+    "email": "Correo electrónico",
+    "username": "Nombre de usuario",
+    "birthdate": "Fecha de nacimiento",
+    "enterUsername": "Ingresa tu nombre de usuario",
+    "enterEmail": "Ingresa tu correo electrónico",
+    "enterUsernameOrEmail": "Ingresa tu nombre de usuario o correo electrónico",
+    "enterPassword": "Ingresa tu contraseña",
+    "confirmPassword": "Confirma tu contraseña",
+    "choosePassword": "Elige una contraseña",
+    "chooseUsername": "Elige un nombre de usuario",
+    "connecting": "Conectando...",
+    "connect": "Iniciar sesión",
+    "registering": "Registrando...",
+    "signUp": "Registrarse",
+    "loginWith": "Iniciar sesión con:",
+    "continueWithGithub": "Continuar con GitHub",
+    "continueWith42": "Continuar con 42",
+    "noAccount": "¿No tienes cuenta?",
+    "alreadyHaveAccount": "¿Ya tienes cuenta?",
+    "createAccountHere": "¿No tienes cuenta? Crea una aquí",
+    "loginHere": "¿Ya tienes cuenta? Inicia sesión aquí",
+    "startSession": "Inicia una sesión y toma tus primeras decisiones.",
+    "fillAllFields": "Por favor completa todos los campos",
+    "loginFailed": "Error al iniciar sesión",
+    "registerFailed": "Error en el registro",
+    "passwordsDontMatch": "Las contraseñas no coinciden",
+    "passwordRequirements": "La contraseña no cumple los requisitos",
+    "enter2FACode": "Ingrese el código de autenticación de dos factores",
+    "2faCodePlaceholder": "Ingrese el código de 6 dígitos",
+    "invalid2FACode": "Código 2FA inválido. Debe tener 6 dígitos.",
+    "verifying": "Verificando...",
+    "verify": "Verificar",
+    "2faVerificationFailed": "Verificación 2FA fallida. Por favor, inténtelo de nuevo.",
+    "enter2FACode": "Ingrese el código de autenticación de dos factores",
+    "2faCodePlaceholder": "Ingrese el código de 6 dígitos",
+    "invalid2FACode": "Código 2FA inválido. Debe tener 6 dígitos.",
+    "verifying": "Verificando...",
+    "verify": "Verificar",
+    "2faVerificationFailed": "Verificación 2FA fallida. Por favor, inténtelo de nuevo."
+  },
+  "passwordRequirements": {
+    "minChars": "Al menos 8 caracteres",
+    "uppercase": "Una letra mayúscula",
+    "lowercase": "Una letra minúscula",
+    "number": "Un número",
+    "specialChar": "Un carácter especial (@$!%*?&)",
+    "characters": "8+ caracteres"
+  },
+  "nav": {
+    "play": "Jugar",
+    "profile": "Perfil",
+    "history": "Historial",
+    "network": "Red",
+    "settings": "Configuración",
+	"leaderboard": "Clasificación",
+    "logout": "Cerrar sesión"
+  },
+    "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones",
+    "markAllRead": "Marcar todo como leido",
+    "clearAll": "Borrar",
+    "read": "Leido"
+    },
+     "profile": {
+       "title": "Perfil",
+       "username": "Jugador",
+       "matches": "Partidas",
+       "wins": "Victorias",
+       "losses": "Derrotas",
+       "pointsFor": "Puntos a favor",
+       "pointsAgainst": "Puntos en contra",
+       "timeSpent": "Tiempo jugado",
+       "minutes": "min",
+       "winRate": "Tasa de victorias",
+       "stress": "Nivel de estrés",
+       "confidence": "Confianza",
+       "stressDescription": "Más bajo es mejor - indica calma",
+       "confidenceDescription": "Más alto es mejor - indica seguridad",
+       "achievements": "Logros",
+       "pongStats": "Estadísticas Pong",
+       "breatheStats": "Estadísticas Respiración",
+       "sessions": "Sesiones",
+       "totalTime": "Tiempo total",
+       "avgSessionTime": "Sesión prom.",
+       "noAchievements": "Aún no hay logros"
+     },
+  "history": {
+    "title": "Historial de partidas",
+    "game": "Juego",
+    "result": "Resultado",
+    "all": "Todos",
+    "loadMore": "Cargar más...",
+    "noPong": "Aún no hay partidas de Pong",
+    "noBreathe": "Aún no hay sesiones de Respiración"
+  },
+  "chat": {
+    "title": "Mensajes",
+    "yesterday": "Ayer",
+    "noConversations": "Aún no hay conversaciones. ¡Empieza a chatear con amigos!",
+    "selectConversation": "Seleccionar una conversación",
+    "selectPrompt": "Selecciona una conversación para empezar a chatear",
+    "loadMore": "Cargar mensajes anteriores...",
+    "placeholder": "Escribe un mensaje...",
+    "isTyping": "está escribiendo...",
+    "cannotMessage": "No se puede enviar mensaje a este usuario",
+    "userNotFound": "Usuario no encontrado",
+    "sendFailed": "Error al enviar mensaje"
+  },
+  "home": {
+    "title": "ft_transcendance",
+    "subtitle": "Cuando hablar se convierte en mecánica de juego."
+  },
+  "game": {
+    "launchGame": "INICIAR JUEGO",
+    "startGame": "Iniciar juego"
+  },
+  "network": {
+    "title": "Red",
+    "addFriend": "Agregar amigo",
+    "enterFriendUsername": "Ingresa el nombre de usuario del amigo",
+    "friends": "Amigos",
+    "noFriends": "Aún no tienes amigos",
+    "friendRequests": "Solicitudes de amistad",
+    "sentRequests": "Solicitudes enviadas",
+    "noPendingRequests": "No hay solicitudes pendientes",
+    "givenRequestPending": "Cancelar solicitud",
+    "requestCancelled": "Solicitud de amistad cancelada",
+    "requestNoLongerExists": "Esta solicitud ya no existe",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "block": "Bloquear",
+    "viewProfile": "Ver perfil",
+    "chat": "Chatear",
+    "remove": "Eliminar",
+    "unfriend": "Quitar de amigos",
+    "blockUser": "Bloquear usuario",
+    "friendRemoved": "Amigo eliminado con éxito",
+    "userBlocked": "Usuario bloqueado con éxito",
+    "userUnblocked": "Usuario desbloqueado con éxito",
+    "blockedUsers": "Usuarios bloqueados",
+    "unblock": "Desbloquear",
+    "blocked": "Bloqueado",
+    "friendRequestSent": "Solicitud de amistad enviada",
+    "failedToAddFriend": "Error al agregar amigo",
+    "failedToBlockUser": "Error al bloquear usuario",
+    "removeFriend": "Eliminar amigo",
+    "removeFriendConfirm": "¿Qué deseas hacer con {{username}}?"
+  },
+  "settings": {
+    "title": "Configuración",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "language": "Idioma",
+    "twoFactor": "Autenticación de dos factores (2FA)",
+    "enable2FA": "Activar 2FA",
+    "disable2FA": "Desactivar 2FA",
+    "setup2FA": "Configuración de autenticación de dos factores",
+    "scan2FAQRCode": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Authy, etc.)",
+    "enter2FACode": "Ingresa el código de 6 dígitos",
+    "2faEnabled": "¡2FA activado con éxito!",
+    "2faDisabled": "2FA desactivado",
+    "2faSetupFailed": "Error al configurar 2FA",
+    "2faVerifyFailed": "Código de verificación inválido",
+    "2faDisableFailed": "Error al desactivar 2FA",
+    "invalid2FACode": "Por favor ingresa un código válido de 6 dígitos",
+    "saving": "Guardando...",
+    "saveChanges": "Guardar cambios",
+    "profileUpdated": "¡Perfil actualizado con éxito!",
+    "updateFailed": "Error al actualizar el perfil",
+    "enterUsername": "Ingresa tu nombre de usuario",
+    "enterEmail": "Ingresa tu correo electrónico",
+    "gdpr": {
+      "title": "Datos y Privacidad (GDPR)",
+      "exportJson": "Exportar datos (JSON)",
+      "exportCsv": "Exportar sesiones (CSV)",
+      "exportXml": "Exportar datos (XML)",
+      "exportSuccess": "¡Datos exportados exitosamente!",
+      "exportFailed": "Error al exportar los datos",
+      "deleteAccount": "Eliminar mi cuenta",
+      "deleteTitle": "Eliminar cuenta permanentemente",
+      "deleteWarning": "! ADVERTENCIA ! Esta acción es permanente e irreversible. Todos tus datos personales serán eliminados de nuestros servidores.",
+      "deleteAcknowledge": "Entiendo que esta acción es permanente y no puede ser deshecha",
+      "typeDelete": "Escribe 'DELETE' para confirmar",
+      "confirmDelete": "Eliminar cuenta",
+      "deleteConfirmInvalid": "Por favor confirma y escribe 'DELETE' para validar",
+      "deleteSuccess": "Cuenta eliminada exitosamente",
+      "deleteFailed": "Error al eliminar la cuenta"
+    },
+    "import": {
+      "title": "Importar datos",
+      "upload": "Importar archivo",
+      "noFile": "Por favor selecciona un archivo para importar",
+      "success": "¡Datos importados exitosamente!",
+      "failed": "Error al importar los datos",
+      "processed": "Registros procesados",
+      "updated": "Registros actualizados",
+      "skipped": "Registros omitidos",
+      "errors": "Errores de importación"
+    },
+    "avatar": {
+      "change": "Cambiar",
+      "hint": "Haz clic para subir un nuevo avatar (máx. 5MB)",
+      "invalidType": "Por favor selecciona un archivo de imagen",
+      "tooLarge": "La imagen debe ser menor a 5MB",
+      "uploadSuccess": "¡Avatar actualizado exitosamente!",
+      "uploadFailed": "Error al subir el avatar"
+    }
+  },
+  "languages": {
+    "en": "Inglés",
+    "fr": "Francés",
+    "es": "Español"
+  },
+  "scenes": {
+    "worldMap": {
+      "shop": "Tienda",
+      "hospital": "Hospital",
+      "house": "Casa",
+	  "hospitalWarning": "Advertencia: Tus niveles de estrés o confianza pueden afectar tu experiencia en el {{location}}.",
+      "parking": "Estacionamiento",
+      "coffee": "Cafetería",
+      "arrivedAt": "Has llegado a la {{location}}. ¿Qué te gustaría hacer?"
+    },
+    "shop": {
+      "welcome": "Has entrado a la tienda. Explora 3 artículos y realiza tus compras.",
+      "gotIt": "Entendido",
+      "selectedItem": "Has seleccionado {{item}}. ¿Quieres comprarlo?",
+      "purchased": "Has comprado: {{items}}."
+    },
+    "coffee": {
+      "welcome": "Arrastra tus pensamientos para categorizarlos si quieres. Haz clic en 'STOP' para aceptar.",
+      "gotIt": "¡Entendido!",
+      "thoughts": {
+        "timeChanges": "El tiempo cambia todo",
+        "peopleDisappoint": "La gente decepciona a menudo",
+        "effortMatters": "El esfuerzo importa más",
+        "feelingsFade": "Los sentimientos se desvanecen",
+        "silenceHeavy": "El silencio pesa",
+        "trustBreaks": "La confianza se rompe fácilmente",
+        "nothingLasts": "Nada dura para siempre",
+        "memoriesLie": "Los recuerdos mienten a veces",
+        "wordsScars": "Las palabras dejan cicatrices",
+        "choicesConsequences": "Las decisiones tienen consecuencias",
+        "loveRisky": "El amor parece arriesgado",
+        "regretLate": "El arrepentimiento llega tarde",
+        "painTeaches": "El dolor enseña lecciones",
+        "comfortKills": "La comodidad mata el crecimiento",
+        "fearLimits": "El miedo limita los sueños",
+        "happinessTemporary": "La felicidad parece temporal",
+        "lonelinessFamiliar": "La soledad parece familiar",
+        "attentionAddictive": "La atención parece adictiva",
+        "controlIllusion": "El control es una ilusión",
+        "meaningPersonal": "El significado es personal"
+      }
+    },
+    "house": {
+      "welcome": "¡Bienvenido a la Casa! ¡Prepárate para jugar Pong!",
+      "iaOpponent": "Oponente IA",
+      "localMultiplayer": "Dos jugadores",
+      "chooseDifficulty": "Elige tu dificultad:",
+      "easy": "Fácil",
+      "medium": "Medio",
+      "hard": "Difícil",
+      "gameOverPlayer": "¡Fin del juego! ¡{{player}} gana!",
+      "player1": "Jugador 1",
+      "player2": "Jugador 2",
+      "youWin": "¡Fin del juego! ¡Ganaste!",
+      "iaWins": "¡Fin del juego! ¡La IA gana!"
+    },
+    "parking": {
+      "welcome": "Has estacionado tu carro. Ahora, respira. Presiona ESC para volver.",
+      "gotIt": "Entendido",
+      "inspire": "Inspira",
+      "hold": "Mantén",
+      "expire": "Expira"
+    },
+    "hospital": {
+      "welcome": "Debido a recursos limitados, solo un paciente puede ser revisado primero.",
+      "gotIt": "Entendido",
+      "folder1": "Carpeta 1",
+      "folder2": "Carpeta 2",
+      "folder3": "Carpeta 3",
+      "confirmReview": "Has seleccionado el expediente médico de {{name}}. ¿Continuar?",
+      "thankYou": "Gracias por revisar los expedientes médicos. Tu experiencia es valiosa para brindar la mejor atención a nuestros pacientes."
+    }
+  },
+  "legal": {
+    "privacyPolicyLink": "Política de privacidad",
+    "termsOfServiceLink": "Términos de servicio",
+    "privacyPolicy": {
+      "title": "Política de Privacidad",
+      "lastUpdated": "Última actualización",
+      "introduction": {
+        "title": "1. Introducción",
+        "content": "Bienvenido a ft_transcendence. Respetamos su privacidad y estamos comprometidos a proteger sus datos personales. Esta política de privacidad explica cómo recopilamos, usamos y protegemos su información cuando utiliza nuestra plataforma de juegos."
+      },
+      "dataCollection": {
+        "title": "2. Datos que recopilamos",
+        "intro": "Recopilamos los siguientes tipos de datos:",
+        "account": "Información de cuenta:",
+        "accountDesc": "Nombre de usuario, dirección de correo electrónico, contraseña cifrada y avatar de perfil.",
+        "game": "Datos del juego:",
+        "gameDesc": "Historial de partidas, puntuaciones, victorias/derrotas, logros y progresión de XP.",
+        "social": "Datos sociales:",
+        "socialDesc": "Lista de amigos, mensajes de chat y usuarios bloqueados.",
+        "technical": "Datos técnicos:",
+        "technicalDesc": "Dirección IP, tipo de navegador e información del dispositivo con fines de seguridad."
+      },
+      "dataUse": {
+        "title": "3. Cómo usamos sus datos",
+        "provide": "Para proporcionar y mantener nuestro servicio de juegos",
+        "account": "Para administrar su cuenta y habilitar funciones del juego",
+        "matchmaking": "Para habilitar emparejamiento y clasificaciones",
+        "communicate": "Para comunicarnos con usted sobre su cuenta",
+        "security": "Para garantizar la seguridad y prevenir abusos"
+      },
+      "dataStorage": {
+        "title": "4. Almacenamiento y seguridad de datos",
+        "content": "Sus datos se almacenan de forma segura utilizando cifrado estándar de la industria. Las contraseñas están cifradas y con sal. Usamos HTTPS para todas las comunicaciones e implementamos limitación de velocidad para prevenir abusos."
+      },
+      "gdpr": {
+        "title": "5. Sus derechos (RGPD)",
+        "intro": "Según las regulaciones del RGPD, tiene los siguientes derechos:",
+        "access": "Derecho de acceso:",
+        "accessDesc": "Solicitar una copia de sus datos personales.",
+        "rectification": "Derecho de rectificación:",
+        "rectificationDesc": "Actualizar o corregir sus datos personales.",
+        "erasure": "Derecho de supresión:",
+        "erasureDesc": "Solicitar la eliminación de su cuenta y datos.",
+        "portability": "Derecho a la portabilidad de datos:",
+        "portabilityDesc": "Exportar sus datos en formato JSON, CSV o XML.",
+        "howTo": "Puede ejercer estos derechos a través de la página de Configuración de su cuenta."
+      },
+      "cookies": {
+        "title": "6. Cookies y almacenamiento local",
+        "content": "Usamos cookies esenciales y almacenamiento local para mantener su sesión y preferencias. Estos son necesarios para que la aplicación funcione correctamente."
+      },
+      "thirdParty": {
+        "title": "7. Servicios de terceros",
+        "content": "Podemos integrarnos con proveedores OAuth (como 42) para autenticación. Al usar autenticación de terceros, también se aplican sus respectivas políticas de privacidad."
+      },
+      "children": {
+        "title": "8. Privacidad de los niños",
+        "content": "Nuestro servicio no está dirigido a menores de 13 años. No recopilamos conscientemente datos personales de menores de 13 años."
+      },
+      "changes": {
+        "title": "9. Cambios en esta política",
+        "content": "Podemos actualizar esta política de privacidad de vez en cuando. Le notificaremos cualquier cambio publicando la nueva política en esta página."
+      },
+      "contact": {
+        "title": "10. Contáctenos",
+        "content": "Si tiene preguntas sobre esta política de privacidad o nuestras prácticas de datos, contáctenos a través de la plataforma."
+      },
+      "footer": "Esta política de privacidad cumple con el RGPD y otras regulaciones aplicables de protección de datos."
+    },
+    "termsOfService": {
+      "title": "Términos de Servicio",
+      "lastUpdated": "Última actualización",
+      "acceptance": {
+        "title": "1. Aceptación de términos",
+        "content": "Al acceder y usar ft_transcendence, acepta estar sujeto a estos Términos de Servicio. Si no está de acuerdo con estos términos, no use el servicio."
+      },
+      "description": {
+        "title": "2. Descripción del servicio",
+        "content": "ft_transcendence es una plataforma de juegos multijugador basada en web que presenta Pong y otros juegos. El servicio incluye juego en tiempo real, funcionalidad de chat, sistemas de amigos, clasificaciones y funciones de gamificación."
+      },
+      "accounts": {
+        "title": "3. Cuentas de usuario",
+        "accurate": "Debe proporcionar información de registro precisa y completa.",
+        "secure": "Es responsable de mantener la seguridad de las credenciales de su cuenta.",
+        "activity": "Es responsable de todas las actividades que ocurran bajo su cuenta.",
+        "notify": "Debe notificarnos inmediatamente sobre cualquier uso no autorizado de su cuenta.",
+        "age": "Debe tener al menos 13 años para crear una cuenta."
+      },
+      "conduct": {
+        "title": "4. Uso aceptable",
+        "intro": "Acepta no:",
+        "abuse": "Acosar, abusar o dañar a otros usuarios",
+        "cheat": "Usar trampas, exploits o software de automatización",
+        "impersonate": "Hacerse pasar por otros usuarios o personal de 42",
+        "spam": "Enviar spam o mensajes no solicitados",
+        "interfere": "Intentar interferir con la seguridad o funcionalidad del servicio",
+        "illegal": "Usar el servicio para cualquier propósito ilegal",
+        "offensive": "Publicar contenido ofensivo, discriminatorio o inapropiado"
+      },
+      "content": {
+        "title": "5. Contenido del usuario",
+        "content": "Conserva la propiedad del contenido que crea (avatares, mensajes de chat). Sin embargo, nos otorga una licencia para mostrar este contenido dentro del servicio. Nos reservamos el derecho de eliminar contenido que viole estos términos."
+      },
+      "gameplay": {
+        "title": "6. Reglas del juego y juego limpio",
+        "fair": "Todos los juegos deben jugarse de manera justa y de buena fe.",
+        "disconnect": "Desconectarse intencionalmente para evitar derrotas puede resultar en penalizaciones.",
+        "rankings": "Las clasificaciones y tablas de posiciones se determinan únicamente por juego legítimo.",
+        "manipulation": "La manipulación de puntuaciones o el arreglo de partidas está prohibido."
+      },
+      "privacy": {
+        "title": "7. Privacidad",
+        "content": "Su uso del servicio también se rige por nuestra Política de Privacidad. Revísela para entender cómo recopilamos, usamos y protegemos sus datos."
+      },
+      "termination": {
+        "title": "8. Terminación de cuenta",
+        "content": "Podemos suspender o terminar su cuenta si viola estos términos. También puede eliminar su cuenta en cualquier momento a través de la página de Configuración.",
+        "data": "Al eliminar la cuenta, sus datos personales se eliminarán de acuerdo con nuestra Política de Privacidad y los requisitos del RGPD."
+      },
+      "disclaimer": {
+        "title": "9. Descargo de garantías",
+        "content": "El servicio se proporciona \"tal cual\" sin garantías de ningún tipo. No garantizamos un servicio ininterrumpido o sin errores. Este es un proyecto educativo desarrollado como parte del currículo de 42."
+      },
+      "liability": {
+        "title": "10. Limitación de responsabilidad",
+        "content": "No seremos responsables por daños indirectos, incidentales o consecuentes que surjan de su uso del servicio."
+      },
+      "changes": {
+        "title": "11. Cambios en los términos",
+        "content": "Nos reservamos el derecho de modificar estos términos en cualquier momento. El uso continuado del servicio después de los cambios constituye la aceptación de los nuevos términos."
+      },
+      "governing": {
+        "title": "12. Ley aplicable",
+        "content": "Estos términos se regirán e interpretarán de acuerdo con las leyes aplicables. Cualquier disputa se resolverá a través de los canales legales apropiados."
+      },
+      "contact": {
+        "title": "13. Contacto",
+        "content": "Si tiene preguntas sobre estos Términos de Servicio, contáctenos a través de la plataforma."
+      },
+      "footer": "Al usar ft_transcendence, reconoce que ha leído, entendido y acepta estar sujeto a estos Términos de Servicio."
+    }
+  }
+}

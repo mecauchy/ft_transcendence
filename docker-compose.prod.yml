@@ -1,13 +1,94 @@
-# Override file for docker-compose.yml in prod
+# Override file for docker-compose.yml in PRODUCTION environment
+# Use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
 
 services:
+  # VAULT SERVICE - PRODUCTION MODE
   vault:
-    command: vault server -config=/vault/config/vault-prod.hcl
+    # Use file-based storage with proper configuration
+    command: ["vault", "server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
+    volumes:
+      - vault_data:/vault/file
+      - ./infra/vault/vault.hcl:/vault/config/vault.hcl:ro
+      - ./infra/secret:/run/secrets:ro
     environment:
-      - VAULT_API_ADDR=https://vault:8200
-#API GATEWAY SERVICE
-  # api_gateway:
-  #   environment:
-  #     - VAULT_AUTH_METHOD=approle
-  #     - VAULT_ROLE_ID_FILE=${GATEWAY_SERVICE_ROLE_ID}
-  #     - VAULT_SECRET_ID_FILE=${GATEWAY_SERVICE_SECRET_ID}1
+      VAULT_ADDR: http://vault:8200
+      VAULT_CACERT:  # Unset VAULT_CACERT for dev mode (HTTP only)
+      VAULT_LOG_LEVEL: info
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN}
+    # Don't expose ports in production, use ingress/load balancer
+    ports: []
+    # Simple health check for dev mode
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --spider --tries=1 --timeout=2 http://127.0.0.1:8200/v1/sys/health?standbyok=true || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # PostgreSQL SERVICE - PRODUCTION MODE
+  postgres:
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+      - postgres_data:/var/lib/postgresql/data
+    # Don't expose port directly in production
+    ports: []
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root_admin -h localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis SERVICE - PRODUCTION MODE
+  redis:
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
+    volumes:
+      - redis_data:/data
+      - ./infra/secret:/run/secrets:ro
+    # Don't expose port directly in production
+    ports: []
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # WAF SERVICE - PRODUCTION MODE
+  waf:
+    environment:
+      # Use real TLS certificates in production
+      - ENABLE_TLS=true
+      - SSL_CERT_PATH=/etc/ssl/certs/server.crt
+      - SSL_KEY_PATH=/etc/ssl/private/server.key
+    volumes:
+      - ./infra/certs:/etc/ssl/certs:ro
+
+  api-gateway:
+    environment:
+      - LOG_LEVEL=info
+      - VAULT_ADDRESS=http://vault:8200
+      - CORS_ORIGIN=https://192.168.1.57
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+    secrets:
+      - source: jwt_secret
+        target: /run/secrets/jwt_secret.txt
+      - source: vault_token
+        target: /run/secrets/vault_token.txt
+
+  auth-service:
+    environment:
+      - LOG_LEVEL=info
+      - VAULT_ADDR=http://vault:8200
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+
+  uptime-kuma:
+    environment:
+      - VAULT_ADDR=http://vault:8200
+
+  alertmanager:
+    environment:
+      - VAULT_ADDR=http://vault:8200
+

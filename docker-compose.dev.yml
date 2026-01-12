@@ -1,0 +1,71 @@
+services:
+  vault:
+    entrypoint: /entrypoint.sh
+    volumes:
+      - ./infra/secret:/run/secrets:rw
+      - ./infra/vault/init_vault.sh:/init-vault.sh:ro
+      - ./infra/vault/entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      VAULT_ADDR: https://0.0.0.0:8200
+    secrets: []  # Override base compose secrets
+
+  grafana:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+
+  alertmanager:
+    environment:
+      - VAULT_TOKEN_FILE=/run/secrets/vault_token.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+
+  api-gateway:
+    environment:
+      - LOG_LEVEL=debug
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_SKIP_VERIFY=true
+      - AUTH_SERVICE_URL=https://auth-service:3001
+      - USER_SERVICE_URL=https://user-service:3002
+      - GAME_SERVICE_URL=https://game-service:3003
+      - CORS_ORIGIN=*
+      - RATE_LIMIT_MAX=1000
+      - RATE_LIMIT_WINDOW=1 minute
+    ports:
+      - "3000:3000"
+
+  auth-service:
+    environment:
+      - LOG_LEVEL=debug
+      - PORT=3001
+      - HOST=0.0.0.0
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_SKIP_VERIFY=true
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret.txt
+    ports:
+      - "3011:3001"
+
+  postgres:
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_db_pass.txt
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+      - ./infra/certs/nginx.crt:/etc/postgresql/ssl/server.crt:ro
+      - ./infra/certs/nginx.key:/etc/postgresql/ssl/server.key:ro
+    ports:
+      - "5432:5432"
+
+  redis:
+    command: ["/bin/sh", "-c", "redis-server --appendonly yes --requirepass \"$(cat /run/secrets/redis_password.txt)\""]
+    volumes:
+      - ./infra/secret:/run/secrets:ro
+    ports:
+      - "6378:6379"
+
+  uptime-kuma:
+    environment:
+      - VAULT_ADDR=https://vault:8200
+      - VAULT_SKIP_VERIFY=true
